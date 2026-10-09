@@ -11,6 +11,27 @@ O objetivo **não** é decorar comandos. É que no fim consigas:
 
 ---
 
+## Passo 0: faz fork deste repositório
+
+**Antes de tocares em qualquer ficheiro:** faz **fork** deste repositório para a tua conta do GitHub, e clona o **fork** (não este repositório diretamente).
+
+```bash
+# No GitHub: botão "Fork" nesta página. Depois, na tua máquina:
+git clone git@github.com:<o-teu-utilizador>/Claude-Workshop.git
+cd Claude-Workshop
+```
+
+Porquê antes de tudo o resto:
+
+- Este repositório é o **template**: fica sempre intacto, no estado em que o começaste a estudar.
+- Todos os exercícios do módulo 11 (mudar, partir, estender) alteram ficheiros. Se os fizeres aqui diretamente, não tens como voltar ao ponto de partida sem perder o que já escreveste.
+- No teu fork podes usar Git **a sério**: um branch por exercício, commits, PRs para ti próprio, tal como o módulo 15 descreve. É o próprio exercício de Git que esse módulo pede.
+- Se algo correr muito mal no fork, apagas e fazes fork de novo — o template nunca é afetado.
+
+A partir daqui, sempre que este índice ou outro módulo disser "a partir da raiz do projeto", é a raiz do **teu fork clonado**.
+
+---
+
 ## Arquitetura
 
 ```mermaid

@@ -42,7 +42,7 @@ Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitaçõ
 | Java + Spring Boot | ✅ | módulo 17: `src/activity` com JPA, Flyway, Spring Security (RBAC com Keycloak), Spring Kafka, Actuator, JUnit/Mockito/MockMvc |
 | .NET | ❌ | não coberto; os conceitos do módulo 17 transferem-se quase 1:1 (ASP.NET Core, EF Core) |
 | CI/CD (GitHub Actions) | ✅ | `.github/workflows/ci.yml`: testes, build, integração e teste de fumo. Validado com `actionlint`, **ainda não correu no GitHub** |
-| Git no dia a dia (branches, PRs, rebase, conflitos) | 🟡 | este projeto já é um repositório Git (o "template"); faz fork/clone para praticar branches e PRs sem tocar no original |
+| Git no dia a dia (branches, PRs, rebase, conflitos) | 🟡 | já fizeste fork (ver [Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)); falta só praticar branches e PRs a sério |
 | Kubernetes | 🟡 | `config/k8s/api.yaml` (Deployment, Service, probes, segurança). Validado com o esquema oficial, **nunca aplicado a um cluster** |
 | Cloud (AWS, Azure, GCP) | ❌ | não coberto; exercício D6 é conceptual |
 | Infraestrutura como código (Terraform, Pulumi) | ❌ | não coberto |
@@ -53,7 +53,7 @@ Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitaçõ
 
 ## O que continua em falta (por ordem de importância)
 
-1. **Git em equipa**: o projeto já é um repositório Git. Faz um fork (ou clona-o para um sítio novo), e pratica um branch por exercício com um PR, para treinar o fluxo real sem arriscar o template.
+1. **Git em equipa**: já estás no teu fork ([Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)). Falta praticar um branch por exercício com um PR, para treinar o fluxo real de equipa.
 2. **Cloud e IaC**: o manifesto de Kubernetes nunca correu num cluster. Um deploy real exige uma conta e um registo de imagens.
 3. **TypeScript na API e no frontend**: o worker já tem, os outros não.
 4. **Tempo real e ORM**: SSE (D8) e a escolha de um ORM, com os trade-offs de cada um.
@@ -64,4 +64,4 @@ Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitaçõ
 
 Os exercícios do bloco D (em `11-exercicios.md`) cobrem o que ficou de fora: **D5** (Kubernetes num cluster local, se tiveres kind ou minikube), **D6** (deploy em cloud), **D8** (SSE). Os D1, D2 e D3 já estão implementados: o exercício é ler o código e fazer a experiência indicada.
 
-Para Git, faz fork deste repositório (ou clona-o para uma pasta nova), cria um branch por exercício, e abre um PR para ti próprio nesse fork. Só com isto praticas o fluxo de equipa, sem arriscar o template original.
+Para Git, no teu fork (ver [Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)), cria um branch por exercício e abre um PR para ti próprio. Só com isto praticas o fluxo de equipa.

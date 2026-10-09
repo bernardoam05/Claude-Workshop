@@ -226,7 +226,7 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 
 | Semana | Foco |
 |---|---|
-| 1 | Fork deste repositório (é o template). Branches + PRs para cada exercício, no teu fork. Vê o CI a correr a sério |
+| 1 | Já fizeste fork ([Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)). Branches + PRs para cada exercício, e vê o CI a correr a sério |
 | 2–3 | Exercícios D9–D12 do módulo 17: Testcontainers e refazer a API Node em **Spring Boot** |
 | 4 | Prisma no projeto Node + Prettier + Husky (hooks de pre-commit) |
 | 5 | Deploy numa cloud (AWS ou Azure) com uma BD gerida |
