@@ -1,0 +1,31 @@
+# Prometheus: a cada scrape_interval, faz GET às métricas de cada alvo e guarda os valores como séries temporais.
+# Modelo PULL: são os serviços que expõem /metrics; o Prometheus é que os vai buscar.
+# UI: http://localhost:9090  (Status → Targets mostra se cada alvo está UP)
+global:
+  scrape_interval: 5s          # curto para o workshop (ver mudanças depressa); em produção, 15–60 s
+  evaluation_interval: 5s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: api              # API Node (prom-client)
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['api:3000']
+
+  - job_name: activity         # serviço Spring Boot (Micrometer via Actuator)
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['activity:8080']
+
+  - job_name: rabbitmq         # plugin rabbitmq_prometheus; "detailed" + family dá métricas POR FILA
+    metrics_path: /metrics/detailed
+    params:
+      family: [queue_coarse_metrics]
+    static_configs:
+      - targets: ['rabbitmq:15692']
+
+  - job_name: prometheus       # o próprio Prometheus também expõe métricas
+    static_configs:
+      - targets: ['localhost:9090']

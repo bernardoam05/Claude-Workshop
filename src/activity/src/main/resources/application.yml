@@ -1,0 +1,57 @@
+# Configuração do Spring Boot. ${VAR:valor} = lê a variável de ambiente VAR, ou usa o valor por omissão.
+# Os valores por omissão servem para correr localmente (fora do Docker); no compose, tudo vem do ambiente.
+server:
+  port: 8080
+
+spring:
+  application:
+    name: activity
+
+  datasource:
+    # currentSchema=activity: este serviço usa o SEU schema, separado das tabelas da API Node.
+    # Num sistema real, cada microserviço teria a sua base de dados e as suas credenciais.
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/workshop?currentSchema=activity}
+    username: ${DATABASE_USER:workshop}
+    password: ${DATABASE_PASSWORD:workshop}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # o Hibernate só VALIDA o schema; quem o cria e altera é o Flyway
+    open-in-view: false     # não manter a ligação à BD aberta durante a renderização da resposta
+
+  flyway:
+    schemas: activity       # cria o schema se não existir e guarda o histórico de migrações lá dentro
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    consumer:
+      group-id: activity-service
+      # Um consumer group NOVO começa no início do tópico (relê todo o histórico retido).
+      # "latest" faria-o começar só nas mensagens novas.
+      auto-offset-reset: earliest
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Dois URLs, como na API Node: o issuer público (validado no "iss") e o JWKS interno (chaves).
+          issuer-uri: ${OIDC_ISSUER:http://localhost:8180/realms/workshop}
+          jwk-set-uri: ${OIDC_JWKS_URL:http://localhost:8180/realms/workshop/protocol/openid-connect/certs}
+          audiences: ${OIDC_AUDIENCE:workshop-api}
+
+app:
+  kafka:
+    topic: task-events
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true      # /actuator/health/liveness e /actuator/health/readiness (para Docker/Kubernetes)
+  metrics:
+    tags:
+      service: activity    # label comum a todas as métricas: distingue este serviço da API no Grafana

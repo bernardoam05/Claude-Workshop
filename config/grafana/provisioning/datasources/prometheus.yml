@@ -1,0 +1,10 @@
+# Provisioning: o Grafana lê estes ficheiros no arranque. Fonte de dados e dashboards são CÓDIGO,
+# versionados no Git, em vez de cliques na interface que se perdem quando o contentor é recriado.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true

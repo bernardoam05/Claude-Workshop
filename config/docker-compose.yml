@@ -1,0 +1,255 @@
+# Orquestração local de todo o sistema.
+# Uso (a partir da raiz do projeto):  docker compose -f config/docker-compose.yml up --build -d
+#
+# Repara: só o "web" (porta 8080), o painel do RabbitMQ (15672) e o Keycloak (8180) estão expostos ao host.
+# O Keycloak tem de estar exposto: o browser é redirecionado para ele no login.
+# A API, a BD, o Redis e o worker existem apenas dentro da rede interna do Docker.
+
+name: workshop
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: workshop
+      POSTGRES_USER: workshop
+      POSTGRES_PASSWORD: workshop   # só para desenvolvimento local, nunca em produção
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # volume nomeado: os dados sobrevivem a "docker compose down"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workshop -d workshop"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine   # a variante "management" traz o painel web
+    environment:
+      RABBITMQ_DEFAULT_USER: workshop
+      RABBITMQ_DEFAULT_PASS: workshop
+    ports:
+      - "15672:15672"                        # painel: http://localhost:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  # Identity Provider (OIDC). Guarda utilizadores e passwords, faz o login e emite tokens assinados (RS256).
+  # Consola de administração: http://localhost:8180  (admin / admin — só desenvolvimento)
+  # Utilizador de teste do realm "workshop": alice / alice-password
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3
+    mem_limit: 900m
+    command: ["start-dev", "--import-realm"]   # start-dev: HTTP, BD interna (H2). NUNCA em produção
+    environment:
+      JAVA_OPTS_APPEND: "-Xms256m -Xmx640m"   # heap da JVM do Keycloak, dentro do mem_limit
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # O URL que o BROWSER vê. Fica escrito no "iss" dos tokens; a API valida-o.
+      KC_HOSTNAME: http://localhost:8180
+      # Permite que a API fale com o Keycloak pelo nome interno (keycloak:8080), apesar do KC_HOSTNAME.
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro   # o realm é importado no arranque (configuração como código)
+    ports:
+      - "8180:8080"
+    healthcheck:
+      # A imagem não tem curl nem wget: fazemos o pedido HTTP à mão com /dev/tcp do bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  api:
+    build: ../src/api                        # contexto de build: a pasta onde está o Dockerfile
+    environment:
+      PORT: "3000"
+      DATABASE_URL: postgres://workshop:workshop@postgres:5432/workshop
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://workshop:workshop@rabbitmq:5672
+      # Segredo que assina os tokens. O valor por omissão é SÓ para desenvolvimento local.
+      # Em qualquer outro sítio define JWT_SECRET no ambiente (ex.: JWT_SECRET=... docker compose up).
+      JWT_SECRET: ${JWT_SECRET:-workshop-dev-only-change-me}
+      # Keycloak. Repara nos DOIS URLs: o público (issuer, igual ao "iss" do token) e o interno (JWKS).
+      OIDC_ISSUER: http://localhost:8180/realms/workshop
+      OIDC_JWKS_URL: http://keycloak:8080/realms/workshop/protocol/openid-connect/certs
+      OIDC_AUDIENCE: workshop-api
+      OIDC_CLIENT_ID: workshop-web
+      # Kafka: os eventos também vão para o tópico task-events (best-effort, ver compositePublisher.js).
+      KAFKA_BROKERS: kafka:9092
+    # Sem depends_on do keycloak, de propósito: as chaves só são pedidas no primeiro token do Keycloak.
+    # Se o Keycloak estiver em baixo, o login manual continua a funcionar (falha isolada).
+    depends_on:
+      postgres:
+        condition: service_healthy           # espera pelo HEALTHCHECK, não só por "contentor arrancou"
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped                  # se o processo morrer, o Docker volta a arrancá-lo
+
+  worker:
+    build: ../src/worker
+    environment:
+      DATABASE_URL: postgres://workshop:workshop@postgres:5432/workshop
+      RABBITMQ_URL: amqp://workshop:workshop@rabbitmq:5672
+    depends_on:
+      api:
+        condition: service_healthy           # a API é quem cria as tabelas (migrações); o worker espera por ela
+    restart: unless-stopped
+
+  web:
+    build: ../src/web
+    ports:
+      - "${WEB_PORT:-8080}:80"               # único ponto de entrada. Se 8080 estiver ocupada: WEB_PORT=8081 docker compose ...
+    depends_on:
+      api:
+        condition: service_healthy           # o Nginx resolve "api" no arranque; sem a API pronta, falha
+
+  # Documentação interativa da API, gerada a partir do contrato OpenAPI. http://localhost:8088
+  # Para experimentar as rotas protegidas: botão "Authorize" e colar um token.
+  swagger:
+    image: swaggerapi/swagger-ui:v5.17.14
+    environment:
+      SWAGGER_JSON: /spec/openapi.yaml
+    volumes:
+      - ../src/api/openapi.yaml:/spec/openapi.yaml:ro
+    ports:
+      - "8088:8080"
+
+  # ---------------------------------------------------------------------------------------------
+  # Kafka (modo KRaft: o próprio Kafka gere os metadados, sem ZooKeeper). Um só broker: desenvolvimento.
+  # Dois listeners: "kafka:9092" para os contentores, "localhost:9094" para ferramentas no teu computador.
+  kafka:
+    image: apache/kafka:3.9.1
+    mem_limit: 768m
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1          # 1 porque só há um broker (em produção: 3)
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"           # tópicos criados explicitamente (kafka-init), nunca por acidente
+      KAFKA_LOG_RETENTION_HOURS: 168                     # as mensagens ficam 7 dias, mesmo depois de lidas
+    ports:
+      - "9094:9094"
+    volumes:
+      - kafkadata:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 15s
+
+  # Contentor de uso único: cria os tópicos e termina. Os outros serviços esperam que acabe com sucesso.
+  kafka-init:
+    image: apache/kafka:3.9.1
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
+          --topic task-events --partitions 3 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
+          --topic task-events.DLT --partitions 1 --replication-factor 1 &&
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic task-events
+    restart: "no"
+
+  # Interface web para ver tópicos, partições, mensagens e consumer groups. http://localhost:8089
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:v1.5.0
+    mem_limit: 320m
+    environment:
+      KAFKA_CLUSTERS_0_NAME: workshop
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      JAVA_OPTS: "-Xmx192m"
+    ports:
+      - "8089:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # Microserviço Java/Spring Boot: consome o tópico task-events e serve /api/activity/* a administradores.
+  activity:
+    build: ../src/activity
+    mem_limit: 512m
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx320m"   # limite explícito da heap: o MaxRAMPercentage do Dockerfile não chega com mem_limit pequeno
+      DATABASE_URL: jdbc:postgresql://postgres:5432/workshop?currentSchema=activity
+      DATABASE_USER: workshop
+      DATABASE_PASSWORD: workshop
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OIDC_ISSUER: http://localhost:8180/realms/workshop
+      OIDC_JWKS_URL: http://keycloak:8080/realms/workshop/protocol/openid-connect/certs
+      OIDC_AUDIENCE: workshop-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully       # só arranca depois de os tópicos existirem
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s                                 # a JVM e o Spring demoram a arrancar
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------------------------
+  # Observabilidade. Prometheus recolhe métricas; Grafana mostra-as.
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    mem_limit: 256m
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+    ports:
+      - "9090:9090"                                     # http://localhost:9090
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    mem_limit: 256m
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin                 # só desenvolvimento
+      GF_AUTH_ANONYMOUS_ENABLED: "true"                 # ver os dashboards sem login (papel Viewer)
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/workshop-overview.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"                                     # http://localhost:3001
+    depends_on:
+      - prometheus
+
+volumes:
+  pgdata:
+  kafkadata:

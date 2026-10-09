@@ -1,0 +1,72 @@
+# Kubernetes: Deployment + Service para a API.
+# Aplicar (depois de publicares a imagem num registo e de criares o Secret):
+#   kubectl create secret generic api-secrets \
+#     --from-literal=DATABASE_URL=... --from-literal=REDIS_URL=... \
+#     --from-literal=RABBITMQ_URL=... --from-literal=JWT_SECRET=...
+#   kubectl apply -f config/k8s/api.yaml
+#
+# Repara: os segredos NÃO estão aqui. Este ficheiro vai para o Git; os valores não.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    app: api
+spec:
+  replicas: 2                     # duas réplicas: se uma morrer, a outra continua a atender
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: registry.example.com/workshop-api:1.0.0   # substitui pelo teu registo; nunca uses :latest em produção
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: api-secrets
+          env:
+            - name: PORT
+              value: "3000"
+          # Readiness: "posso receber tráfego?" Verifica dependências (BD, Redis). Se falhar, o pod sai do Service.
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # Liveness: "estou vivo?" Barato e local: só confirma que o processo aceita ligações.
+          # Se usássemos /api/health aqui, uma BD em baixo faria o Kubernetes reiniciar a API em loop.
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:            # o que o escalonador reserva
+              cpu: 100m
+              memory: 128Mi
+            limits:              # o que o contentor não pode ultrapassar
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  selector:
+    app: api                      # o Service envia tráfego para os pods com esta label
+  ports:
+    - port: 80                    # porta do Service dentro do cluster
+      targetPort: 3000            # porta do contentor
+  type: ClusterIP                 # só acessível dentro do cluster (quem expõe é um Ingress, a ver no exercício)

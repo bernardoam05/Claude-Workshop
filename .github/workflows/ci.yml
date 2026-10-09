@@ -1,0 +1,161 @@
+# Pipeline de integração contínua: corre a cada push e a cada pull request.
+# Cada job é independente e corre em paralelo, exceto onde "needs" força ordem.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# Pensado para correr SÓ em runners alojados pelo GitHub (ubuntu-latest): nenhum job precisa de
+# self-hosted runner nem de uma VM própria. Os runners gratuitos têm pouca RAM e pouco disco livre,
+# por isso o job "smoke" só sobe os serviços de que o teste de fumo e os E2E precisam (ver mais abaixo).
+jobs:
+  api:
+    name: API · testes unitários
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/api/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  worker:
+    name: Worker · compilar e testar
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/worker/package-lock.json
+      - run: npm ci
+      - run: npm test   # inclui o build do TypeScript: um erro de tipos parte o pipeline
+
+  activity:
+    name: Activity (Spring Boot) · testes Maven
+    runs-on: ubuntu-latest
+    timeout-minutes: 15   # a JVM + download de dependências Maven são o job mais lento do pipeline
+    defaults:
+      run:
+        working-directory: src/activity
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven            # guarda ~/.m2 entre execuções: o Maven não volta a descarregar tudo
+      - run: mvn -B test
+
+  web:
+    name: Web · build de produção
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  integration:
+    name: API · integração com Postgres real
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: api   # só faz sentido se os testes unitários passarem primeiro (poupa minutos)
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: workshop
+          POSTGRES_PASSWORD: workshop
+          POSTGRES_DB: workshop_test   # o nome tem de conter "test": é a guarda de segurança dos testes
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U workshop"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_TEST_URL: postgres://workshop:workshop@localhost:5432/workshop_test
+    defaults:
+      run:
+        working-directory: src/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/api/package-lock.json
+      - run: npm ci
+      - run: npm run test:integration
+
+  smoke:
+    name: Sistema completo · Docker Compose + teste de fumo
+    runs-on: ubuntu-latest
+    timeout-minutes: 20   # falha depressa em vez de gastar os minutos gratuitos do mês à espera
+    # Só corre se todas as peças compilarem e testarem: não gastamos tempo a construir imagens partidas.
+    needs: [api, worker, activity, web, integration]
+    env:
+      JWT_SECRET: ci-only-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Libertar espaço em disco
+        # Os runners gratuitos do GitHub têm pouco disco livre. Isto remove toolchains pré-instaladas
+        # que este pipeline não usa (.NET, Android, GHC), para sobrar espaço para as imagens Docker
+        # (Postgres, Redis, RabbitMQ, Keycloak, Kafka e as 4 imagens construídas aqui).
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          docker image prune -af || true
+          df -h /
+      - name: Subir o sistema
+        # Lista explícita de serviços: só os que o teste de fumo e os E2E precisam.
+        # "keycloak" tem de ir à parte porque a API não depende dele por desenho (ver docs/14):
+        # o login manual continua a funcionar mesmo que o Keycloak esteja em baixo.
+        # Os outros nomes trazem as suas dependências automaticamente (postgres, redis, rabbitmq, kafka, kafka-init).
+        # Grafana, Prometheus, Kafka UI e Swagger ficam de fora: são só para exploração manual (módulos 16/18),
+        # ninguém os usa neste pipeline, e poupam memória e tempo de build.
+        run: docker compose -f config/docker-compose.yml up -d --build --wait web api worker activity keycloak
+      - name: Teste de fumo
+        run: ./scripts/smoke-test.sh
+      - name: Testes E2E (Playwright, browser real)
+        run: |
+          docker run --rm --network host -v "$PWD/tests/e2e:/e2e" -w /e2e -e CI=true \
+            mcr.microsoft.com/playwright:v1.63.0-noble sh -c "npm ci && npx playwright test"
+      - name: Guardar traces do Playwright em caso de falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: tests/e2e/test-results/
+      - name: Logs em caso de falha
+        if: failure()
+        run: docker compose -f config/docker-compose.yml logs --no-color
+      - name: Limpar
+        if: always()
+        run: docker compose -f config/docker-compose.yml down -v

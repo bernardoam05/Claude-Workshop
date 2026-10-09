@@ -1,0 +1,28 @@
+# Dependências instaladas: reconstroem-se a partir do package-lock.json / pom.xml.
+node_modules/
+
+# Saída de build: gerada, nunca escrita à mão.
+dist/
+build/
+target/
+
+# Segredos locais. O compose lê JWT_SECRET/WEB_PORT do ambiente; um .env nunca vai para o Git.
+.env
+.env.*
+!.env.example
+
+# Resultados de testes (Playwright) e logs.
+test-results/
+playwright-report/
+blob-report/
+*.log
+npm-debug.log*
+
+# Editores e sistema operativo.
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Artefactos ocasionais de experiências (ver docs/11-exercicios.md, exercício A5).
+*.tmp

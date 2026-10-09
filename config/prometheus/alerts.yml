@@ -1,0 +1,42 @@
+# Regras de alerta. O Prometheus avalia-as continuamente; vê-as em http://localhost:9090/alerts.
+# Em produção, o Alertmanager recebe os alertas e envia-os (email, Slack, PagerDuty). Aqui não o temos.
+#
+# Boa prática: alertar sobre SINTOMAS que afetam utilizadores (erros, latência) e sobre trabalho a acumular,
+# não sobre causas (CPU alta). "for": a condição tem de durar este tempo, para não alertar por um pico de 1 s.
+groups:
+  - name: workshop
+    rules:
+      - alert: ApiErrosElevados
+        expr: sum(rate(http_request_duration_seconds_count{job="api", status=~"5.."}[1m])) > 0.1
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "A API está a devolver erros 5xx (mais de 0,1 por segundo)"
+
+      - alert: ApiLenta
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="api"}[5m]))) > 0.5
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: "p95 da latência da API acima de 500 ms"
+
+      - alert: MensagensNaDLQ
+        expr: rabbitmq_detailed_queue_messages_ready{queue="worker.task-events.dlq"} > 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "Há mensagens na DLQ do worker: alguém tem de as inspecionar"
+
+      - alert: KafkaConsumerAtrasado
+        expr: max(kafka_consumer_fetch_manager_records_lag_max{job="activity"}) > 100
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: "O serviço activity está mais de 100 mensagens atrás no Kafka"
+
+      - alert: AlvoEmBaixo
+        expr: up == 0
+        for: 30s
+        labels: { severity: critical }
+        annotations:
+          summary: "O Prometheus não consegue recolher métricas de {{ $labels.job }}"
