@@ -26,17 +26,16 @@ git clone git@github.com:<o-teu-utilizador>/Claude-Workshop.git
 cd Claude-Workshop
 ```
 
-**Se ÉS o dono do template** (ex.: é a tua própria conta): o GitHub **não deixa** fazer fork de um repositório para a mesma conta onde já existe — o botão "Fork" fica desativado ou dá erro. A alternativa, com o mesmo efeito prático, é criar um segundo repositório, vazio, e enviar para lá uma cópia local:
+**Se ÉS o dono do template** (ex.: é a tua própria conta): o GitHub **não deixa** fazer fork de um repositório para a mesma conta onde já existe. Em vez disso, usa a funcionalidade "Template repository" do GitHub, feita exatamente para este caso:
+
+1. `Settings` do repositório → marca a checkbox **"Template repository"**.
+2. Na página principal, aparece o botão verde **"Use this template" → "Create a new repository"**.
+3. Dá-lhe um nome (ex.: `claude-workshop-exercicios`). O GitHub cria uma cópia independente, com histórico próprio e limpo — sem ligação de fork.
+4. Clona-a normalmente:
 
 ```bash
-# 1. Cria no GitHub um repositório novo e VAZIO (sem README nem licença): ex. "claude-workshop-exercicios"
-# 2. Clona o template com um nome de remoto diferente de "origin", para o poderes distinguir:
-git clone --origin template git@github.com:bernardoam05/Claude-Workshop.git claude-workshop-exercicios
+git clone git@github.com:bernardoam05/claude-workshop-exercicios.git
 cd claude-workshop-exercicios
-git remote add origin git@github.com:bernardoam05/claude-workshop-exercicios.git
-git push -u origin main
-# A partir de agora, "git push" vai para a tua cópia de trabalho; "git fetch template" traz
-# atualizações futuras do template original, se quiseres trazê-las sem perder o teu trabalho.
 ```
 
 Porquê antes de tudo o resto:
