@@ -13,22 +13,40 @@ O objetivo **não** é decorar comandos. É que no fim consigas:
 
 ## Passo 0: faz fork deste repositório
 
-**Antes de tocares em qualquer ficheiro:** faz **fork** deste repositório para a tua conta do GitHub, e clona o **fork** (não este repositório diretamente).
+**Template:** [github.com/bernardoam05/Claude-Workshop](https://github.com/bernardoam05/Claude-Workshop)
+
+**Antes de tocares em qualquer ficheiro:** faz uma cópia independente deste repositório, e trabalha **nela**, nunca aqui diretamente. Como, depende de quem és:
+
+**Se NÃO és o dono do template** (é o caso da maioria de quem está a ler isto):
 
 ```bash
-# No GitHub: botão "Fork" nesta página. Depois, na tua máquina:
+# No GitHub, na página do template: botão "Fork" (canto superior direito).
+# Isto cria uma cópia em github.com/<o-teu-utilizador>/Claude-Workshop. Depois, na tua máquina:
 git clone git@github.com:<o-teu-utilizador>/Claude-Workshop.git
 cd Claude-Workshop
+```
+
+**Se ÉS o dono do template** (ex.: é a tua própria conta): o GitHub **não deixa** fazer fork de um repositório para a mesma conta onde já existe — o botão "Fork" fica desativado ou dá erro. A alternativa, com o mesmo efeito prático, é criar um segundo repositório, vazio, e enviar para lá uma cópia local:
+
+```bash
+# 1. Cria no GitHub um repositório novo e VAZIO (sem README nem licença): ex. "claude-workshop-exercicios"
+# 2. Clona o template com um nome de remoto diferente de "origin", para o poderes distinguir:
+git clone --origin template git@github.com:bernardoam05/Claude-Workshop.git claude-workshop-exercicios
+cd claude-workshop-exercicios
+git remote add origin git@github.com:bernardoam05/claude-workshop-exercicios.git
+git push -u origin main
+# A partir de agora, "git push" vai para a tua cópia de trabalho; "git fetch template" traz
+# atualizações futuras do template original, se quiseres trazê-las sem perder o teu trabalho.
 ```
 
 Porquê antes de tudo o resto:
 
 - Este repositório é o **template**: fica sempre intacto, no estado em que o começaste a estudar.
 - Todos os exercícios do módulo 11 (mudar, partir, estender) alteram ficheiros. Se os fizeres aqui diretamente, não tens como voltar ao ponto de partida sem perder o que já escreveste.
-- No teu fork podes usar Git **a sério**: um branch por exercício, commits, PRs para ti próprio, tal como o módulo 15 descreve. É o próprio exercício de Git que esse módulo pede.
-- Se algo correr muito mal no fork, apagas e fazes fork de novo — o template nunca é afetado.
+- Na tua cópia podes usar Git **a sério**: um branch por exercício, commits, PRs, tal como o módulo 15 descreve. É o próprio exercício de Git que esse módulo pede — e com um repositório GitHub a sério por trás, o CI (módulo 19) corre de verdade a cada push.
+- Se algo correr muito mal, apagas a cópia e repetes o processo — o template nunca é afetado.
 
-A partir daqui, sempre que este índice ou outro módulo disser "a partir da raiz do projeto", é a raiz do **teu fork clonado**.
+A partir daqui, sempre que este índice ou outro módulo disser "a partir da raiz do projeto", é a raiz da **tua cópia** (fork ou repositório próprio), nunca a do template.
 
 ---
 
