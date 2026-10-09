@@ -191,6 +191,22 @@ Novidades desta versão: **autenticação** (módulo 04 e 13), **CI** (`.github/
 
 ---
 
+## Autoavaliação: testa-te a sério
+
+Ler e assentir com a cabeça não é a mesma coisa que saber. Há um quiz de linha de comandos, sem dependências, com correção automática:
+
+```bash
+node scripts/quiz.mjs status   # vê o teu progresso (ninguém mais o vê: fica num ficheiro local, fora do Git)
+node scripts/quiz.mjs 06       # quiz do módulo 06 (RabbitMQ), por exemplo
+node scripts/quiz.mjs exame    # exame final: mistura perguntas de todos os módulos
+```
+
+Precisas de **70%** para "passar" um módulo. Perguntas erradas mostram-te a resposta certa, uma explicação, e o ficheiro onde essa resposta está — não é um "falhaste, boa sorte", é um apontador de volta ao sítio certo.
+
+**Sê honesto sobre o que isto garante:** acertar as perguntas prova que reconheces os conceitos e os factos de cada módulo. **Não prova** que consegues escrever um Dockerfile do zero, depurar uma fila a sério, ou decidir uma arquitetura sob pressão numa entrevista. Essa parte só os **exercícios do módulo 11** testam — e aí não há correção automática: comparas o que escreveste com as soluções escondidas em `<details>`, com o teu próprio julgamento. Usa os dois juntos: o quiz para a teoria, os exercícios para a prática. Nenhum dos dois, sozinho, "garante" que aprendeste.
+
+---
+
 ## Checklist de auto-avaliação
 
 No fim do workshop deves conseguir, **sem consultar nada**:
