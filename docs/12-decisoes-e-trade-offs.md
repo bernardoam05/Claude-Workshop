@@ -165,3 +165,71 @@ Escreve, em 10 linhas, a tua resposta. Deves cobrir:
 - Um `POST` HTTP **não é** uma fila: não tem persistência, retries nem DLQ. Terias de reimplementar tudo isso à mão.
 - Se o problema é a "peça a mais para manter", a resposta mais útil pode ser: manter a fila, mas usar um serviço gerido, ou (se o volume for pequeno) substituir por tabela de jobs em Postgres com `SELECT ... FOR UPDATE SKIP LOCKED`, que é uma fila razoável para volumes baixos e **não adiciona nenhuma peça nova**. Este é um bom exemplo de que a alternativa mais simples pode ser a melhor, mas só se o volume o permitir.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 12`.
+
+**1.** Porque se escolheu SERIAL em vez de UUID para o id das tarefas?
+
+- a) UUID não existe no Postgres
+- b) SERIAL é mais pequeno/rápido com um só servidor de BD; UUID compensa quando não há coordenação central (como o eventId)
+- c) Não há diferença prática entre os dois
+- d) SERIAL é sempre mais seguro
+
+<details><summary>Resposta</summary>
+
+**b) SERIAL é mais pequeno/rápido com um só servidor de BD; UUID compensa quando não há coordenação central (como o eventId)** — É por isso que o eventId (gerado em vários sítios, sem coordenação) usa UUID, mas o id da tarefa usa SERIAL.
+
+</details>
+
+**2.** Porque se calculam as estatísticas com COUNT na BD em vez de um contador Redis (INCR)?
+
+- a) COUNT é sempre mais rápido que INCR
+- b) INCR seria uma segunda escrita desincronizada da BD (dual-write): uma falha entre as duas deixaria o contador errado para sempre
+- c) O Redis não suporta a operação INCR
+- d) Não há diferença prática entre as duas abordagens
+
+<details><summary>Resposta</summary>
+
+**b) INCR seria uma segunda escrita desincronizada da BD (dual-write): uma falha entre as duas deixaria o contador errado para sempre** — COUNT lê sempre a fonte de verdade; não há duas escritas para ficarem dessincronizadas.
+
+</details>
+
+**3.** Que padrão resolve o dual-write ao gravar o evento na MESMA transação SQL da mudança de negócio?
+
+<details><summary>Resposta</summary>
+
+**outbox** — Um processo separado (relay) lê a tabela outbox e publica, de forma assíncrona e sem perdas.
+
+</details>
+
+**4.** Porque se escolheu REST em vez de GraphQL para este projeto?
+
+- a) GraphQL não tem bibliotecas para Node
+- b) REST é sempre tecnicamente superior
+- c) Há só UM cliente (o frontend); REST é mais simples nesse caso — GraphQL compensaria com VÁRIOS clientes com necessidades diferentes
+- d) GraphQL é incompatível com Express
+
+<details><summary>Resposta</summary>
+
+**c) Há só UM cliente (o frontend); REST é mais simples nesse caso — GraphQL compensaria com VÁRIOS clientes com necessidades diferentes** — A escolha depende do contexto, não é uma regra absoluta.
+
+</details>
+
+**5.** Segundo o próprio módulo, o que falta a este sistema para ir para produção?
+
+- a) Nada, já está pronto tal como está
+- b) Coisas como HTTPS, rate limiting, outbox, lock nas migrações, segredos geridos e backups testados
+- c) Só precisa de mais memória RAM
+- d) Só falta trocar Node por Java
+
+<details><summary>Resposta</summary>
+
+**b) Coisas como HTTPS, rate limiting, outbox, lock nas migrações, segredos geridos e backups testados** — O módulo lista explicitamente uma checklist do que falta, mesmo depois de todas as iterações.
+
+</details>
+
+<!-- quiz:end -->

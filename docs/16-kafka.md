@@ -139,3 +139,76 @@ Usamos `kafkajs` porque é JavaScript puro e simples de ler. Mas **não é atual
 3. Concordas se precisas de reprocessar histórico, de vários consumidores independentes ou de volume muito alto, e se a equipa sabe operar Kafka. Não concordas se o caso é "filas de tarefas" com routing flexível, prioridades, TTL por mensagem e DLQ simples (onde o RabbitMQ é mais natural), ou se a equipa é pequena. Um broker a menos para operar é um argumento real, mas não é o único.
 4. Em 2 dias não perdeu nada: a retenção é de 7 dias, e o grupo continua no seu offset, por isso lê o atraso todo (o lag vai estar alto durante uns minutos). Em 10 dias, as mensagens com mais de 7 dias já foram apagadas e perdem-se. A retenção é uma decisão de negócio, e há alertas de lag precisamente para não chegar a este ponto.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 16`.
+
+**1.** Qual a diferença principal entre uma fila (RabbitMQ) e um log (Kafka)?
+
+- a) Não há diferença real entre os dois
+- b) No RabbitMQ a mensagem é apagada após o ack; no Kafka fica no log até ao fim da retenção, e cada consumidor guarda o seu próprio offset
+- c) Kafka só funciona com aplicações Java
+- d) RabbitMQ não tem o conceito de filas
+
+<details><summary>Resposta</summary>
+
+**b) No RabbitMQ a mensagem é apagada após o ack; no Kafka fica no log até ao fim da retenção, e cada consumidor guarda o seu próprio offset** — É por isso que um consumer group novo no Kafka pode reler todo o histórico desde o início.
+
+</details>
+
+**2.** Porque é que a chave usada na publicação para o Kafka é o userId?
+
+- a) É só o campo mais pequeno disponível para servir de chave
+- b) Garante que todos os eventos do mesmo utilizador vão para a MESMA partição, preservando a ordem entre eles
+- c) O Kafka exige obrigatoriamente uma chave numérica
+- d) Reduz o tamanho total da mensagem
+
+<details><summary>Resposta</summary>
+
+**b) Garante que todos os eventos do mesmo utilizador vão para a MESMA partição, preservando a ordem entre eles** — O Kafka só garante ordem DENTRO de uma partição; a chave decide a partição.
+
+</details>
+
+**3.** Com N partições num tópico, qual é o paralelismo MÁXIMO de UM consumer group?
+
+- a) Sempre 1, independentemente de N
+- b) Igual ao número de partições (N)
+- c) Ilimitado, não depende das partições
+- d) Igual ao número de brokers do cluster
+
+<details><summary>Resposta</summary>
+
+**b) Igual ao número de partições (N)** — Com mais instâncias do que partições, as excedentes ficam sem nenhuma partição atribuída.
+
+</details>
+
+**4.** Porque é uma mensagem envenenada especialmente perigosa no Kafka, mais do que no RabbitMQ?
+
+- a) Não é mais perigosa, o comportamento é idêntico
+- b) O Kafka entrega por ordem dentro da partição: enquanto não avançar, bloqueia TODAS as mensagens seguintes dessa partição
+- c) O Kafka apaga automaticamente mensagens inválidas
+- d) Só afeta o produtor, nunca o consumidor
+
+<details><summary>Resposta</summary>
+
+**b) O Kafka entrega por ordem dentro da partição: enquanto não avançar, bloqueia TODAS as mensagens seguintes dessa partição** — É por isso que existe o Dead Letter Topic: avançar o offset sem perder a mensagem problemática.
+
+</details>
+
+**5.** O que significa 'idempotent: true' no produtor Kafka deste projeto?
+
+- a) Garante exactly-once em todo o sistema, ponta a ponta
+- b) Evita que retries de REDE do próprio produtor dupliquem a mensagem NO BROKER — não cobre falhas depois disso (ex.: numa BD externa)
+- c) Ativa compressão automática das mensagens
+- d) É exatamente o mesmo que 'acks: all'
+
+<details><summary>Resposta</summary>
+
+**b) Evita que retries de REDE do próprio produtor dupliquem a mensagem NO BROKER — não cobre falhas depois disso (ex.: numa BD externa)** — Exactly-once ponta a ponta continua a exigir idempotência do lado do consumidor.
+
+</details>
+
+<!-- quiz:end -->

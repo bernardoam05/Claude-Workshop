@@ -179,3 +179,71 @@ A BD garante consistência **dentro** de uma transação. Não garante consistê
 2. Cada query é um round-trip à rede, com custo de latência e de ligação ocupada. Uma query só é uma ida e volta.
 3. Podem ser **dois**. Ambos fazem `findById`, veem `done = false`, e ambos publicam. Isto é uma **condição de corrida** (race condition) na lógica de aplicação. Soluções: `UPDATE ... WHERE done = false RETURNING` (a BD decide quem ganha), ou um lock de linha com `SELECT ... FOR UPDATE`. Repara que o teste unitário não apanha isto, porque corre sequencialmente. Discutiremos em `10-testes` e `12-decisoes`.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 03`.
+
+**1.** Porque usar parâmetros ($1, $2) em vez de concatenar strings no SQL?
+
+- a) É mais rápido a executar
+- b) Evita SQL injection: separa o SQL dos valores enviados pelo utilizador
+- c) É uma exigência sintática do driver pg
+- d) Não há diferença real
+
+<details><summary>Resposta</summary>
+
+**b) Evita SQL injection: separa o SQL dos valores enviados pelo utilizador** — Com parâmetros, o valor nunca é interpretado como SQL, por mais hostil que seja.
+
+</details>
+
+**2.** Porque é que o driver pg devolve BIGINT como string em JavaScript?
+
+- a) É um bug conhecido do driver
+- b) Porque o JS só tem precisão segura até 2^53, e um bigint pode exceder isso
+- c) Porque strings são mais seguras contra injection
+- d) O Postgres exige esse formato
+
+<details><summary>Resposta</summary>
+
+**b) Porque o JS só tem precisão segura até 2^53, e um bigint pode exceder isso** — É por isso que o projeto usa SERIAL (int4) em vez de BIGSERIAL para o id das tarefas.
+
+</details>
+
+**3.** Que cláusula SQL torna um INSERT idempotente, ignorando a inserção se a chave já existir?
+
+<details><summary>Resposta</summary>
+
+**on conflict do nothing** — ON CONFLICT (coluna) DO NOTHING é a base da idempotência do worker e do serviço Spring.
+
+</details>
+
+**4.** Porque é que task_events NÃO tem FOREIGN KEY para tasks(id)?
+
+- a) Foi um esquecimento
+- b) O evento pode chegar depois de a tarefa ser apagada; é um registo de auditoria que deve sobreviver aos dados
+- c) O Postgres não suporta FK nesse caso
+- d) Seria mais lento ter a FK
+
+<details><summary>Resposta</summary>
+
+**b) O evento pode chegar depois de a tarefa ser apagada; é um registo de auditoria que deve sobreviver aos dados** — É uma decisão consciente: a FK faria o INSERT falhar para eventos tardios de tarefas já apagadas.
+
+</details>
+
+**5.** Para que serve correr uma migração dentro de BEGIN/COMMIT/ROLLBACK?
+
+- a) Só por estilo, sem efeito
+- b) Garante que, se algo falhar a meio, nada da migração fica parcialmente aplicado
+- c) Torna a migração mais rápida
+- d) É uma exigência do Postgres para qualquer query
+
+<details><summary>Resposta</summary>
+
+**b) Garante que, se algo falhar a meio, nada da migração fica parcialmente aplicado** — Uma migração falhada a meio, sem transação, deixaria o schema num estado inconsistente.
+
+</details>
+
+<!-- quiz:end -->

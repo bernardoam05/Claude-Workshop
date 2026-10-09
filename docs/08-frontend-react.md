@@ -157,3 +157,76 @@ Experiência: corre `npm run dev` em `src/web` (com a API a correr no compose na
 2. Sem feedback, o botão não reage e o utilizador clica várias vezes (criando duplicados). Melhorias: desativar o botão enquanto `pending`, mostrar um estado de carregamento, e no `TaskForm` impedir submissão dupla. Não se muda a API para isto.
 3. Estatísticas são informação secundária: se falharem, o último valor válido continua no ecrã, e mostrar um erro a cada 3 segundos seria pior do que nada. Um erro de uma ação é **resposta direta** a algo que o utilizador fez, e deve ser visível. Estaria errado se as estatísticas fossem críticas (ex.: saldo bancário), onde um valor antigo mostrado como atual é perigoso.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 08`.
+
+**1.** Porque é que o <input> do TaskForm tem value={title} e onChange em vez de ser 'não controlado'?
+
+- a) Só por estilo de código
+- b) Torna-o CONTROLADO: o React é a fonte de verdade do valor, o que permite limpar o campo via estado (setTitle(''))
+- c) É uma exigência do HTML5
+- d) Melhora a performance de renderização
+
+<details><summary>Resposta</summary>
+
+**b) Torna-o CONTROLADO: o React é a fonte de verdade do valor, o que permite limpar o campo via estado (setTitle(''))** — Sem value, o estado do input viveria no DOM, fora do controlo do React.
+
+</details>
+
+**2.** Para que serve a função devolvida por um useEffect?
+
+- a) Não serve para nada em particular
+- b) É a função de LIMPEZA: corre antes do efeito repetir e quando o componente desmonta
+- c) Formata o JSX antes de renderizar
+- d) Substitui por completo o useState
+
+<details><summary>Resposta</summary>
+
+**b) É a função de LIMPEZA: corre antes do efeito repetir e quando o componente desmonta** — Sem ela, por exemplo, um setInterval continuaria a correr depois de o componente desaparecer.
+
+</details>
+
+**3.** Porque é que usar o ÍNDICE do array como 'key' numa lista pode causar bugs?
+
+- a) Nunca causa bugs, é seguro sempre
+- b) O React pode associar o estado errado a cada item quando a lista muda de tamanho (ex.: ao apagar o primeiro)
+- c) É proibido pelo React e dá erro de compilação
+- d) Torna a lista visivelmente mais lenta
+
+<details><summary>Resposta</summary>
+
+**b) O React pode associar o estado errado a cada item quando a lista muda de tamanho (ex.: ao apagar o primeiro)** — Usa sempre um id estável (task.id), nunca a posição no array.
+
+</details>
+
+**4.** Porque recarregar as tarefas do SERVIDOR depois de criar uma, em vez de a adicionar localmente ao array?
+
+- a) Por preguiça de escrever mais código
+- b) Garante que a UI reflete o estado real do servidor (id, created_at), mesmo que a criação seja rejeitada ou outro dado tenha mudado
+- c) É sempre mais rápido
+- d) É uma exigência do React
+
+<details><summary>Resposta</summary>
+
+**b) Garante que a UI reflete o estado real do servidor (id, created_at), mesmo que a criação seja rejeitada ou outro dado tenha mudado** — É a troca entre simplicidade/correção e a otimização de um 'optimistic update'.
+
+</details>
+
+**5.** Quando é que o polling (perguntar a cada X segundos) é preferível a WebSocket?
+
+- a) Nunca, WebSocket é sempre melhor
+- b) Quando os dados mudam pouco e alguns segundos de atraso são aceitáveis: menos complexidade do que gerir ligações WebSocket
+- c) Sempre que há mais de um utilizador ligado
+- d) Só quando a app corre em produção
+
+<details><summary>Resposta</summary>
+
+**b) Quando os dados mudam pouco e alguns segundos de atraso são aceitáveis: menos complexidade do que gerir ligações WebSocket** — WebSocket traz estado de ligação, reconexão e balanceamento — custo que só compensa com necessidade real de tempo real.
+
+</details>
+
+<!-- quiz:end -->

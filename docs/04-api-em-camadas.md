@@ -145,3 +145,71 @@ Quando fazes `docker stop`, o Docker envia `SIGTERM` e espera uns segundos antes
 2. É uma **regra de negócio**. Na rota, ficava acoplada ao HTTP e não era testável sem servidor. Na BD (trigger), ficava invisível para quem lê o código da aplicação e seria difícil de testar e de versionar. Há casos em que um trigger é a escolha certa (garantias que a aplicação não pode dar), mas não aqui.
 3. Quando a rota fala com a BD diretamente, a regra "invalidar cache" e "publicar evento" têm de ser **copiadas** para cada rota. Quando alguém se esquece numa delas, o sistema fica inconsistente sem nenhum erro visível. A camada de serviço existe precisamente para que estas regras estejam num único sítio.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 04`.
+
+**1.** Nas camadas deste projeto, quem é o ÚNICO sítio que fala SQL?
+
+- a) As rotas (routes/)
+- b) O serviço (services/)
+- c) O repositório (repositories/)
+- d) O ficheiro app.js
+
+<details><summary>Resposta</summary>
+
+**c) O repositório (repositories/)** — Rotas traduzem HTTP; serviços decidem regras; só o repositório toca em SQL.
+
+</details>
+
+**2.** Porque é que o serviço recebe repository/cache/publisher como parâmetros (DI), em vez de os criar ele próprio?
+
+- a) É mais rápido em runtime
+- b) Permite testar com versões falsas (fakes), sem BD, Redis nem RabbitMQ reais
+- c) É uma exigência do Express
+- d) Reduz o número de ficheiros do projeto
+
+<details><summary>Resposta</summary>
+
+**b) Permite testar com versões falsas (fakes), sem BD, Redis nem RabbitMQ reais** — É o que torna os testes unitários possíveis em milissegundos, sem infraestrutura.
+
+</details>
+
+**3.** Em updateTask, o evento task.completed só é publicado numa transição de 'done' de false para...?
+
+<details><summary>Resposta</summary>
+
+**true** — Marcar duas vezes como concluída não gera dois eventos; só a transição conta.
+
+</details>
+
+**4.** Porque é que app.js e index.js estão em ficheiros separados?
+
+- a) Só por estética de organização
+- b) app.js só CONSTRÓI a app (testável sem infraestrutura); index.js ARRANCA o processo e liga tudo
+- c) Não há razão técnica
+- d) Para reduzir o número de linhas por ficheiro
+
+<details><summary>Resposta</summary>
+
+**b) app.js só CONSTRÓI a app (testável sem infraestrutura); index.js ARRANCA o processo e liga tudo** — Os testes de rotas importam createApp sem nunca tocar em Postgres, Redis ou RabbitMQ.
+
+</details>
+
+**5.** O que é o 'dual-write problem' mencionado neste módulo?
+
+- a) Escrever duas vezes seguidas na mesma tabela por engano
+- b) Escrever em dois sistemas (BD e fila) sem uma transação que cubra os dois, podendo um falhar e o outro não
+- c) Um bug que duplica linhas na BD
+- d) Publicar a mesma mensagem duas vezes na fila
+
+<details><summary>Resposta</summary>
+
+**b) Escrever em dois sistemas (BD e fila) sem uma transação que cubra os dois, podendo um falhar e o outro não** — Se o RabbitMQ estiver em baixo, a tarefa fica gravada na BD mas o evento nunca é publicado.
+
+</details>
+
+<!-- quiz:end -->

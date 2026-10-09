@@ -150,3 +150,71 @@ Em produção, o **Alertmanager** recebe os alertas, agrupa-os, silencia-os dura
 - **D14. Métrica de negócio:** um counter `tasks_completed_total` e um painel "tarefas concluídas por hora". Métricas de negócio são as que a gestão mais pede.
 - **D15. SLO:** define "99% dos pedidos em menos de 300 ms em 30 dias" e cria um painel com o *error budget* que resta.
 - **D16. Logs estruturados:** troca os `console.log` da API por `pino` (JSON) e junta Loki ao compose, com os logs no Grafana ao lado das métricas.
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 18`.
+
+**1.** Porque é que a label 'route' usa o padrão (/api/tasks/:id) e não o caminho real (/api/tasks/42)?
+
+- a) É só uma questão de estilo de código
+- b) Usar o id real criaria uma série nova por cada tarefa (alta cardinalidade), podendo esgotar a memória do Prometheus
+- c) O Express não permite expor o id real nas métricas
+- d) Torna a consulta PromQL mais lenta de escrever
+
+<details><summary>Resposta</summary>
+
+**b) Usar o id real criaria uma série nova por cada tarefa (alta cardinalidade), podendo esgotar a memória do Prometheus** — Cardinalidade descontrolada é a forma mais rápida de derrubar um Prometheus.
+
+</details>
+
+**2.** Porque se usa o percentil p95 em vez da média para medir latência?
+
+- a) A média é sempre a métrica mais útil, em qualquer caso
+- b) A média esconde a 'cauda': pedidos muito lentos passam despercebidos nela, mas afetam utilizadores reais
+- c) p95 é mais simples de calcular do que a média
+- d) Não há diferença prática entre as duas
+
+<details><summary>Resposta</summary>
+
+**b) A média esconde a 'cauda': pedidos muito lentos passam despercebidos nela, mas afetam utilizadores reais** — 1 em cada 20 pedidos lentos pode ser invisível na média e visível no p95.
+
+</details>
+
+**3.** Que métrica indica se um consumidor Kafka está 'atrasado' a processar o tópico?
+
+<details><summary>Resposta</summary>
+
+**lag** — Consumer lag = último offset do tópico menos o offset do grupo.
+
+</details>
+
+**4.** Porque é que o 'up' de um alvo no Prometheus é uma forma simples de detetar que um serviço está em baixo?
+
+- a) O Prometheus funciona por PULL: se o scrape falhar, 'up' fica automaticamente 0
+- b) O Prometheus funciona por PUSH, e 'up' é enviado manualmente pelo serviço
+- c) 'up' é calculado por um humano a verificar o painel
+- d) Não existe a métrica 'up' no Prometheus
+
+<details><summary>Resposta</summary>
+
+**a) O Prometheus funciona por PULL: se o scrape falhar, 'up' fica automaticamente 0** — É o modelo pull que torna 'up == 0' um sinal fiável e automático de alvo indisponível.
+
+</details>
+
+**5.** Porque é que os painéis e os alertas estão em ficheiros no Git (provisioning), em vez de configurados a cliques na interface do Grafana?
+
+- a) É só uma preferência estética
+- b) Ficam versionados: sobrevivem a recriar o contentor e são revistos como código, não cliques que se perdem
+- c) O Grafana obriga a este formato para funcionar
+- d) Carrega mais rápido desta forma
+
+<details><summary>Resposta</summary>
+
+**b) Ficam versionados: sobrevivem a recriar o contentor e são revistos como código, não cliques que se perdem** — Dashboard e fonte de dados como código, tal como a infraestrutura em config/k8s/.
+
+</details>
+
+<!-- quiz:end -->

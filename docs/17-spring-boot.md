@@ -126,3 +126,71 @@ Um teste apanhou um problema real enquanto escrevíamos o serviço: a API Node e
 - **D10. Nova rota:** `GET /api/activity/users/{userId}`, só para admins, com uma query derivada do nome (`findByUserIdOrderByReceivedAtDesc`). Escreve primeiro o teste `@WebMvcTest`.
 - **D11. Validação:** um `POST` com `@Valid` e um record com `@NotBlank`/`@Size`, e um `@RestControllerAdvice` que devolve erros no formato `{ "error": "..." }`, igual à API Node.
 - **D12. Refazer a API Node em Spring:** mesmas rotas, mesma BD, mesmos testes de contrato (o `openapi.yaml` diz-te o que tem de bater certo). É o exercício que mais te prepara para uma vaga Java.
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 17`.
+
+**1.** O que permite a injeção de dependências por CONSTRUTOR, usada em ActivityService?
+
+- a) Torna o código mais lento a correr
+- b) Instanciar a classe em testes com 'new ActivityService(mock, ...)', sem precisar do Spring a correr
+- c) É uma exigência obrigatória da linguagem Java
+- d) Substitui a necessidade do Maven
+
+<details><summary>Resposta</summary>
+
+**b) Instanciar a classe em testes com 'new ActivityService(mock, ...)', sem precisar do Spring a correr** — É por isso que ActivityServiceTest não precisa de @SpringBootTest nem de Mockito 'pesado'.
+
+</details>
+
+**2.** Porque está o Hibernate configurado com ddl-auto: validate, e não update?
+
+- a) 'update' não existe no Spring Boot
+- b) Com 'validate', o Hibernate só confirma que o schema bate certo; quem o cria/altera é o Flyway, com histórico e controlo
+- c) É mais rápido no arranque da aplicação
+- d) É o valor por omissão do Spring Boot em qualquer caso
+
+<details><summary>Resposta</summary>
+
+**b) Com 'validate', o Hibernate só confirma que o schema bate certo; quem o cria/altera é o Flyway, com histórico e controlo** — Deixar o Hibernate alterar o schema sozinho em produção é uma das armadilhas clássicas do ORM.
+
+</details>
+
+**3.** Que anotação do Spring Security garante que, sem o papel 'admin' no token, a rota devolve 403?
+
+<details><summary>Resposta</summary>
+
+**@preauthorize** — @PreAuthorize("hasRole('admin')") no ActivityController.
+
+</details>
+
+**4.** Qual foi o erro real encontrado ao integrar o Keycloak com o Spring Security neste projeto?
+
+- a) O Postgres não conseguia ligar-se
+- b) O Spring só lia por omissão o claim 'scope'; sem um conversor para 'realm_access.roles', hasRole('admin') falhava sempre com 403
+- c) O Maven não conseguia compilar o projeto
+- d) O Flyway apagava os dados existentes a cada arranque
+
+<details><summary>Resposta</summary>
+
+**b) O Spring só lia por omissão o claim 'scope'; sem um conversor para 'realm_access.roles', hasRole('admin') falhava sempre com 403** — Foi corrigido com o conversor KeycloakRealmRoles, que tem o seu próprio teste dedicado.
+
+</details>
+
+**5.** Porque é que o contrato TaskEvent tem @JsonIgnoreProperties(ignoreUnknown = true)?
+
+- a) É só uma questão de estilo de código
+- b) Padrão 'tolerant reader': permite ao produtor (API Node) acrescentar campos novos sem obrigar este consumidor a um deploy coordenado
+- c) Acelera o processo de parsing do JSON
+- d) É obrigatório em todos os records do Java
+
+<details><summary>Resposta</summary>
+
+**b) Padrão 'tolerant reader': permite ao produtor (API Node) acrescentar campos novos sem obrigar este consumidor a um deploy coordenado** — Sem isto, o campo 'created_at' extra da API Node fazia o parsing falhar por completo.
+
+</details>
+
+<!-- quiz:end -->

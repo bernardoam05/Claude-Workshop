@@ -242,3 +242,71 @@ Um workflow que corre mas que ninguém é **obrigado** a respeitar não protege 
 2. Usarias uma **matrix**: `strategy: matrix: os: [ubuntu-latest, windows-latest, macos-latest]` e `runs-on: ${{ matrix.os }}`, o que corre o mesmo job três vezes, uma por sistema. A maior parte dos projetos não o faz para tudo porque macOS e Windows são runners mais caros (consomem minutos a um multiplicador maior) e, para um backend que só corre em Linux em produção (como este), testar nos outros sistemas não traz garantia adicional que justifique o custo.
 3. Que nunca se commitam segredos, mesmo "só para testar": o ficheiro fica no histórico do Git para sempre (mesmo que seja apagado depois), qualquer pessoa com acesso ao repositório lê-o, e um repositório privado pode tornar-se público por engano. A forma correta é um **Secret** do GitHub Actions (`${{ secrets.NOME }}`), nunca visível nos logs, e revogável sem reescrever código.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 19`.
+
+**1.** Porque é que o job 'smoke' tem needs: [api, worker, activity, web, integration]?
+
+- a) Não há motivo especial, foi uma escolha arbitrária
+- b) Só vale a pena construir e arrancar 6 contentores depois de se saber que o resto já compila e passa os testes, poupando minutos
+- c) O GitHub Actions obriga a essa ordem sempre
+- d) Torna os logs da execução mais organizados visualmente
+
+<details><summary>Resposta</summary>
+
+**b) Só vale a pena construir e arrancar 6 contentores depois de se saber que o resto já compila e passa os testes, poupando minutos** — Descobrir um erro de sintaxe no build do frontend não justifica esperar por Keycloak e Kafka primeiro.
+
+</details>
+
+**2.** Qual a diferença entre 'if: failure()' e 'if: always()' num step do GitHub Actions?
+
+- a) São exatamente o mesmo, só muda o nome
+- b) failure() só corre se um step anterior falhou; always() corre sempre, mesmo com falhas anteriores
+- c) failure() corre sempre; always() só corre às vezes
+- d) Nenhum dos dois existe de verdade no GitHub Actions
+
+<details><summary>Resposta</summary>
+
+**b) failure() só corre se um step anterior falhou; always() corre sempre, mesmo com falhas anteriores** — É por isso que a limpeza (docker compose down) usa always() e os traces do Playwright usam failure().
+
+</details>
+
+**3.** Que variável/token automático e temporário o GitHub Actions cria em cada execução, para dar permissões mínimas sem geres um segredo tu próprio?
+
+<details><summary>Resposta</summary>
+
+**github_token** — Diferente de um Secret que tu crias: é emitido e destruído automaticamente a cada execução.
+
+</details>
+
+**4.** Porque é que 'actionlint' não é suficiente para garantir que o pipeline funciona de verdade?
+
+- a) É sempre suficiente, nada mais é preciso
+- b) Só valida a SINTAXE do YAML; não executa nenhum comando, por isso não apanha erros de lógica ou de execução
+- c) O actionlint está descontinuado e já não funciona
+- d) Só funciona com workflows escritos em Python
+
+<details><summary>Resposta</summary>
+
+**b) Só valida a SINTAXE do YAML; não executa nenhum comando, por isso não apanha erros de lógica ou de execução** — Por isso o módulo recomenda também o 'act' (executa a sério, localmente) sempre que possível.
+
+</details>
+
+**5.** O que traz o OIDC a um job de deploy, em vez de um segredo de cloud de longa duração?
+
+- a) É exatamente o mesmo que guardar um segredo normal
+- b) Um token de curta duração, verificado por assinatura (chave pública), o que reduz o risco de um segredo permanente ser roubado
+- c) Serve só para autenticar utilizadores finais da aplicação, não pipelines
+- d) Não é aplicável a pipelines de CI/CD
+
+<details><summary>Resposta</summary>
+
+**b) Um token de curta duração, verificado por assinatura (chave pública), o que reduz o risco de um segredo permanente ser roubado** — É a mesma ideia do Keycloak (módulo 14), aplicada à autenticação entre o CI e a cloud.
+
+</details>
+
+<!-- quiz:end -->

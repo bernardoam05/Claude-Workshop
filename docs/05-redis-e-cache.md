@@ -99,3 +99,71 @@ Repara que `KEYS *` está **proibido** em produção: percorre todas as chaves e
 2. Os próximos 60 segundos servem dados antigos. A janela é o tempo entre a leitura e a escrita da cache. Reduz-se com TTL mais curto, ou com um **versionamento** (guardar um número de versão e rejeitar escritas com versão antiga). Não se elimina totalmente sem locks.
 3. Porque as estatísticas são baratas de recalcular mas são **pedidas com frequência** pelo frontend (de 3 em 3 segundos). Um TTL de 5s é um compromisso: no pior caso, o número fica 5 segundos atrás de algo que já ficou atrás do worker. Não há razão para servir dados de há um minuto. A regra geral: o TTL segue **quanto tempo os dados podem estar errados sem prejudicar ninguém**, não quanto custa recalcular.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 05`.
+
+**1.** No padrão cache-aside, o que se faz à cache depois de uma escrita na BD?
+
+- a) Atualiza-se a cache com o novo valor calculado
+- b) Invalida-se (apaga-se), deixando a próxima leitura repor a partir da BD
+- c) Nada, a cache gere-se sozinha
+- d) Duplica-se a chave com um sufixo novo
+
+<details><summary>Resposta</summary>
+
+**b) Invalida-se (apaga-se), deixando a próxima leitura repor a partir da BD** — Apagar é mais simples e evita condições de corrida ao recalcular o valor.
+
+</details>
+
+**2.** Para que serve o TTL se já se invalida a cache explicitamente em cada escrita?
+
+- a) Não serve para nada, é redundante
+- b) É uma rede de segurança: limita quanto tempo dados errados podem durar, se a invalidação falhar
+- c) Torna as leituras mais rápidas
+- d) É uma exigência do protocolo Redis
+
+<details><summary>Resposta</summary>
+
+**b) É uma rede de segurança: limita quanto tempo dados errados podem durar, se a invalidação falhar** — Se o cache.del falhar ou nunca for chamado, o TTL garante que o erro não dura para sempre.
+
+</details>
+
+**3.** Como se chama o fenómeno em que muitos pedidos simultâneos, todos com cache vazia, atacam a BD ao mesmo tempo?
+
+<details><summary>Resposta</summary>
+
+**cache stampede** — Mitiga-se com request coalescing, TTL com jitter, ou refresh-ahead.
+
+</details>
+
+**4.** Porque é perigoso usar o comando KEYS * em produção no Redis?
+
+- a) Não é perigoso, é só lento
+- b) Bloqueia o Redis enquanto percorre todas as chaves (usa SCAN em vez disso)
+- c) Apaga todas as chaves existentes
+- d) Exige sempre autenticação
+
+<details><summary>Resposta</summary>
+
+**b) Bloqueia o Redis enquanto percorre todas as chaves (usa SCAN em vez disso)** — O Redis é essencialmente single-threaded para comandos; KEYS * bloqueia tudo durante a busca.
+
+</details>
+
+**5.** Porque é que as estatísticas (stats) têm TTL mais curto (5s) do que a lista de tarefas (60s)?
+
+- a) Foi uma escolha arbitrária, sem critério
+- b) São pedidas com muito mais frequência pelo frontend (polling a cada 3s), por isso um TTL curto mantém-nas frescas a baixo custo
+- c) Porque ocupam mais espaço em memória
+- d) Porque dependem diretamente do Redis
+
+<details><summary>Resposta</summary>
+
+**b) São pedidas com muito mais frequência pelo frontend (polling a cada 3s), por isso um TTL curto mantém-nas frescas a baixo custo** — O TTL segue quanto tempo os dados podem estar desatualizados sem prejudicar ninguém.
+
+</details>
+
+<!-- quiz:end -->

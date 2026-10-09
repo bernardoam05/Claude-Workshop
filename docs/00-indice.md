@@ -193,15 +193,153 @@ Novidades desta versão: **autenticação** (módulo 04 e 13), **CI** (`.github/
 
 ## Autoavaliação: testa-te a sério
 
-Ler e assentir com a cabeça não é a mesma coisa que saber. Há um quiz de linha de comandos, sem dependências, com correção automática:
+Ler e assentir com a cabeça não é a mesma coisa que saber. Há duas formas, que são o mesmo conteúdo:
 
-```bash
-node scripts/quiz.mjs status   # vê o teu progresso (ninguém mais o vê: fica num ficheiro local, fora do Git)
-node scripts/quiz.mjs 06       # quiz do módulo 06 (RabbitMQ), por exemplo
-node scripts/quiz.mjs exame    # exame final: mistura perguntas de todos os módulos
-```
+- **No próprio módulo:** cada ficheiro `docs/0X-*.md` termina com um "Quiz rápido" — perguntas **só daquele módulo**, com a resposta escondida em `<details>`, para leres sem precisar do terminal.
+- **No terminal, com correção automática:**
+  ```bash
+  node scripts/quiz.mjs status   # vê o teu progresso (fica num ficheiro local, fora do Git)
+  node scripts/quiz.mjs 06       # quiz do módulo 06 (RabbitMQ) — só perguntas desse módulo
+  node scripts/quiz.mjs geral    # perguntas GERAIS, que ligam vários módulos entre si
+  node scripts/quiz.mjs exame    # exame final: 2 perguntas de cada módulo + TODAS as gerais
+  ```
 
-Precisas de **70%** para "passar" um módulo. Perguntas erradas mostram-te a resposta certa, uma explicação, e o ficheiro onde essa resposta está — não é um "falhaste, boa sorte", é um apontador de volta ao sítio certo.
+As duas vêm do mesmo ficheiro (`scripts/quiz-questions.json`), gerado para os `.md` por `scripts/generate-quiz-docs.mjs` — nunca edites o texto entre `<!-- quiz:start -->
+
+## Quiz rápido (perguntas gerais)
+
+Estas perguntas ligam vários módulos entre si: não substituem o quiz de cada módulo, somam-se a ele. Fazem mais sentido depois de teres passado pela maioria dos módulos. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs geral`.
+
+**1.** Entre o RabbitMQ (worker), o Kafka (activity) e as migrações do Postgres, qual é o padrão COMUM que garante que repetir a mesma operação não duplica o efeito?
+
+- a) Um mutex global que bloqueia o processo inteiro
+- b) INSERT ... ON CONFLICT DO NOTHING (ou equivalente) sobre uma chave única, decidido atomicamente pela própria base de dados
+- c) Um temporizador que ignora pedidos repetidos durante alguns segundos
+- d) Não há padrão comum: cada um resolve o problema de forma totalmente diferente
+
+<details><summary>Resposta</summary>
+
+**b) INSERT ... ON CONFLICT DO NOTHING (ou equivalente) sobre uma chave única, decidido atomicamente pela própria base de dados** — Idempotência resolvida empurrando a decisão para a BD — módulos 03, 06, 07, 16, 17.
+
+</details>
+
+**2.** O login manual (JWT HS256) e o login pelo Keycloak (JWT RS256) resolvem o mesmo problema de formas diferentes. Qual é a diferença essencial, em termos de quem pode EMITIR um token válido?
+
+- a) Não há diferença real, é só uma troca de nome
+- b) Com HS256 há um segredo PARTILHADO: quem o conhece consegue emitir e verificar; com RS256, só quem tem a chave PRIVADA emite, e qualquer um com a chave pública só consegue verificar
+- c) RS256 é apenas uma versão mais lenta do HS256
+- d) HS256 só funciona em Node.js; RS256 só funciona em Java
+
+<details><summary>Resposta</summary>
+
+**b) Com HS256 há um segredo PARTILHADO: quem o conhece consegue emitir e verificar; com RS256, só quem tem a chave PRIVADA emite, e qualquer um com a chave pública só consegue verificar** — Liga os módulos 04, 14 e 17 (o Spring também só verifica, nunca emite, tokens do Keycloak).
+
+</details>
+
+**3.** Se o RabbitMQ E o Kafka estiverem ambos em baixo, mas o Postgres e o Redis continuarem saudáveis, o que acontece a um POST /api/tasks?
+
+- a) A API fica completamente em baixo e devolve 503 a todos os pedidos
+- b) A tarefa é criada com sucesso (Postgres e Redis continuam saudáveis), mas a API devolve 500 porque a publicação no RabbitMQ é obrigatória — o dual-write problem a manifestar-se
+- c) A tarefa não é criada e a API devolve 404
+- d) Nada acontece, o pedido fica em espera indefinidamente
+
+<details><summary>Resposta</summary>
+
+**b) A tarefa é criada com sucesso (Postgres e Redis continuam saudáveis), mas a API devolve 500 porque a publicação no RabbitMQ é obrigatória — o dual-write problem a manifestar-se** — Liga os módulos 04, 06, 12 e 16: o Kafka é best-effort, mas o RabbitMQ não é.
+
+</details>
+
+**4.** Porque é que tanto o resolver dinâmico do Nginx (módulo 09) como o JWKS do Keycloak (módulo 14) existem — ambos voltam a pedir informação periodicamente em vez de a guardar para sempre?
+
+- a) Por acaso; não há nenhum motivo técnico comum entre os dois
+- b) Porque o que está do outro lado pode mudar (a API é recriada com outro IP; o Keycloak pode rodar as suas chaves), e confiar num valor guardado para sempre causaria falhas (502) ou tokens recusados sem motivo aparente
+- c) Porque o DNS é sempre lento e por isso tem de se repetir
+- d) Só por uma questão de segurança contra ataques, sem mais nenhuma razão
+
+<details><summary>Resposta</summary>
+
+**b) Porque o que está do outro lado pode mudar (a API é recriada com outro IP; o Keycloak pode rodar as suas chaves), e confiar num valor guardado para sempre causaria falhas (502) ou tokens recusados sem motivo aparente** — O mesmo problema de fundo — confiar demasiado tempo num valor que pode mudar — aparece em sítios diferentes.
+
+</details>
+
+**5.** O serviço Spring (activity, Kafka) e o worker (TypeScript, RabbitMQ) resolvem o mesmo tipo de problema: o que é diferente entre os dois brokers que obrigou a soluções de erro diferentes (DLQ vs Dead Letter Topic)?
+
+- a) Nada é diferente: a solução para mensagens problemáticas é idêntica nos dois
+- b) No RabbitMQ, nack(requeue=false) rejeita a mensagem individualmente; no Kafka, como a entrega é por ORDEM dentro da partição, é o próprio consumidor que publica explicitamente no Dead Letter Topic para poder avançar o offset
+- c) O Kafka não tem nenhum mecanismo equivalente a uma dead letter
+- d) O RabbitMQ não permite rejeitar mensagens
+
+<details><summary>Resposta</summary>
+
+**b) No RabbitMQ, nack(requeue=false) rejeita a mensagem individualmente; no Kafka, como a entrega é por ORDEM dentro da partição, é o próprio consumidor que publica explicitamente no Dead Letter Topic para poder avançar o offset** — Liga os módulos 06, 07 e 16.
+
+</details>
+
+**6.** O cache do Redis (módulo 05) e a cache do npm/Maven no CI (módulo 19) partilham o mesmo princípio. Qual?
+
+- a) Não têm nenhum princípio em comum, são tecnologias completamente diferentes
+- b) Guardar o resultado de um trabalho caro (uma query à BD; descarregar dependências) para o reutilizar, com uma forma de saber quando deixa de ser válido (TTL; hash do lock file)
+- c) Os dois usam exatamente a mesma tecnologia por dentro
+- d) Servem só para reduzir a fatura da cloud, sem efeito na velocidade
+
+<details><summary>Resposta</summary>
+
+**b) Guardar o resultado de um trabalho caro (uma query à BD; descarregar dependências) para o reutilizar, com uma forma de saber quando deixa de ser válido (TTL; hash do lock file)** — O mesmo padrão de cache aparece em camadas muito diferentes do sistema.
+
+</details>
+
+**7.** Olhando para os módulos 02 (Docker), 17 (Spring) e 19 (CI), qual é a ideia REPETIDA sobre como lidar com ferramentas que só servem para construir, não para correr?
+
+- a) Não há ideia repetida entre os três módulos
+- b) O padrão multi-stage/separação: uma fase com as ferramentas pesadas de construção (compilador, Maven), e só o resultado final (dist/, JAR, imagem) fica no sítio onde a aplicação corre
+- c) Os três exigem exatamente o mesmo Dockerfile
+- d) Só se aplica a Java, nunca a Node ou a pipelines de CI
+
+<details><summary>Resposta</summary>
+
+**b) O padrão multi-stage/separação: uma fase com as ferramentas pesadas de construção (compilador, Maven), e só o resultado final (dist/, JAR, imagem) fica no sítio onde a aplicação corre** — É a mesma lógica do Dockerfile multi-stage, aplicada ao build do Maven e à imagem final do CI.
+
+</details>
+
+**8.** Porque é que tantos módulos (03 migrações, 07 worker, 16 Kafka, 17 Flyway) insistem em dizer 'nunca edites algo já aplicado, cria um novo'?
+
+- a) É só um costume do Git, sem nenhuma razão técnica
+- b) Porque outros ambientes (produção, outros colegas) já podem ter aplicado a versão antiga; editá-la depois criaria divergência entre quem aplicou a V1 original e quem aplicasse a V1 editada
+- c) Torna o histórico do Git mais lento a carregar
+- d) É uma limitação específica do PostgreSQL, não se aplica a outras bases de dados
+
+<details><summary>Resposta</summary>
+
+**b) Porque outros ambientes (produção, outros colegas) já podem ter aplicado a versão antiga; editá-la depois criaria divergência entre quem aplicou a V1 original e quem aplicasse a V1 editada** — O mesmo raciocínio aparece em migrações SQL, eventos e versões de configuração.
+
+</details>
+
+**9.** Pensando no sistema completo (módulos 01-19), qual é a fraqueza mais correta a apontar, mesmo depois de todas as correções feitas durante o workshop?
+
+- a) Não existe nenhuma fraqueza; o sistema está pronto para produção tal como está
+- b) O dual-write entre a base de dados e o RabbitMQ/Kafka continua sem outbox: uma falha momentânea do broker ainda causa uma inconsistência visível ao utilizador
+- c) O projeto não tem testes automatizados nenhuns
+- d) Falta usar Docker em algum dos serviços
+
+<details><summary>Resposta</summary>
+
+**b) O dual-write entre a base de dados e o RabbitMQ/Kafka continua sem outbox: uma falha momentânea do broker ainda causa uma inconsistência visível ao utilizador** — É a fraqueza que o próprio módulo 12 identifica e nunca chega a resolver — de propósito, para discutires a solução.
+
+</details>
+
+**10.** Em uma palavra ou expressão curta: como se chama o princípio partilhado entre o timeout-minutes do CI (módulo 19), o timeout de 2s do publisher Kafka (módulo 16) e o nack no worker (módulo 07) — nunca esperar indefinidamente por algo que pode nunca responder?
+
+<details><summary>Resposta</summary>
+
+**timeout** — 'Falhar depressa' em vez de ficar pendurado é mais fácil de diagnosticar e mais barato do que ficar à espera para sempre.
+
+</details>
+
+<!-- quiz:end -->` à mão, muda o JSON e corre o gerador.
+
+**Cada módulo só tem perguntas dele próprio** — o quiz do módulo 06 nunca pergunta sobre Kafka. As **perguntas gerais**, no fim deste índice, são diferentes: testam se ligas conceitos de módulos diferentes (ex.: o que RabbitMQ, Kafka e as migrações do Postgres têm em comum). **Somam-se** ao quiz de cada módulo — nunca o substituem, e é por isso que o `exame` tem sempre as 2 perguntas de cada módulo *mais* todas as gerais, nunca umas em vez das outras.
+
+Precisas de **70%** para "passar". Perguntas erradas mostram-te a resposta certa, uma explicação, e o ficheiro onde essa resposta está — não é um "falhaste, boa sorte", é um apontador de volta ao sítio certo.
 
 **Sê honesto sobre o que isto garante:** acertar as perguntas prova que reconheces os conceitos e os factos de cada módulo. **Não prova** que consegues escrever um Dockerfile do zero, depurar uma fila a sério, ou decidir uma arquitetura sob pressão numa entrevista. Essa parte só os **exercícios do módulo 11** testam — e aí não há correção automática: comparas o que escreveste com as soluções escondidas em `<details>`, com o teu próprio julgamento. Usa os dois juntos: o quiz para a teoria, os exercícios para a prática. Nenhum dos dois, sozinho, "garante" que aprendeste.
 
@@ -222,3 +360,136 @@ No fim do workshop deves conseguir, **sem consultar nada**:
 - [ ] Escrever uma migração nova sem editar as antigas.
 - [ ] Explicar porque o React e a API funcionam na mesma origem e para que serve o Nginx.
 - [ ] Dizer o que falta a este sistema para ir para produção.
+
+<!-- quiz:start -->
+
+## Quiz rápido (perguntas gerais)
+
+Estas perguntas ligam vários módulos entre si: não substituem o quiz de cada módulo, somam-se a ele. Fazem mais sentido depois de teres passado pela maioria dos módulos. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs geral`.
+
+**1.** Entre o RabbitMQ (worker), o Kafka (activity) e as migrações do Postgres, qual é o padrão COMUM que garante que repetir a mesma operação não duplica o efeito?
+
+- a) Um mutex global que bloqueia o processo inteiro
+- b) INSERT ... ON CONFLICT DO NOTHING (ou equivalente) sobre uma chave única, decidido atomicamente pela própria base de dados
+- c) Um temporizador que ignora pedidos repetidos durante alguns segundos
+- d) Não há padrão comum: cada um resolve o problema de forma totalmente diferente
+
+<details><summary>Resposta</summary>
+
+**b) INSERT ... ON CONFLICT DO NOTHING (ou equivalente) sobre uma chave única, decidido atomicamente pela própria base de dados** — Idempotência resolvida empurrando a decisão para a BD — módulos 03, 06, 07, 16, 17.
+
+</details>
+
+**2.** O login manual (JWT HS256) e o login pelo Keycloak (JWT RS256) resolvem o mesmo problema de formas diferentes. Qual é a diferença essencial, em termos de quem pode EMITIR um token válido?
+
+- a) Não há diferença real, é só uma troca de nome
+- b) Com HS256 há um segredo PARTILHADO: quem o conhece consegue emitir e verificar; com RS256, só quem tem a chave PRIVADA emite, e qualquer um com a chave pública só consegue verificar
+- c) RS256 é apenas uma versão mais lenta do HS256
+- d) HS256 só funciona em Node.js; RS256 só funciona em Java
+
+<details><summary>Resposta</summary>
+
+**b) Com HS256 há um segredo PARTILHADO: quem o conhece consegue emitir e verificar; com RS256, só quem tem a chave PRIVADA emite, e qualquer um com a chave pública só consegue verificar** — Liga os módulos 04, 14 e 17 (o Spring também só verifica, nunca emite, tokens do Keycloak).
+
+</details>
+
+**3.** Se o RabbitMQ E o Kafka estiverem ambos em baixo, mas o Postgres e o Redis continuarem saudáveis, o que acontece a um POST /api/tasks?
+
+- a) A API fica completamente em baixo e devolve 503 a todos os pedidos
+- b) A tarefa é criada com sucesso (Postgres e Redis continuam saudáveis), mas a API devolve 500 porque a publicação no RabbitMQ é obrigatória — o dual-write problem a manifestar-se
+- c) A tarefa não é criada e a API devolve 404
+- d) Nada acontece, o pedido fica em espera indefinidamente
+
+<details><summary>Resposta</summary>
+
+**b) A tarefa é criada com sucesso (Postgres e Redis continuam saudáveis), mas a API devolve 500 porque a publicação no RabbitMQ é obrigatória — o dual-write problem a manifestar-se** — Liga os módulos 04, 06, 12 e 16: o Kafka é best-effort, mas o RabbitMQ não é.
+
+</details>
+
+**4.** Porque é que tanto o resolver dinâmico do Nginx (módulo 09) como o JWKS do Keycloak (módulo 14) existem — ambos voltam a pedir informação periodicamente em vez de a guardar para sempre?
+
+- a) Por acaso; não há nenhum motivo técnico comum entre os dois
+- b) Porque o que está do outro lado pode mudar (a API é recriada com outro IP; o Keycloak pode rodar as suas chaves), e confiar num valor guardado para sempre causaria falhas (502) ou tokens recusados sem motivo aparente
+- c) Porque o DNS é sempre lento e por isso tem de se repetir
+- d) Só por uma questão de segurança contra ataques, sem mais nenhuma razão
+
+<details><summary>Resposta</summary>
+
+**b) Porque o que está do outro lado pode mudar (a API é recriada com outro IP; o Keycloak pode rodar as suas chaves), e confiar num valor guardado para sempre causaria falhas (502) ou tokens recusados sem motivo aparente** — O mesmo problema de fundo — confiar demasiado tempo num valor que pode mudar — aparece em sítios diferentes.
+
+</details>
+
+**5.** O serviço Spring (activity, Kafka) e o worker (TypeScript, RabbitMQ) resolvem o mesmo tipo de problema: o que é diferente entre os dois brokers que obrigou a soluções de erro diferentes (DLQ vs Dead Letter Topic)?
+
+- a) Nada é diferente: a solução para mensagens problemáticas é idêntica nos dois
+- b) No RabbitMQ, nack(requeue=false) rejeita a mensagem individualmente; no Kafka, como a entrega é por ORDEM dentro da partição, é o próprio consumidor que publica explicitamente no Dead Letter Topic para poder avançar o offset
+- c) O Kafka não tem nenhum mecanismo equivalente a uma dead letter
+- d) O RabbitMQ não permite rejeitar mensagens
+
+<details><summary>Resposta</summary>
+
+**b) No RabbitMQ, nack(requeue=false) rejeita a mensagem individualmente; no Kafka, como a entrega é por ORDEM dentro da partição, é o próprio consumidor que publica explicitamente no Dead Letter Topic para poder avançar o offset** — Liga os módulos 06, 07 e 16.
+
+</details>
+
+**6.** O cache do Redis (módulo 05) e a cache do npm/Maven no CI (módulo 19) partilham o mesmo princípio. Qual?
+
+- a) Não têm nenhum princípio em comum, são tecnologias completamente diferentes
+- b) Guardar o resultado de um trabalho caro (uma query à BD; descarregar dependências) para o reutilizar, com uma forma de saber quando deixa de ser válido (TTL; hash do lock file)
+- c) Os dois usam exatamente a mesma tecnologia por dentro
+- d) Servem só para reduzir a fatura da cloud, sem efeito na velocidade
+
+<details><summary>Resposta</summary>
+
+**b) Guardar o resultado de um trabalho caro (uma query à BD; descarregar dependências) para o reutilizar, com uma forma de saber quando deixa de ser válido (TTL; hash do lock file)** — O mesmo padrão de cache aparece em camadas muito diferentes do sistema.
+
+</details>
+
+**7.** Olhando para os módulos 02 (Docker), 17 (Spring) e 19 (CI), qual é a ideia REPETIDA sobre como lidar com ferramentas que só servem para construir, não para correr?
+
+- a) Não há ideia repetida entre os três módulos
+- b) O padrão multi-stage/separação: uma fase com as ferramentas pesadas de construção (compilador, Maven), e só o resultado final (dist/, JAR, imagem) fica no sítio onde a aplicação corre
+- c) Os três exigem exatamente o mesmo Dockerfile
+- d) Só se aplica a Java, nunca a Node ou a pipelines de CI
+
+<details><summary>Resposta</summary>
+
+**b) O padrão multi-stage/separação: uma fase com as ferramentas pesadas de construção (compilador, Maven), e só o resultado final (dist/, JAR, imagem) fica no sítio onde a aplicação corre** — É a mesma lógica do Dockerfile multi-stage, aplicada ao build do Maven e à imagem final do CI.
+
+</details>
+
+**8.** Porque é que tantos módulos (03 migrações, 07 worker, 16 Kafka, 17 Flyway) insistem em dizer 'nunca edites algo já aplicado, cria um novo'?
+
+- a) É só um costume do Git, sem nenhuma razão técnica
+- b) Porque outros ambientes (produção, outros colegas) já podem ter aplicado a versão antiga; editá-la depois criaria divergência entre quem aplicou a V1 original e quem aplicasse a V1 editada
+- c) Torna o histórico do Git mais lento a carregar
+- d) É uma limitação específica do PostgreSQL, não se aplica a outras bases de dados
+
+<details><summary>Resposta</summary>
+
+**b) Porque outros ambientes (produção, outros colegas) já podem ter aplicado a versão antiga; editá-la depois criaria divergência entre quem aplicou a V1 original e quem aplicasse a V1 editada** — O mesmo raciocínio aparece em migrações SQL, eventos e versões de configuração.
+
+</details>
+
+**9.** Pensando no sistema completo (módulos 01-19), qual é a fraqueza mais correta a apontar, mesmo depois de todas as correções feitas durante o workshop?
+
+- a) Não existe nenhuma fraqueza; o sistema está pronto para produção tal como está
+- b) O dual-write entre a base de dados e o RabbitMQ/Kafka continua sem outbox: uma falha momentânea do broker ainda causa uma inconsistência visível ao utilizador
+- c) O projeto não tem testes automatizados nenhuns
+- d) Falta usar Docker em algum dos serviços
+
+<details><summary>Resposta</summary>
+
+**b) O dual-write entre a base de dados e o RabbitMQ/Kafka continua sem outbox: uma falha momentânea do broker ainda causa uma inconsistência visível ao utilizador** — É a fraqueza que o próprio módulo 12 identifica e nunca chega a resolver — de propósito, para discutires a solução.
+
+</details>
+
+**10.** Em uma palavra ou expressão curta: como se chama o princípio partilhado entre o timeout-minutes do CI (módulo 19), o timeout de 2s do publisher Kafka (módulo 16) e o nack no worker (módulo 07) — nunca esperar indefinidamente por algo que pode nunca responder?
+
+<details><summary>Resposta</summary>
+
+**timeout** — 'Falhar depressa' em vez de ficar pendurado é mais fácil de diagnosticar e mais barato do que ficar à espera para sempre.
+
+</details>
+
+<!-- quiz:end -->

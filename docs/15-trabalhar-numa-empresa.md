@@ -235,3 +235,45 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 | 8 | Kubernetes local (kind) com Helm; aplicar o `config/k8s/api.yaml` e completar para os outros serviços |
 
 No fim disto, tens um projeto de portfólio que mostra praticamente tudo o que uma vaga júnior/pleno pede, e que consegues explicar linha a linha numa entrevista. **Isso vale mais do que qualquer certificado.**
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 15`.
+
+**1.** O que é 'trunk-based development'?
+
+- a) Nunca usar branches, tudo direto no main
+- b) Branches curtos, com merge frequente (diário) para o main, em vez de branches longos tipo develop/release
+- c) Um branch por desenvolvedor, para sempre
+- d) Rebase automático a cada commit feito
+
+<details><summary>Resposta</summary>
+
+**b) Branches curtos, com merge frequente (diário) para o main, em vez de branches longos tipo develop/release** — É o modelo que a maioria das equipas modernas usa, em vez do Git Flow clássico.
+
+</details>
+
+**2.** Qual destas é uma boa prática de Pull Request, segundo o módulo?
+
+- a) O maior possível, para poupar número de reviews
+- b) Pequeno, com descrição de o quê/porquê/como testar, e CI verde antes de pedir revisão
+- c) Sem descrição: o código explica-se a si próprio
+- d) Só se deve abrir ao fim do dia de sexta-feira
+
+<details><summary>Resposta</summary>
+
+**b) Pequeno, com descrição de o quê/porquê/como testar, e CI verde antes de pedir revisão** — 2000 linhas num PR não se revêem a sério — aprovam-se às cegas.
+
+</details>
+
+**3.** Como se chama a reunião diária de ~15 min onde se diz o que se fez, o que se vai fazer e o que bloqueia?
+
+<details><summary>Resposta</summary>
+
+**daily** — É também onde deves dizer explicitamente o que te está a bloquear.
+
+</details>
+
+<!-- quiz:end -->

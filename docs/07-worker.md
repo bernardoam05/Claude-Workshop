@@ -130,3 +130,71 @@ Imagina que queres um consumidor que envia uma notificação quando uma tarefa �
 2. A linha fica em `task_events` (o `INSERT` foi commitado). Na reentrega, o `INSERT` não insere e devolve `duplicado`. O contador é **correto** porque é uma `COUNT` sobre a fonte de verdade. Com Redis `INCR`, a morte entre o `INSERT` e o `INCR` (ou entre o `INCR` e o `ack`) faria o contador ficar errado sem forma de o corrigir: são **duas** escritas em sistemas diferentes, o mesmo dual-write do módulo 06. Por isso escolhemos `COUNT` (ver `12-decisoes`).
 3. Ninguém a consome de propósito: é um **armazém de falhas**. Um humano (ou um script) inspeciona, corrige a causa, e reenvia as mensagens para a fila principal. Ferramentas: o painel do RabbitMQ (Get messages / Move messages), ou o Shovel plugin para mover em massa. Uma DLQ sem alerta é uma falha silenciosa: é preciso monitorizar o tamanho dela.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 07`.
+
+**1.** Porque é que o worker é um processo SEPARADO da API?
+
+- a) Só por preferência de organização
+- b) Escala independente, isolamento de falhas, e não bloqueia o event loop da API com trabalho pesado
+- c) É sempre mais barato ter dois processos
+- d) O RabbitMQ exige processos separados
+
+<details><summary>Resposta</summary>
+
+**b) Escala independente, isolamento de falhas, e não bloqueia o event loop da API com trabalho pesado** — Um bug no processamento de eventos não deve derrubar os pedidos HTTP da API.
+
+</details>
+
+**2.** O que garante a idempotência do handler ao gravar em task_events?
+
+- a) Um mutex escrito à mão no código Node
+- b) INSERT ... ON CONFLICT (event_id) DO NOTHING, atómico dentro da própria BD
+- c) Um cache em memória do processo
+- d) Nada em especial — confia-se na sorte
+
+<details><summary>Resposta</summary>
+
+**b) INSERT ... ON CONFLICT (event_id) DO NOTHING, atómico dentro da própria BD** — A BD decide atomicamente se é a primeira vez; não há janela de corrida entre verificar e escrever.
+
+</details>
+
+**3.** Que cabeçalho o RabbitMQ acrescenta a uma mensagem que passou pela dead-letter exchange, registando de onde veio e porquê?
+
+<details><summary>Resposta</summary>
+
+**x-death** — x-death regista exchange, fila, razão e quantas vezes a mensagem foi rejeitada.
+
+</details>
+
+**4.** O que acontece se o worker morrer DEPOIS do INSERT em task_events mas ANTES do ack?
+
+- a) A linha gravada é perdida automaticamente
+- b) A mensagem é reentregue; o INSERT seguinte é ignorado (ON CONFLICT), sem perda nem duplicação do efeito
+- c) O sistema entra em deadlock
+- d) É irrelevante, nunca acontece na prática
+
+<details><summary>Resposta</summary>
+
+**b) A mensagem é reentregue; o INSERT seguinte é ignorado (ON CONFLICT), sem perda nem duplicação do efeito** — É exatamente o cenário que a idempotência foi desenhada para cobrir.
+
+</details>
+
+**5.** Porque é perigoso usar nack(requeue=true) para um erro causado por um BUG determinístico no código?
+
+- a) Não é perigoso, é a prática recomendada
+- b) Cria um ciclo infinito de reentregas ao ritmo do erro, consumindo CPU para sempre, sem nunca resolver nada
+- c) Torna a mensagem mais lenta a processar
+- d) É o comportamento por omissão do RabbitMQ
+
+<details><summary>Resposta</summary>
+
+**b) Cria um ciclo infinito de reentregas ao ritmo do erro, consumindo CPU para sempre, sem nunca resolver nada** — Erros permanentes (como um bug) devem ir para a DLQ, não ser reenviados sem fim.
+
+</details>
+
+<!-- quiz:end -->

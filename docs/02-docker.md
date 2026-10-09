@@ -182,3 +182,71 @@ $C build --no-cache api   # reconstruir ignorando a cache
 2. Uma linha (`FROM node:24-alpine`). Pode partir: dependências nativas, mudanças de comportamento. Por isso se testa antes e se fixa a versão exata.
 3. Não se commitam segredos. O `.env` vai no `.gitignore` e existe um `.env.example` sem valores reais. Para desenvolvimento local o valor fraco aqui é aceitável, mas o **hábito** é o que interessa.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 02`.
+
+**1.** Qual a diferença entre imagem e contentor?
+
+- a) Não há diferença, são sinónimos
+- b) Imagem é um modelo imutável; contentor é uma instância dela a correr
+- c) Contentor é sempre mais pequeno que a imagem
+- d) Imagem só existe depois do deploy
+
+<details><summary>Resposta</summary>
+
+**b) Imagem é um modelo imutável; contentor é uma instância dela a correr** — Imagem = modelo congelado; contentor = esse modelo em execução.
+
+</details>
+
+**2.** Porque se copia o package.json ANTES do código fonte no Dockerfile?
+
+- a) É só convenção, sem efeito prático
+- b) Para aproveitar a cache de camadas: só reinstala dependências se elas mudarem
+- c) Porque o Docker exige essa ordem
+- d) Para reduzir o tamanho final da imagem
+
+<details><summary>Resposta</summary>
+
+**b) Para aproveitar a cache de camadas: só reinstala dependências se elas mudarem** — A ordem das instruções decide o que fica em cache; mudar só o código não invalida a camada do npm ci.
+
+</details>
+
+**3.** O que garante 'depends_on: condition: service_healthy' que um depends_on simples não garante?
+
+- a) Que o contentor foi criado
+- b) Que o healthcheck do serviço já passou, não só que o processo arrancou
+- c) Que a imagem foi reconstruída
+- d) Que a rede Docker existe
+
+<details><summary>Resposta</summary>
+
+**b) Que o healthcheck do serviço já passou, não só que o processo arrancou** — depends_on simples só espera o contentor iniciar; service_healthy espera o healthcheck passar.
+
+</details>
+
+**4.** No multi-stage build do frontend, que servidor corre na imagem FINAL (não no build): node ou nginx?
+
+<details><summary>Resposta</summary>
+
+**nginx** — O estágio final só tem Nginx + ficheiros estáticos; o Node fica só no estágio de build.
+
+</details>
+
+**5.** Porque correr como 'USER node' em vez de root no Dockerfile?
+
+- a) É mais rápido a arrancar
+- b) Limita o dano possível se o processo for comprometido (menor privilégio)
+- c) O runtime do Node exige um utilizador específico
+- d) Reduz o tamanho da imagem
+
+<details><summary>Resposta</summary>
+
+**b) Limita o dano possível se o processo for comprometido (menor privilégio)** — Princípio do menor privilégio: um processo comprometido como 'node' não tem root dentro do contentor.
+
+</details>
+
+<!-- quiz:end -->

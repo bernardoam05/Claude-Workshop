@@ -134,3 +134,71 @@ Express 5 trata erros lançados em funções `async` automaticamente. Repara que
 2. Mensagens de erro internas (SQL, caminhos de ficheiros, stack traces) são informação útil para um atacante. Registamo-las no **servidor** (`console.error`) e devolvemos ao cliente uma mensagem genérica.
 3. O estado final não muda (é idempotente). O número de eventos **também não** deve mudar: `updateTask` só publica quando há transição `false → true`. Repara que a verificação está no serviço, não na rota, porque é uma regra de negócio.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 01`.
+
+**1.** Qual destes códigos HTTP significa 'recurso criado com sucesso' (ex.: POST /api/tasks)?
+
+- a) 200 OK
+- b) 201 Created
+- c) 204 No Content
+- d) 202 Accepted
+
+<details><summary>Resposta</summary>
+
+**b) 201 Created** — POST que cria um recurso novo responde 201, não 200.
+
+</details>
+
+**2.** Porque é que DELETE devolve 204 e não 200?
+
+- a) Porque apagar falha sempre
+- b) Porque não há corpo para devolver depois de apagar: 204 = sucesso sem corpo
+- c) É mais rápido responder 204
+- d) O Express exige 204 em DELETE
+
+<details><summary>Resposta</summary>
+
+**b) Porque não há corpo para devolver depois de apagar: 204 = sucesso sem corpo** — 204 No Content é o código certo quando a operação teve sucesso mas não há nada para devolver.
+
+</details>
+
+**3.** Porque é que o Node não bloqueia todos os utilizadores enquanto espera a resposta da BD?
+
+- a) Porque usa várias threads para cada pedido
+- b) Porque as operações de I/O são assíncronas e libertam o event loop enquanto esperam
+- c) Porque o Postgres é sempre rápido
+- d) Porque o Express faz cache automática
+
+<details><summary>Resposta</summary>
+
+**b) Porque as operações de I/O são assíncronas e libertam o event loop enquanto esperam** — O Node é single-threaded, mas o await liberta o event loop durante o I/O, para atender outros pedidos.
+
+</details>
+
+**4.** No Express, o que torna uma função reconhecível como middleware de ERRO?
+
+- a) Ser declarada com async
+- b) Ter 4 parâmetros: (err, req, res, next)
+- c) Chamar-se errorHandler
+- d) Estar no topo do ficheiro
+
+<details><summary>Resposta</summary>
+
+**b) Ter 4 parâmetros: (err, req, res, next)** — O Express reconhece um middleware de erro pela assinatura com 4 parâmetros, não pelo nome.
+
+</details>
+
+**5.** Que método HTTP altera só os campos enviados, sem substituir o recurso inteiro?
+
+<details><summary>Resposta</summary>
+
+**patch** — PATCH altera parcialmente; PUT substituiria o recurso inteiro.
+
+</details>
+
+<!-- quiz:end -->

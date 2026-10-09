@@ -149,3 +149,71 @@ O protocolo é o mesmo (OIDC), por isso o que aprendeste aqui transfere-se. Só 
 2. XSS: qualquer script injetado na página lê o `localStorage`. Alternativa: o token fica num **backend** (BFF), e o browser só tem um cookie `httpOnly; Secure; SameSite`, que o JavaScript não consegue ler. É o padrão recomendado atualmente para SPAs com dados sensíveis.
 3. A próxima chamada dá 401 e a app termina a sessão (está no `App.jsx`). Solução: pedir `offline_access` ou usar o refresh token para renovar silenciosamente antes de expirar. Bibliotecas como `keycloak-js` ou `oidc-client-ts` fazem isto por ti.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 14`.
+
+**1.** No fluxo Authorization Code + PKCE, para que serve o 'code_verifier'?
+
+- a) Para cifrar a password do utilizador
+- b) Para provar que foi a MESMA app a iniciar o fluxo e a trocar o código, sem precisar de um client secret (a app é pública)
+- c) É só o nome interno do token final
+- d) Serve apenas para efeitos de logging
+
+<details><summary>Resposta</summary>
+
+**b) Para provar que foi a MESMA app a iniciar o fluxo e a trocar o código, sem precisar de um client secret (a app é pública)** — Uma SPA não pode guardar um client secret; o PKCE substitui-o.
+
+</details>
+
+**2.** Porque é que a API valida o 'audience' (aud) do token, além da assinatura?
+
+- a) Não é realmente necessário validar o aud
+- b) Sem isso, um token emitido para OUTRA aplicação (do mesmo Keycloak) seria aceite por esta API
+- c) O aud serve só para efeitos de log
+- d) É exatamente o mesmo campo que o issuer
+
+<details><summary>Resposta</summary>
+
+**b) Sem isso, um token emitido para OUTRA aplicação (do mesmo Keycloak) seria aceite por esta API** — O aud garante que o token foi emitido PARA esta API, não para outro cliente do mesmo realm.
+
+</details>
+
+**3.** Que algoritmo assina os tokens do Keycloak (chave pública/privada), diferente do HS256 do login manual?
+
+<details><summary>Resposta</summary>
+
+**rs256** — RS256 permite que várias APIs verifiquem o token sem nunca conhecerem a chave privada.
+
+</details>
+
+**4.** O que é o 'just-in-time provisioning' usado para ligar um login do Keycloak a um utilizador local?
+
+- a) Um processo noturno (cron) que sincroniza todos os utilizadores
+- b) Criar a linha local do utilizador no PRIMEIRO pedido autenticado por esse 'sub', sem sincronização antecipada
+- c) Um botão de registo manual que o admin tem de clicar
+- d) Não existe neste projeto
+
+<details><summary>Resposta</summary>
+
+**b) Criar a linha local do utilizador no PRIMEIRO pedido autenticado por esse 'sub', sem sincronização antecipada** — userRepository.findOrCreateExternal faz exatamente isto, de forma atómica (ON CONFLICT).
+
+</details>
+
+**5.** Porque é que o Keycloak NÃO liga automaticamente uma conta externa a uma conta local com o mesmo email?
+
+- a) Não é tecnicamente possível fazê-lo
+- b) Permitiria a alguém com controlo sobre esse email no IdP apoderar-se de uma conta local (account takeover)
+- c) É só para simplificar o código do projeto
+- d) O protocolo OIDC proíbe-o explicitamente
+
+<details><summary>Resposta</summary>
+
+**b) Permitiria a alguém com controlo sobre esse email no IdP apoderar-se de uma conta local (account takeover)** — Por isso a API responde 409 em vez de ligar as contas silenciosamente.
+
+</details>
+
+<!-- quiz:end -->

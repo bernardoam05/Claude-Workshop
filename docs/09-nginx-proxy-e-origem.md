@@ -138,3 +138,76 @@ curl -i http://localhost:3000/api/health    # falha — não está publicada
 2. O URL absoluto `localhost:3000` só existe na tua máquina. Em produção, o browser do utilizador não tem nada em `localhost:3000`. O relativo `/api` resolve-se para a origem da página, seja ela qual for: `localhost:8080`, `app.empresa.pt`, etc.
 3. O Nginx devolve `504 Gateway Timeout` ao cliente. O servidor da API **continua** a processar, porque o Nginx não o cancela por defeito (o pedido já foi enviado). Isto é uma razão para tornar operações lentas assíncronas (módulo 06): responder `202 Accepted` e processar em background.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 09`.
+
+**1.** Porque é que usar o Nginx como proxy evita o problema de CORS entre o frontend e a API?
+
+- a) Não evita, só esconde o erro no browser
+- b) O browser vê tudo como a MESMA origem (mesmo host/porta), por isso nunca há um pedido cross-origin
+- c) O Nginx desativa a Same-Origin Policy do browser
+- d) CORS só existe quando se usa HTTPS
+
+<details><summary>Resposta</summary>
+
+**b) O browser vê tudo como a MESMA origem (mesmo host/porta), por isso nunca há um pedido cross-origin** — O frontend chama /api/tasks como caminho relativo; para o browser, é a mesma origem que a página.
+
+</details>
+
+**2.** Para que serve 'try_files $uri /index.html' numa SPA?
+
+- a) Só melhora a performance de resposta
+- b) Faz URLs 'profundos' (ex.: /tarefas/3) devolverem a app (index.html) em vez de 404, deixando o React decidir o que mostrar
+- c) Comprime automaticamente as respostas
+- d) Protege contra ataques XSS
+
+<details><summary>Resposta</summary>
+
+**b) Faz URLs 'profundos' (ex.: /tarefas/3) devolverem a app (index.html) em vez de 404, deixando o React decidir o que mostrar** — Sem try_files, recarregar a página num URL profundo daria 404 do Nginx.
+
+</details>
+
+**3.** No bug real descrito no módulo, o que fazia o Nginx devolver 502 depois de a API ser recriada?
+
+- a) A API estava simplesmente offline
+- b) O Nginx tinha resolvido e guardado o IP antigo da API no arranque, e nunca voltou a pedir um novo (sem DNS dinâmico)
+- c) Faltava memória no contentor
+- d) Um erro de sintaxe no nginx.conf
+
+<details><summary>Resposta</summary>
+
+**b) O Nginx tinha resolvido e guardado o IP antigo da API no arranque, e nunca voltou a pedir um novo (sem DNS dinâmico)** — A correção foi um 'resolver' com TTL curto e usar uma variável no proxy_pass.
+
+</details>
+
+**4.** Qual a diferença entre os códigos HTTP 401 e 403?
+
+- a) São exatamente o mesmo código com nomes diferentes
+- b) 401: não sabemos quem és (sem token ou token inválido); 403: sabemos quem és, mas não tens permissão
+- c) 401 é sempre mais grave que 403
+- d) 403 só existe em APIs feitas em Java
+
+<details><summary>Resposta</summary>
+
+**b) 401: não sabemos quem és (sem token ou token inválido); 403: sabemos quem és, mas não tens permissão** — É a diferença exata entre a Alice sem papel admin (403) e um pedido sem token (401) no serviço activity.
+
+</details>
+
+**5.** O que torna o proxy_pass sensível ao 'resolver' do Nginx, obrigando-o a resolver o nome em cada pedido?
+
+- a) Usar um endereço IP fixo no proxy_pass
+- b) Usar uma VARIÁVEL no lugar do host (ex.: set $api_upstream api:3000; proxy_pass http://$api_upstream)
+- c) Usar sempre HTTPS no proxy_pass
+- d) É automático em todas as versões do Nginx
+
+<details><summary>Resposta</summary>
+
+**b) Usar uma VARIÁVEL no lugar do host (ex.: set $api_upstream api:3000; proxy_pass http://$api_upstream)** — Com um host fixo, o Nginx resolve o nome só uma vez no arranque.
+
+</details>
+
+<!-- quiz:end -->

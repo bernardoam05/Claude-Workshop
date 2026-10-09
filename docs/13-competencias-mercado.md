@@ -65,3 +65,45 @@ Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitaçõ
 Os exercícios do bloco D (em `11-exercicios.md`) cobrem o que ficou de fora: **D5** (Kubernetes num cluster local, se tiveres kind ou minikube), **D6** (deploy em cloud), **D8** (SSE). Os D1, D2 e D3 já estão implementados: o exercício é ler o código e fazer a experiência indicada.
 
 Para Git, no teu fork (ver [Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)), cria um branch por exercício e abre um PR para ti próprio. Só com isto praticas o fluxo de equipa.
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 13`.
+
+**1.** Segundo o módulo, o que é que este workshop ainda NÃO cobre?
+
+- a) Docker e Docker Compose
+- b) Testes E2E e CI/CD
+- c) Cloud real (AWS/Azure/GCP) e Infraestrutura como Código
+- d) Autenticação com Keycloak
+
+<details><summary>Resposta</summary>
+
+**c) Cloud real (AWS/Azure/GCP) e Infraestrutura como Código** — Cloud real e IaC continuam marcados como ❌ mesmo depois de todas as iterações do workshop.
+
+</details>
+
+**2.** Porque é que o módulo recomenda refazer a API em Spring Boot (ou .NET) como exercício prioritário?
+
+- a) Porque é tecnicamente mais fácil que Node
+- b) É a maior parte das vagas em Portugal, e o exercício transfere os mesmos conceitos aprendidos para outra stack
+- c) Porque o Node vai deixar de ser usado em breve
+- d) É uma exigência do próprio CI
+
+<details><summary>Resposta</summary>
+
+**b) É a maior parte das vagas em Portugal, e o exercício transfere os mesmos conceitos aprendidos para outra stack** — O valor não é a linguagem em si, é perceberes que os conceitos (camadas, DI, migrações) se repetem.
+
+</details>
+
+**3.** Que símbolo usa o módulo para indicar que uma competência está coberta só PARCIALMENTE?
+
+<details><summary>Resposta</summary>
+
+**🟡** — ✅ coberto, 🟡 parcial, ❌ não coberto.
+
+</details>
+
+<!-- quiz:end -->

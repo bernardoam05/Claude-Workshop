@@ -215,3 +215,71 @@ curl -i -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -d 
 3. Se o worker gerasse o id, uma **reentrega** geraria um id novo e a idempotência por `eventId` falharia: o mesmo evento seria contado duas vezes. O id tem de ser atribuído **uma vez**, na origem do facto, antes de qualquer retry. Quem cria o facto é quem gera a identidade.
 4. Com uma BD: o **outbox**. Gravas a tarefa e a linha de outbox na mesma transação SQL. Ou ambas ficam, ou nenhuma. Depois, um processo (relay) lê o outbox e publica, marcando como enviado. Se o relay falhar, reenvia (at-least-once, e o consumidor é idempotente, como já vimos).
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 06`.
+
+**1.** A entrega 'pelo menos uma vez' do RabbitMQ implica o quê para o consumidor?
+
+- a) Nada de especial, pode ignorar isso
+- b) Tem de ser idempotente: a mesma mensagem pode chegar mais de uma vez
+- c) Tem de responder mais rápido
+- d) Tem de usar menos memória
+
+<details><summary>Resposta</summary>
+
+**b) Tem de ser idempotente: a mesma mensagem pode chegar mais de uma vez** — Reentregas acontecem sempre que o consumidor morre entre receber e fazer ack.
+
+</details>
+
+**2.** Quando se deve usar nack(msg, false, false) — ou seja, sem requeue?
+
+- a) Sempre, para qualquer erro
+- b) Para erros PERMANENTES (ex.: JSON inválido), que reenviar nunca resolve
+- c) Nunca, é sempre perigoso
+- d) Só quando a fila está vazia
+
+<details><summary>Resposta</summary>
+
+**b) Para erros PERMANENTES (ex.: JSON inválido), que reenviar nunca resolve** — Erros permanentes com requeue=true criam um ciclo infinito; vão para a DLQ em vez disso.
+
+</details>
+
+**3.** Como se chama a fila para onde vão as mensagens que não podem ser processadas?
+
+<details><summary>Resposta</summary>
+
+**dlq** — Dead Letter Queue: um 'armazém de falhas', para inspeção humana.
+
+</details>
+
+**4.** Porque é que o ack só acontece DEPOIS do processamento, nunca antes?
+
+- a) É mais lento fazer assim, mas é tradição
+- b) Se o worker morrer antes do ack, a mensagem é reentregue; fazer ack antes perderia o trabalho se o processo morresse a meio
+- c) O RabbitMQ obriga a essa ordem por protocolo
+- d) Não há diferença prática
+
+<details><summary>Resposta</summary>
+
+**b) Se o worker morrer antes do ack, a mensagem é reentregue; fazer ack antes perderia o trabalho se o processo morresse a meio** — Ack cedo + morte do processo = efeito nunca aconteceu, mas o broker pensa que sim.
+
+</details>
+
+**5.** O que é o 'dual-write problem' aplicado ao RabbitMQ, neste projeto?
+
+- a) Publicar a mesma mensagem duas vezes de propósito
+- b) A BD pode ser escrita com sucesso e a publicação no RabbitMQ falhar (ou o inverso), sem uma transação comum aos dois
+- c) Um bug de duplicação no worker
+- d) Duas filas com o mesmo nome a competir
+
+<details><summary>Resposta</summary>
+
+**b) A BD pode ser escrita com sucesso e a publicação no RabbitMQ falhar (ou o inverso), sem uma transação comum aos dois** — Resolve-se com o padrão outbox: gravar o evento na mesma transação SQL da mudança.
+
+</details>
+
+<!-- quiz:end -->

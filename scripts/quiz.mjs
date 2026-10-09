@@ -5,8 +5,9 @@
 // Uso:
 //   node scripts/quiz.mjs           → menu com o estado de cada módulo
 //   node scripts/quiz.mjs status    → só mostra o progresso, sem perguntar nada
-//   node scripts/quiz.mjs 06        → quiz do módulo 06 (RabbitMQ)
-//   node scripts/quiz.mjs exame     → exame final: mistura perguntas de todos os módulos
+//   node scripts/quiz.mjs 06        → quiz do módulo 06 (RabbitMQ), só com perguntas DESSE módulo
+//   node scripts/quiz.mjs geral     → só as perguntas gerais, que ligam vários módulos entre si
+//   node scripts/quiz.mjs exame     → tudo: 2 perguntas de cada módulo + todas as gerais
 //
 // O que isto prova e o que NÃO prova: acertar as perguntas mostra que reconheces os
 // conceitos e os factos de cada módulo. Não prova que consegues ESCREVER um Dockerfile
@@ -24,7 +25,9 @@ import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const bank = JSON.parse(readFileSync(path.join(here, 'quiz-questions.json'), 'utf8'));
+const data = JSON.parse(readFileSync(path.join(here, 'quiz-questions.json'), 'utf8'));
+const bank = data.modules; // só os módulos com teoria (sem o 00, índice, nem o 11, que já é o próprio teste)
+const geral = data.geral;  // perguntas que LIGAM vários módulos — somam-se às dos módulos, nunca as substituem
 const resultsPath = path.join(here, '..', '.quiz-results.json');
 const PASS_THRESHOLD = 0.7; // 70% para "passar" um módulo
 
@@ -104,9 +107,10 @@ async function runModuleQuiz(nextLine, mod) {
 }
 
 async function runExam(nextLine) {
-  console.log('\n=== Exame final: 2 perguntas por módulo, à sorte ===');
-  const mixed = bank.flatMap((mod) => shuffle(mod.questions).slice(0, 2));
-  const questions = shuffle(mixed);
+  console.log('\n=== Exame final: 2 perguntas de cada módulo + TODAS as perguntas gerais ===');
+  // As gerais não são amostradas: entram por completo, porque são elas que testam a ligação entre módulos.
+  const perModule = bank.flatMap((mod) => shuffle(mod.questions).slice(0, 2));
+  const questions = shuffle([...perModule, ...geral.questions]);
   const score = await runQuestions(nextLine, questions);
   const pct = score / questions.length;
   console.log(`\nResultado do exame: ${score}/${questions.length} (${Math.round(pct * 100)}%)`);
@@ -120,8 +124,12 @@ function printStatus(results) {
     const status = !r ? '— por fazer' : r.passed ? `✔ passou (${Math.round(r.pct * 100)}%)` : `✘ repetir (${Math.round(r.pct * 100)}%)`;
     console.log(`  ${mod.id}  ${mod.title.padEnd(32)} ${status}`);
   }
+  if (results.geral) {
+    const r = results.geral;
+    console.log(`\n  geral  ${geral.title.padEnd(32)} ${r.passed ? `✔ passou (${Math.round(r.pct * 100)}%)` : `✘ repetir (${Math.round(r.pct * 100)}%)`}`);
+  }
   if (results.exame) {
-    console.log(`\n  exame final: ${results.exame.score}/${results.exame.total} (${Math.round(results.exame.pct * 100)}%) em ${results.exame.date.slice(0, 10)}`);
+    console.log(`  exame final: ${results.exame.score}/${results.exame.total} (${Math.round(results.exame.pct * 100)}%) em ${results.exame.date.slice(0, 10)}`);
   }
   console.log('\n(Nota: os módulos 00 e 11 não têm quiz de propósito — 00 é o índice, e o 11 É o próprio teste: os exercícios práticos, com soluções em <details> dentro de cada um.)\n');
 }
@@ -151,6 +159,14 @@ async function main() {
     if (arg === 'exame') {
       results.exame = await runExam(nextLine);
       saveResults(results);
+      return;
+    }
+
+    if (arg === 'geral') {
+      // Reaproveita runModuleQuiz com um "módulo" sintético: mesma mecânica, perguntas diferentes.
+      results.geral = await runModuleQuiz(nextLine, { id: 'geral', title: geral.title, doc: 'docs/00-indice.md', questions: geral.questions });
+      saveResults(results);
+      printStatus(results);
       return;
     }
 

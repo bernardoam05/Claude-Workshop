@@ -128,3 +128,71 @@ Com `eventId` em todos os logs de um fluxo, consegues seguir **uma** tarefa desd
 2. O E2E é mais próximo do real, mas: é lento, falha por motivos não relacionados (rede, timing), não diz **qual** parte falhou, e só cobre o caminho feliz. Com 50 casos de borda em E2E, o CI demora uma hora e ninguém o corre. Os unitários dão feedback em milissegundos e localizam o problema.
 3. Não se marca como `skip`. Primeiro tentas **reproduzir** (correr 100 vezes em loop: `for i in $(seq 100); do npm test || break; done`). Intermitência quase sempre é: **dependência de tempo** (timers, `setTimeout` de 10ms), **estado partilhado** entre testes, ou **ordem** de execução. Um teste marcado como `skip` é uma dívida que ninguém paga.
 </details>
+
+<!-- quiz:start -->
+
+## Quiz rápido (autoavaliação)
+
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 10`.
+
+**1.** Na pirâmide de testes, que nível deve ter o MAIOR número de testes?
+
+- a) Testes E2E (browser)
+- b) Testes de integração (BD real)
+- c) Testes unitários (com fakes)
+- d) Testes manuais
+
+<details><summary>Resposta</summary>
+
+**c) Testes unitários (com fakes)** — Rápidos, focados e sem infraestrutura — por isso são a base larga da pirâmide.
+
+</details>
+
+**2.** Qual a diferença entre um 'fake' e um 'mock', como usados neste workshop?
+
+- a) São sempre sinónimos, sem diferença prática
+- b) Um fake tem uma implementação funcional simplificada; um mock foca-se em verificar interações (foi chamado com X?)
+- c) Mock é sempre mais rápido de escrever que um fake
+- d) Fake só se usa em testes de Java
+
+<details><summary>Resposta</summary>
+
+**b) Um fake tem uma implementação funcional simplificada; um mock foca-se em verificar interações (foi chamado com X?)** — Os testes do projeto são, na prática, fakes com verificação de interações.
+
+</details>
+
+**3.** Porque é que um fake que devolve a mesma REFERÊNCIA de objeto (em vez de uma cópia) pode 'mentir' num teste?
+
+- a) Nunca pode, é sempre seguro
+- b) Mudanças feitas depois também alteram o 'valor antigo' já capturado, escondendo bugs de transição de estado
+- c) Torna o teste mais lento
+- d) Impede o teste de compilar
+
+<details><summary>Resposta</summary>
+
+**b) Mudanças feitas depois também alteram o 'valor antigo' já capturado, escondendo bugs de transição de estado** — Foi exactamente o que aconteceu no teste de updateTask: corrigiu-se fazendo findById devolver uma cópia.
+
+</details>
+
+**4.** Qual a diferença entre um healthcheck de liveness e um de readiness?
+
+- a) São o mesmo conceito com nomes diferentes
+- b) Liveness pergunta 'o processo está vivo?'; readiness pergunta 'está pronto para receber trabalho?' (verifica dependências)
+- c) Liveness só existe no Kubernetes
+- d) Readiness é sempre mais rápido de calcular
+
+<details><summary>Resposta</summary>
+
+**b) Liveness pergunta 'o processo está vivo?'; readiness pergunta 'está pronto para receber trabalho?' (verifica dependências)** — Se a liveness dependesse da BD, uma BD em baixo faria reiniciar a API em loop, sem resolver nada.
+
+</details>
+
+**5.** Que ferramenta corre os testes E2E num browser real neste projeto?
+
+<details><summary>Resposta</summary>
+
+**playwright** — Playwright, correndo numa imagem Docker oficial, inclusive no CI.
+
+</details>
+
+<!-- quiz:end -->
