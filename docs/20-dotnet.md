@@ -4,6 +4,8 @@
 
 **Código:** `src/notifications/`. Lê por esta ordem: `Notifications.csproj` → `Program.cs` → `Config.cs` → `Data/` → `Events/` → `Messaging/RabbitMqConsumer.cs` → `Auth/KeycloakRoleClaims.cs`.
 
+> Se a sintaxe de C# ainda não for familiar (`record`, construtores primários, LINQ, `?`...), o [módulo 22](22-sintaxe-csharp.md) é uma referência rápida com linhas reais deste serviço.
+
 ---
 
 ## 1. O que este serviço faz

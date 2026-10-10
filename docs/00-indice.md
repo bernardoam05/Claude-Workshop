@@ -162,6 +162,7 @@ Fluxo de um clique em "concluir tarefa":
 | 18 | [Prometheus e Grafana](18-observabilidade-prometheus-grafana.md) | Métricas, PromQL, dashboards, alertas | 2 h |
 | 19 | [CI/CD com GitHub Actions](19-ci-cd-github-actions.md) | Jobs, services, cache, artefactos, OIDC | 2,5 h |
 | 20 | [C# e .NET](20-dotnet.md) | Minimal APIs, DI nativa, EF Core, RabbitMQ.Client v7 | 3 h |
+| — | [Sintaxe: JavaScript/TS](21-sintaxe-javascript.md) · [C#](22-sintaxe-csharp.md) | Referência, não módulo — consulta sempre que precisares | — |
 
 Podes fazer por ordem. Os módulos 02, 03 e 06 são os mais densos.
 
@@ -179,6 +180,15 @@ Para cada módulo:
 6. Só depois abre as soluções (estão em `<details>`).
 
 > **Regra de ouro:** se não consegues explicar, linha a linha, o que um ficheiro faz e o que aconteceria se essa linha não existisse, ainda não o percebeste.
+
+### Se a linguagem, não só o conceito, for o obstáculo
+
+Os módulos assumem que já sabes ler JavaScript e C# — e é normal não saberes, sobretudo se não forem as linguagens em que estudaste. Há duas referências feitas exatamente para isto, com linhas **reais** do projeto, não exemplos inventados:
+
+- **[Sintaxe de JavaScript/TypeScript](21-sintaxe-javascript.md)** — para os módulos 01 a 15 (`src/api`, `src/worker`, `src/web`).
+- **[Sintaxe de C#](22-sintaxe-csharp.md)** — para o módulo 20 (`src/notifications`).
+
+Não são para ler de uma vez. Abre-os quando uma linha de código não fizer sentido, procura a construção, volta ao ficheiro.
 
 ---
 

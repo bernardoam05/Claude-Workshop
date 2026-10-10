@@ -4,6 +4,8 @@
 
 **Ficheiros para ler primeiro:** `src/api/src/app.js`, `src/api/src/routes/tasks.js`, `src/web/src/api.js`.
 
+> Se a sintaxe de JavaScript ainda não for confortável (arrow functions, `async`/`await`, destructuring...), o [módulo 21](21-sintaxe-javascript.md) é uma referência rápida com linhas reais deste projeto. Consulta-o sempre que uma linha não fizer sentido.
+
 ---
 
 ## 1. Cliente e servidor

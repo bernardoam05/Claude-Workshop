@@ -164,27 +164,27 @@ No fim, deves conseguir seguir **uma** tarefa com `docker compose logs api worke
 Não confies cegamente em cabeçalhos vindos do exterior: um cliente pode enviar um id gigante ou com caracteres estranhos. Valida-o (tamanho e formato) antes de o propagar, como fazes com o resto da entrada.
 </details>
 
-### C17. Utilizadores e ownership
-Hoje qualquer pessoa vê e altera todas as tarefas. Acrescenta utilizadores simples:
+### C17. Administradores podem gerir as tarefas de qualquer utilizador
+> **Nota:** este exercício descrevia originalmente "acrescentar utilizadores e ownership" — mas isso já está implementado a sério (módulo 04, com JWT e Keycloak). Ficou obsoleto, por isso foi substituído por um passo a mais sobre a MESMA base.
 
-- um cabeçalho `X-User-Id` é suficiente **para o exercício** (não é autenticação real: diz porquê);
-- cada tarefa pertence a um utilizador; as rotas só mostram e alteram as tuas.
+Hoje, o papel `admin` do Keycloak já dá acesso a `/api/activity/*` e `/api/notifications/*` — mas **não** a `/api/tasks`: a Carla (admin) continua limitada às suas próprias tarefas, tal como a Alice. Combina os dois mecanismos de autorização que já existem no projeto (ownership por `user_id`, e papel `admin` do token):
 
-Decisões a tomar: a cache é **por utilizador** ou global? Como muda a chave? E o evento, que `task` leva? Justifica.
+- Um administrador deve conseguir listar, concluir ou apagar a tarefa de **qualquer** utilizador.
+- Um utilizador normal continua limitado às suas.
+- Decide: a cache (`tasks:user:<id>`) continua por utilizador mesmo quando um admin vê a lista de outro? O que mudarias na chave?
+- Escreve um teste (no `taskService.test.js`) que prove que um admin vê as tarefas da Alice, e que a Alice continua sem ver as da Carla.
 
 ### C18. Rate limiting no Nginx
 Limita cada IP a 10 pedidos por segundo em `/api/` com `limit_req`. Prova com um ciclo de `curl` que os pedidos a mais recebem `503` (ou `429` se configurares). Explica porque é que isto está no Nginx e não na API.
 
-### C19. Desafio final: notificações
-Acrescenta um consumidor **novo** que, quando uma tarefa é criada, guarda uma "notificação" na BD (`notifications`: id, task_id, message, created_at). Requisitos:
+### C19. Desafio final: o painel de notificações no frontend
+> **Nota:** este exercício pedia originalmente para construir um consumidor novo (fila própria, idempotente, com DLQ) — isso já está feito a sério, em C#/.NET (módulo 20, `src/notifications`). O que **falta** é só o frontend, e é mesmo isso que falta fazer: a prática de escrita continua, só muda o ficheiro.
 
-- Não pode mexer na API nem no worker existente.
-- Tem de ser idempotente.
-- Tem de ter DLQ própria.
-- Tem de ter testes unitários do handler.
-- Tem de aparecer no frontend (um painel com as últimas notificações).
+O backend já existe e funciona (`GET /api/notifications/summary` e `/recent`, só para admins). Falta a parte React:
 
-Escreve primeiro a **topologia** (exchange, filas, bindings) num papel ou ficheiro de notas. Só depois escreve código. Se a topologia estiver certa, o código quase se escreve sozinho.
+- Um componente novo (`NotificationsPanel.jsx`) que chama `/api/notifications/recent` e mostra a lista.
+- Só deve aparecer (ou pelo menos funcionar) para quem tem o papel `admin` — mas o token fica no browser, e o frontend **não** o costuma decifrar. Decide: mostras sempre o link e deixas a API devolver 403 com uma mensagem amigável, ou decificas o JWT no cliente (`atob` na segunda parte do token) para saberes o papel antes de pedires? Qual é mais seguro? Qual dá melhor experiência?
+- Escreve a função nova em `api.js`, o componente, e liga-o ao `App.jsx` — sem copiar o `StatsBar.jsx` linha a linha; usa-o como referência, não como molde.
 
 ---
 
