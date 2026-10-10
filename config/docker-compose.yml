@@ -103,7 +103,13 @@ services:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 10s
       timeout: 3s
-      retries: 5
+      retries: 10
+      # Sem start_period, o Docker começa a contar falhas no 1º check (10s depois do arranque).
+      # O index.js só chama app.listen() depois de: migrar a BD, ligar ao Redis, ao RabbitMQ
+      # (com o seu próprio retry, até 20s) e ao Kafka. O broker pode estar "healthy" na porta
+      # mas com o coordenador de grupos ainda a inicializar ("the coordinator is loading"),
+      # o que atrasa a ligação do produtor Kafka mais do que os 5 retries antigos toleravam.
+      start_period: 30s
     restart: unless-stopped                  # se o processo morrer, o Docker volta a arrancá-lo
 
   worker:
