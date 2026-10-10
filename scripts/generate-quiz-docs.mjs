@@ -56,13 +56,21 @@ function renderBlock({ title, isGeneral, questions, cliArg }) {
   return parts.join('\n');
 }
 
+// Os marcadores só contam quando ocupam a LINHA TODA (começo e fim de linha), nunca dentro de
+// uma frase. Um bug real aconteceu aqui: uma frase a EXPLICAR os marcadores, com
+// "`<!-- quiz:start -->`" dentro de código inline, foi confundida com o marcador a sério,
+// e o gerador substituiu o pedaço errado do documento. indexOf() simples não distingue os dois;
+// uma regex ancorada a início/fim de linha (com a flag "m") distingue.
+const START_RE = /^<!-- quiz:start -->$/m;
+const END_RE = /^<!-- quiz:end -->$/m;
+
 function upsertBlock(filePath, block) {
   const original = readFileSync(filePath, 'utf8');
-  const startIdx = original.indexOf(START);
-  const endIdx = original.indexOf(END);
+  const startMatch = START_RE.exec(original);
+  const endMatch = END_RE.exec(original);
   const content =
-    startIdx !== -1 && endIdx !== -1
-      ? original.slice(0, startIdx) + block + original.slice(endIdx + END.length)
+    startMatch && endMatch && endMatch.index > startMatch.index
+      ? original.slice(0, startMatch.index) + block + original.slice(endMatch.index + endMatch[0].length)
       : `${original.trimEnd()}\n\n${block}\n`;
   writeFileSync(filePath, content);
 }
