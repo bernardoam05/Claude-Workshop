@@ -128,7 +128,7 @@ Para contadores que mudam de vez em quando, polling chega. Escolher WebSocket "p
 
 - **Dev server** com *hot module replacement*: guardas um ficheiro e só esse módulo é recarregado.
 - **Build** de produção: junta, minifica e gera *hashes* nos nomes (`index-Diva-lLB.js`). O hash muda quando o conteúdo muda, por isso o browser não usa uma versão antiga da cache.
-- **Proxy** de desenvolvimento (`vite.config.js`): reencaminha `/api` para `localhost:3000`. Vê o módulo 09 para perceber porquê.
+- **Proxy** de desenvolvimento (`vite.config.js`): reencaminha `/api` para `localhost:3000`. Vê o módulo 10 para perceber porquê.
 
 Experiência: corre `npm run dev` em `src/web` (com a API a correr no compose na porta 3000 — ou corre `docker compose ... up -d` e expõe temporariamente a API). Altera o título num componente e repara que a página atualiza sem recarregar.
 

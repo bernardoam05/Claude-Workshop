@@ -514,8 +514,75 @@
     },
     {
       "id": "09",
+      "title": "Estilos e CSS",
+      "doc": "docs/09-estilos-css.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que faz o plugin @tailwindcss/vite, exatamente?",
+          "options": [
+            "Escreve CSS automaticamente a partir de um desenho",
+            "Lê os ficheiros .jsx à procura de strings que parecem classes Tailwind, e gera no CSS final só as que encontrar",
+            "Converte todo o CSS do projeto em JavaScript",
+            "Substitui o React por um motor de templates próprio"
+          ],
+          "answer": 1,
+          "explain": "É uma leitura de texto, não de execução: classes construídas dinamicamente (ex. \"bg-\" + cor) não são detetadas."
+        },
+        {
+          "type": "mcq",
+          "q": "No bloco @theme do styles.css, o que acontece quando defines --color-accent?",
+          "options": [
+            "Nada, é só um comentário",
+            "Cria uma variável CSS normal E regista as classes que a usam (bg-accent, text-accent, border-accent)",
+            "Só funciona dentro de ficheiros .css, nunca em .jsx",
+            "Substitui a cor em todos os projetos Tailwind instalados na máquina"
+          ],
+          "answer": 1,
+          "explain": "É por isto que mudar a cor num sítio só muda todos os componentes que usam essas classes."
+        },
+        {
+          "type": "mcq",
+          "q": "Como é que o modo escuro funciona neste projeto, sem nenhum botão nem JavaScript?",
+          "options": [
+            "O Tailwind deteta o tema do browser e troca as classes automaticamente",
+            "Um @media (prefers-color-scheme: dark) sobrescreve as variáveis CSS; as classes (bg-bg, bg-surface) continuam iguais, só o valor que leem muda",
+            "Há duas cópias do CSS, uma para cada tema, escolhidas pelo servidor",
+            "Não é possível ter modo escuro sem JavaScript"
+          ],
+          "answer": 1,
+          "explain": "As classes utilitárias nunca mudam de nome — só a variável CSS que referenciam muda de valor dentro do @media."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual é a principal diferença entre a abordagem utility-first (Tailwind) e CSS Modules?",
+          "options": [
+            "Não há diferença nenhuma, são a mesma técnica com nomes diferentes",
+            "CSS Modules continua a escreveres-te CSS à mão (só evita conflito de nomes entre ficheiros); Tailwind evita escrever CSS novo quase sempre, compondo classes já existentes",
+            "CSS Modules só funciona em Vue, nunca em React",
+            "Tailwind não permite nenhuma personalização de cores"
+          ],
+          "answer": 1,
+          "explain": "CSS Modules resolve o problema de nomes de classe colidirem entre componentes; Tailwind resolve consistência evitando que escrevas valores novos (8px aqui, 10px lá) à mão."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que o ficheiro CSS final de produção (dist/assets/*.css) tem só uns KB, e não megabytes, apesar do Tailwind ter milhares de classes disponíveis?",
+          "options": [
+            "O Tailwind comprime o CSS com um algoritmo secreto",
+            "O plugin só gera no CSS final as classes que encontrou realmente usadas no código-fonte (.jsx) — o resto nunca é escrito",
+            "As classes não usadas são carregadas por um pedido HTTP separado",
+            "O browser remove classes não usadas automaticamente"
+          ],
+          "answer": 1,
+          "explain": "É uma varredura em build-time do código-fonte, não uma biblioteca inteira enviada ao browser."
+        }
+      ]
+    },
+    {
+      "id": "10",
       "title": "Nginx, proxy e origem",
-      "doc": "docs/09-nginx-proxy-e-origem.md",
+      "doc": "docs/10-nginx-proxy-e-origem.md",
       "questions": [
         {
           "type": "mcq",
@@ -580,9 +647,9 @@
       ]
     },
     {
-      "id": "10",
+      "id": "11",
       "title": "Testes e observabilidade",
-      "doc": "docs/10-testes-e-observabilidade.md",
+      "doc": "docs/11-testes-e-observabilidade.md",
       "questions": [
         {
           "type": "mcq",
@@ -643,9 +710,9 @@
       ]
     },
     {
-      "id": "12",
+      "id": "13",
       "title": "Decisões e trade-offs",
-      "doc": "docs/12-decisoes-e-trade-offs.md",
+      "doc": "docs/13-decisoes-e-trade-offs.md",
       "questions": [
         {
           "type": "mcq",
@@ -707,9 +774,9 @@
       ]
     },
     {
-      "id": "13",
+      "id": "14",
       "title": "Competências de mercado",
-      "doc": "docs/13-competencias-mercado.md",
+      "doc": "docs/14-competencias-mercado.md",
       "questions": [
         {
           "type": "mcq",
@@ -749,9 +816,9 @@
       ]
     },
     {
-      "id": "14",
+      "id": "15",
       "title": "Autenticação manual vs Keycloak",
-      "doc": "docs/14-autenticacao-manual-vs-keycloak.md",
+      "doc": "docs/15-autenticacao-manual-vs-keycloak.md",
       "questions": [
         {
           "type": "mcq",
@@ -812,9 +879,9 @@
       ]
     },
     {
-      "id": "15",
+      "id": "16",
       "title": "Trabalhar numa empresa",
-      "doc": "docs/15-trabalhar-numa-empresa.md",
+      "doc": "docs/16-trabalhar-numa-empresa.md",
       "questions": [
         {
           "type": "mcq",
@@ -853,9 +920,9 @@
       ]
     },
     {
-      "id": "16",
+      "id": "17",
       "title": "Kafka",
-      "doc": "docs/16-kafka.md",
+      "doc": "docs/17-kafka.md",
       "questions": [
         {
           "type": "mcq",
@@ -920,9 +987,9 @@
       ]
     },
     {
-      "id": "17",
+      "id": "18",
       "title": "Java e Spring Boot",
-      "doc": "docs/17-spring-boot.md",
+      "doc": "docs/18-spring-boot.md",
       "questions": [
         {
           "type": "mcq",
@@ -984,9 +1051,9 @@
       ]
     },
     {
-      "id": "18",
+      "id": "19",
       "title": "Prometheus e Grafana",
-      "doc": "docs/18-observabilidade-prometheus-grafana.md",
+      "doc": "docs/19-observabilidade-prometheus-grafana.md",
       "questions": [
         {
           "type": "mcq",
@@ -1048,9 +1115,9 @@
       ]
     },
     {
-      "id": "19",
+      "id": "20",
       "title": "CI/CD com GitHub Actions",
-      "doc": "docs/19-ci-cd-github-actions.md",
+      "doc": "docs/20-ci-cd-github-actions.md",
       "questions": [
         {
           "type": "mcq",
@@ -1113,9 +1180,9 @@
       ]
     },
     {
-      "id": "20",
+      "id": "21",
       "title": "C# e .NET",
-      "doc": "docs/20-dotnet.md",
+      "doc": "docs/21-dotnet.md",
       "questions": [
         {
           "type": "mcq",

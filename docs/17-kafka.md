@@ -1,4 +1,4 @@
-# 16 · Kafka
+# 17 · Kafka
 
 **Objetivo:** perceber o modelo do Kafka (um **log**, não uma fila), porque é tão pedido nas empresas, e em que é diferente do RabbitMQ que já conheces.
 
@@ -39,7 +39,7 @@ O **mesmo evento** vai para os dois brokers. Num sistema real escolherias um, ma
 - **Partição:** o tópico é dividido em N logs independentes (aqui 3). Cada mensagem tem um **offset** (posição) dentro da sua partição.
 - **Chave:** decide a partição (`hash(chave) % 3`). Usamos `userId` (`kafkaPublisher.js`).
 
-**Porque a chave importa:** o Kafka só garante ordem **dentro de uma partição**. Com chave = `userId`, todos os eventos de um utilizador ficam na mesma partição, por ordem: o `task.created` vem sempre antes do `task.completed` da mesma tarefa. Sem chave, as mensagens espalham-se e a ordem perde-se (era o problema P5 do módulo 11).
+**Porque a chave importa:** o Kafka só garante ordem **dentro de uma partição**. Com chave = `userId`, todos os eventos de um utilizador ficam na mesma partição, por ordem: o `task.created` vem sempre antes do `task.completed` da mesma tarefa. Sem chave, as mensagens espalham-se e a ordem perde-se (era o problema P5 do módulo 12).
 
 **Armadilha:** chaves mal distribuídas criam **partições quentes**. Se 90% dos eventos forem de um cliente gigante, uma partição recebe 90% da carga e um único consumidor fica sobrecarregado, enquanto os outros estão parados.
 
@@ -67,7 +67,7 @@ O consumidor diz ao Kafka "já processei até ao offset X" (**commit**). O Sprin
 
 É o mesmo *at-least-once* do RabbitMQ, e a resposta é a mesma: **idempotência**. O `ActivityEventRepository.insertIfAbsent` usa `ON CONFLICT (event_id) DO NOTHING`, tal como o worker.
 
-**Consumer lag** = (último offset do tópico) − (offset do grupo). É **a** métrica de saúde de um consumidor Kafka: se cresce sempre, o consumidor não está a acompanhar. Está no dashboard do Grafana e há um alerta para ela (módulo 18).
+**Consumer lag** = (último offset do tópico) − (offset do grupo). É **a** métrica de saúde de um consumidor Kafka: se cresce sempre, o consumidor não está a acompanhar. Está no dashboard do Grafana e há um alerta para ela (módulo 19).
 
 ## 6. Erros: Dead Letter Topic
 
@@ -144,7 +144,7 @@ Usamos `kafkajs` porque é JavaScript puro e simples de ler. Mas **não é atual
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 16`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 17`.
 
 **1.** Qual a diferença principal entre uma fila (RabbitMQ) e um log (Kafka)?
 

@@ -4,7 +4,7 @@
 
 **Ficheiros para ler primeiro:** `src/api/src/app.js`, `src/api/src/routes/tasks.js`, `src/web/src/api.js`.
 
-> Se a sintaxe de JavaScript ainda não for confortável (arrow functions, `async`/`await`, destructuring...), o [módulo 21](21-sintaxe-javascript.md) é uma referência rápida com linhas reais deste projeto. Consulta-o sempre que uma linha não fizer sentido.
+> Se a sintaxe de JavaScript ainda não for confortável (arrow functions, `async`/`await`, destructuring...), o [módulo 22](22-sintaxe-javascript.md) é uma referência rápida com linhas reais deste projeto. Consulta-o sempre que uma linha não fizer sentido.
 
 ---
 
@@ -26,7 +26,7 @@ As primeiras 5 linhas não fazem nada ainda — só trazem código de outros fic
 ```js
 export function createApp({ service, authService, healthCheck, oidcPublicConfig = null, metrics = null }) {
 ```
-Aqui começa a única coisa que este ficheiro faz: declarar uma função chamada `createApp`. `export` quer dizer que outros ficheiros a podem importar (é o `index.js` quem a vai chamar, module 04). Os `{ }` no parâmetro são **destructuring** (módulo 21): em vez de receber um argumento qualquer e teres de escrever `args.service`, `args.authService`, etc., já chegam separados, com estes nomes. `= null` em dois deles é um valor por omissão: se quem chamar `createApp` não der `metrics`, a variável `metrics` vale `null` em vez de rebentar.
+Aqui começa a única coisa que este ficheiro faz: declarar uma função chamada `createApp`. `export` quer dizer que outros ficheiros a podem importar (é o `index.js` quem a vai chamar, module 04). Os `{ }` no parâmetro são **destructuring** (módulo 22): em vez de receber um argumento qualquer e teres de escrever `args.service`, `args.authService`, etc., já chegam separados, com estes nomes. `= null` em dois deles é um valor por omissão: se quem chamar `createApp` não der `metrics`, a variável `metrics` vale `null` em vez de rebentar.
 
 ```js
   const app = express();
@@ -43,7 +43,7 @@ Aqui começa a única coisa que este ficheiro faz: declarar uma função chamada
     });
   }
 ```
-Se alguém passou `metrics` (módulo 18), liga aqui o middleware que mede CADA pedido, e cria uma rota `/metrics` que devolve os números recolhidos. Se `metrics` for `null` (o valor por omissão lá de cima), este bloco inteiro não corre — a app funciona sem métricas. `app.get('/metrics', async (req, res) => { ... })` é a forma de dizer "quando chegar um `GET /metrics`, corre esta função"; `req` é o pedido, `res` é a resposta que vais construir e enviar.
+Se alguém passou `metrics` (módulo 19), liga aqui o middleware que mede CADA pedido, e cria uma rota `/metrics` que devolve os números recolhidos. Se `metrics` for `null` (o valor por omissão lá de cima), este bloco inteiro não corre — a app funciona sem métricas. `app.get('/metrics', async (req, res) => { ... })` é a forma de dizer "quando chegar um `GET /metrics`, corre esta função"; `req` é o pedido, `res` é a resposta que vais construir e enviar.
 
 ```js
   app.use(express.json({ limit: '10kb' }));
@@ -176,7 +176,7 @@ export const session = {
   },
   ...
 ```
-`session` é um objeto com métodos (não uma classe, módulo 21) para gerir o que está guardado no browser. `getToken()` lê o token guardado. O `try/catch` existe porque o `localStorage` pode não estar disponível (modo privado do browser, por exemplo) — sem o `try`, isso rebentava a aplicação inteira só por tentar ler uma preferência.
+`session` é um objeto com métodos (não uma classe, módulo 22) para gerir o que está guardado no browser. `getToken()` lê o token guardado. O `try/catch` existe porque o `localStorage` pode não estar disponível (modo privado do browser, por exemplo) — sem o `try`, isso rebentava a aplicação inteira só por tentar ler uma preferência.
 
 ```js
   setToken(token, provider = 'local', idToken = null) {
@@ -189,7 +189,7 @@ export const session = {
     }
   },
 ```
-Guarda o token, de ONDE veio (`local` ou `keycloak` — módulo 14 explica porquê isto importa para o logout), e, se existir, o `idToken` do Keycloak. `provider = 'local'` é outro valor por omissão: quem chamar `setToken(token)` sem mais nada assume que é login local.
+Guarda o token, de ONDE veio (`local` ou `keycloak` — módulo 15 explica porquê isto importa para o logout), e, se existir, o `idToken` do Keycloak. `provider = 'local'` é outro valor por omissão: quem chamar `setToken(token)` sem mais nada assume que é login local.
 
 ```js
   clear() {
@@ -214,7 +214,7 @@ async function request(path, options = {}) {
     },
   });
 ```
-Esta função **não** tem `export` — é privada deste ficheiro, chamada por todas as funções de `api` mais abaixo. `fetch(...)` é a função embutida do browser para fazer pedidos HTTP. `` `${BASE}${path}` `` junta `/api` com o caminho pedido (ex.: `/tasks`), usando template literals (módulo 21). `...options` (spread) copia tudo o que veio em `options` (como `method` ou `body`) para este novo objeto. `...(token ? { Authorization: ... } : {})`: se houver token, acrescenta o cabeçalho `Authorization`; se não houver, `{}` não acrescenta nada — é a forma compacta de um `if` dentro de um objeto.
+Esta função **não** tem `export` — é privada deste ficheiro, chamada por todas as funções de `api` mais abaixo. `fetch(...)` é a função embutida do browser para fazer pedidos HTTP. `` `${BASE}${path}` `` junta `/api` com o caminho pedido (ex.: `/tasks`), usando template literals (módulo 22). `...options` (spread) copia tudo o que veio em `options` (como `method` ou `body`) para este novo objeto. `...(token ? { Authorization: ... } : {})`: se houver token, acrescenta o cabeçalho `Authorization`; se não houver, `{}` não acrescenta nada — é a forma compacta de um `if` dentro de um objeto.
 
 ```js
   if (!res.ok) {

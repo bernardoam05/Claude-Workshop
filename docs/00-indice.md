@@ -58,8 +58,8 @@ git merge template/main   # limpo se não tocaste nos mesmos ficheiros; conflito
 Porquê antes de tudo o resto:
 
 - Este repositório é o **template**: fica sempre intacto, no estado em que o começaste a estudar.
-- Todos os exercícios do módulo 11 (mudar, partir, estender) alteram ficheiros. Se os fizeres aqui diretamente, não tens como voltar ao ponto de partida sem perder o que já escreveste.
-- Na tua cópia podes usar Git **a sério**: um branch por exercício, commits, PRs, tal como o módulo 15 descreve. É o próprio exercício de Git que esse módulo pede — e com um repositório GitHub a sério por trás, o CI (módulo 19) corre de verdade a cada push.
+- Todos os exercícios do módulo 12 (mudar, partir, estender) alteram ficheiros. Se os fizeres aqui diretamente, não tens como voltar ao ponto de partida sem perder o que já escreveste.
+- Na tua cópia podes usar Git **a sério**: um branch por exercício, commits, PRs, tal como o módulo 16 descreve. É o próprio exercício de Git que esse módulo pede — e com um repositório GitHub a sério por trás, o CI (módulo 20) corre de verdade a cada push.
 - Se algo correr muito mal, apagas a cópia e repetes o processo — o template nunca é afetado.
 
 A partir daqui, sempre que este índice ou outro módulo disser "a partir da raiz do projeto", é a raiz da **tua cópia** (fork ou repositório próprio), nunca a do template.
@@ -133,8 +133,10 @@ Fluxo de um clique em "concluir tarefa":
 | `src/api/src/messaging/kafkaPublisher.js` | Publicação no **Kafka** (chave = userId) |
 | `src/api/src/observability/metrics.js` | Métricas Prometheus da API |
 | `config/prometheus/`, `config/grafana/` | Scrape, alertas, fonte de dados e dashboard (como código) |
-| `.github/workflows/ci.yml` | Pipeline de CI lido linha a linha no módulo 19 |
+| `.github/workflows/ci.yml` | Pipeline de CI lido linha a linha no módulo 20 |
 | `src/notifications/` | Microserviço **.NET/C#**: consome RabbitMQ (task.completed), EF Core, JWT Bearer + Keycloak (RBAC) |
+| `src/web/src/styles.css` | Tailwind CSS: `@theme` com os design tokens do projeto, dark mode via `@media` |
+| `src/web/vite.config.js` | Plugin `@tailwindcss/vite`: gera só as classes realmente usadas nos `.jsx` |
 
 ---
 
@@ -150,19 +152,20 @@ Fluxo de um clique em "concluir tarefa":
 | 06 | [Mensagens com RabbitMQ](06-mensagens-rabbitmq.md) | Exchanges, ack, DLQ, idempotência | 3 h |
 | 07 | [O Worker](07-worker.md) | Consumidor, falhas, escala | 1,5 h |
 | 08 | [Frontend com React](08-frontend-react.md) | Componentes, estado, efeitos | 2 h |
-| 09 | [Nginx, proxy e origem](09-nginx-proxy-e-origem.md) | Reverse proxy, CORS, SPA | 1 h |
-| 10 | [Testes e observabilidade](10-testes-e-observabilidade.md) | Pirâmide, fakes, logs, health | 2 h |
-| 11 | [Exercícios](11-exercicios.md) | Mudar, partir e estender | ∞ |
-| 12 | [Decisões e trade-offs](12-decisoes-e-trade-offs.md) | Pensamento crítico | 1,5 h |
-| 13 | [Competências de mercado](13-competencias-mercado.md) | O que está coberto e o que falta | 1 h + exercícios D1–D8 |
-| 14 | [Autenticação: manual vs Keycloak](14-autenticacao-manual-vs-keycloak.md) | OIDC, PKCE, JWKS, SSO | 2 h |
-| 15 | [Trabalhar numa empresa](15-trabalhar-numa-empresa.md) | Ferramentas da indústria, Git, PRs, entrevistas | 2 h |
-| 16 | [Kafka](16-kafka.md) | Log, partições, consumer groups, DLT | 3 h |
-| 17 | [Java e Spring Boot](17-spring-boot.md) | DI, JPA, Flyway, Spring Security, testes | 4 h |
-| 18 | [Prometheus e Grafana](18-observabilidade-prometheus-grafana.md) | Métricas, PromQL, dashboards, alertas | 2 h |
-| 19 | [CI/CD com GitHub Actions](19-ci-cd-github-actions.md) | Jobs, services, cache, artefactos, OIDC | 2,5 h |
-| 20 | [C# e .NET](20-dotnet.md) | Minimal APIs, DI nativa, EF Core, RabbitMQ.Client v7 | 3 h |
-| — | [Sintaxe: JavaScript/TS](21-sintaxe-javascript.md) · [C#](22-sintaxe-csharp.md) | Referência, não módulo — consulta sempre que precisares | — |
+| 09 | [Estilos e CSS](09-estilos-css.md) | CSS puro, Tailwind, design tokens | 1,5 h |
+| 10 | [Nginx, proxy e origem](10-nginx-proxy-e-origem.md) | Reverse proxy, CORS, SPA | 1 h |
+| 11 | [Testes e observabilidade](11-testes-e-observabilidade.md) | Pirâmide, fakes, logs, health | 2 h |
+| 12 | [Exercícios](12-exercicios.md) | Mudar, partir e estender | ∞ |
+| 13 | [Decisões e trade-offs](13-decisoes-e-trade-offs.md) | Pensamento crítico | 1,5 h |
+| 14 | [Competências de mercado](14-competencias-mercado.md) | O que está coberto e o que falta | 1 h + exercícios D1–D8 |
+| 15 | [Autenticação: manual vs Keycloak](15-autenticacao-manual-vs-keycloak.md) | OIDC, PKCE, JWKS, SSO | 2 h |
+| 16 | [Trabalhar numa empresa](16-trabalhar-numa-empresa.md) | Ferramentas da indústria, Git, PRs, entrevistas | 2 h |
+| 17 | [Kafka](17-kafka.md) | Log, partições, consumer groups, DLT | 3 h |
+| 18 | [Java e Spring Boot](18-spring-boot.md) | DI, JPA, Flyway, Spring Security, testes | 4 h |
+| 19 | [Prometheus e Grafana](19-observabilidade-prometheus-grafana.md) | Métricas, PromQL, dashboards, alertas | 2 h |
+| 20 | [CI/CD com GitHub Actions](20-ci-cd-github-actions.md) | Jobs, services, cache, artefactos, OIDC | 2,5 h |
+| 21 | [C# e .NET](21-dotnet.md) | Minimal APIs, DI nativa, EF Core, RabbitMQ.Client v7 | 3 h |
+| — | [Sintaxe: JavaScript/TS](22-sintaxe-javascript.md) · [C#](23-sintaxe-csharp.md) | Referência, não módulo — consulta sempre que precisares | — |
 
 Podes fazer por ordem. Os módulos 02, 03 e 06 são os mais densos.
 
@@ -185,8 +188,8 @@ Para cada módulo:
 
 Os módulos assumem que já sabes ler JavaScript e C# — e é normal não saberes, sobretudo se não forem as linguagens em que estudaste. Há duas referências feitas exatamente para isto, com linhas **reais** do projeto, não exemplos inventados:
 
-- **[Sintaxe de JavaScript/TypeScript](21-sintaxe-javascript.md)** — para os módulos 01 a 15 (`src/api`, `src/worker`, `src/web`).
-- **[Sintaxe de C#](22-sintaxe-csharp.md)** — para o módulo 20 (`src/notifications`).
+- **[Sintaxe de JavaScript/TypeScript](22-sintaxe-javascript.md)** — para os módulos 01 a 16 (`src/api`, `src/worker`, `src/web`).
+- **[Sintaxe de C#](23-sintaxe-csharp.md)** — para o módulo 21 (`src/notifications`).
 
 Não são para ler de uma vez. Abre-os quando uma linha de código não fizer sentido, procura a construção, volta ao ficheiro.
 
@@ -236,7 +239,7 @@ cd src/api    && DATABASE_TEST_URL=... npm run test:integration   # contra Postg
 cd src/worker && npm test                 # compila o TypeScript e corre os testes
 ```
 
-Novidades desta versão: **autenticação** (módulo 04 e 13), **CI** (`.github/workflows/ci.yml`), **testes de integração**, **worker em TypeScript** (módulo 07) e **Kubernetes** (`config/k8s/`). O estado de cada competência está no [módulo 13](13-competencias-mercado.md).
+Novidades desta versão: **autenticação** (módulo 04 e 14), **CI** (`.github/workflows/ci.yml`), **testes de integração**, **worker em TypeScript** (módulo 07) e **Kubernetes** (`config/k8s/`). O estado de cada competência está no [módulo 14](14-competencias-mercado.md).
 
 ---
 
@@ -259,7 +262,7 @@ As duas vêm do mesmo ficheiro (`scripts/quiz-questions.json`), gerado para os `
 
 Precisas de **70%** para "passar". Perguntas erradas mostram-te a resposta certa, uma explicação, e o ficheiro onde essa resposta está — não é um "falhaste, boa sorte", é um apontador de volta ao sítio certo.
 
-**Sê honesto sobre o que isto garante:** acertar as perguntas prova que reconheces os conceitos e os factos de cada módulo. **Não prova** que consegues escrever um Dockerfile do zero, depurar uma fila a sério, ou decidir uma arquitetura sob pressão numa entrevista. Essa parte só os **exercícios do módulo 11** testam — e aí não há correção automática: comparas o que escreveste com as soluções escondidas em `<details>`, com o teu próprio julgamento. Usa os dois juntos: o quiz para a teoria, os exercícios para a prática. Nenhum dos dois, sozinho, "garante" que aprendeste.
+**Sê honesto sobre o que isto garante:** acertar as perguntas prova que reconheces os conceitos e os factos de cada módulo. **Não prova** que consegues escrever um Dockerfile do zero, depurar uma fila a sério, ou decidir uma arquitetura sob pressão numa entrevista. Essa parte só os **exercícios do módulo 12** testam — e aí não há correção automática: comparas o que escreveste com as soluções escondidas em `<details>`, com o teu próprio julgamento. Usa os dois juntos: o quiz para a teoria, os exercícios para a prática. Nenhum dos dois, sozinho, "garante" que aprendeste.
 
 ---
 

@@ -9,7 +9,7 @@ import { createUserRepository } from '../../src/repositories/userRepository.js';
 // e de tipos que os testes unitários (com fakes) não veem.
 const url = process.env.DATABASE_TEST_URL;
 if (!url) {
-  throw new Error('Define DATABASE_TEST_URL (ver docs/10-testes-e-observabilidade.md)');
+  throw new Error('Define DATABASE_TEST_URL (ver docs/11-testes-e-observabilidade.md)');
 }
 
 // Guarda de segurança: estes testes APAGAM tabelas. Recusamos correr numa base que não seja de teste.

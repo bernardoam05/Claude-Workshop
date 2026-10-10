@@ -165,10 +165,10 @@ jobs:
           df -h /
       - name: Subir o sistema
         # Lista explícita de serviços: só os que o teste de fumo e os E2E precisam.
-        # "keycloak" tem de ir à parte porque a API não depende dele por desenho (ver docs/14):
+        # "keycloak" tem de ir à parte porque a API não depende dele por desenho (ver docs/15):
         # o login manual continua a funcionar mesmo que o Keycloak esteja em baixo.
         # Os outros nomes trazem as suas dependências automaticamente (postgres, redis, rabbitmq, kafka, kafka-init).
-        # Grafana, Prometheus, Kafka UI e Swagger ficam de fora: são só para exploração manual (módulos 16/18),
+        # Grafana, Prometheus, Kafka UI e Swagger ficam de fora: são só para exploração manual (módulos 17/19),
         # ninguém os usa neste pipeline, e poupam memória e tempo de build.
         run: docker compose -f config/docker-compose.yml up -d --build --wait web api worker activity notifications keycloak
       - name: Teste de fumo

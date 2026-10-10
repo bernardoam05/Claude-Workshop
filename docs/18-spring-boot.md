@@ -1,4 +1,4 @@
-# 17 · Java e Spring Boot
+# 18 · Java e Spring Boot
 
 **Objetivo:** ler e escrever um microserviço Spring Boot como os que vais encontrar na maioria das empresas em Portugal, e perceber como cada peça corresponde ao que já fizeste em Node.
 
@@ -8,10 +8,10 @@
 
 ## 1. O que este serviço faz
 
-- **Consome** o tópico Kafka `task-events` (módulo 16).
+- **Consome** o tópico Kafka `task-events` (módulo 17).
 - **Guarda** cada evento no schema `activity` do Postgres, de forma idempotente.
 - **Expõe** `GET /api/activity/summary` e `GET /api/activity/recent`, só para utilizadores com o papel `admin` no Keycloak.
-- **Publica métricas** em `/actuator/prometheus` (módulo 18).
+- **Publica métricas** em `/actuator/prometheus` (módulo 19).
 
 Experimenta: faz login com `carla` / `carla-password` (tem o papel admin) e com `alice` (não tem), e chama a rota. Ou corre `./scripts/smoke-test.sh`, que testa os dois.
 
@@ -131,7 +131,7 @@ Um teste apanhou um problema real enquanto escrevíamos o serviço: a API Node e
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 17`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 18`.
 
 **1.** O que permite a injeção de dependências por CONSTRUTOR, usada em ActivityService?
 

@@ -1,4 +1,4 @@
-# 15 · Trabalhar numa empresa: ferramentas, práticas e o que ninguém te ensina
+# 16 · Trabalhar numa empresa: ferramentas, práticas e o que ninguém te ensina
 
 **Objetivo:** dar-te o mapa do que vais encontrar no primeiro emprego: as ferramentas mais usadas em cada área, como se trabalha em equipa, e o que este workshop **não** consegue ensinar.
 
@@ -26,7 +26,7 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 | Ferramenta | Notas |
 |---|---|
 | **Java + Spring Boot** ⭐ 📌 | A mais pedida em Portugal (banca, seguros, telecom, consultoras). Se tiveres de escolher uma segunda stack, é esta |
-| **C# + .NET** ⭐ | Muito forte em empresas Microsoft e consultoras (módulo 20) |
+| **C# + .NET** ⭐ | Muito forte em empresas Microsoft e consultoras (módulo 21) |
 | **Node.js (Express, NestJS)** ⭐ | Express aqui; **NestJS** é o mais usado em projetos Node grandes (estrutura parecida com Spring) |
 | **Python (FastAPI, Django)** 📌 | Dados, ML, automação, e APIs |
 | **Go** 👀 | Infraestrutura, serviços de alto desempenho |
@@ -65,7 +65,7 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 ### Identidade e segurança
 | Ferramenta | Notas |
 |---|---|
-| **Keycloak** ⭐ | IdP open source (módulo 14) |
+| **Keycloak** ⭐ | IdP open source (módulo 15) |
 | **Microsoft Entra ID, Auth0, Okta, Cognito** 📌 | IdPs SaaS. O protocolo (OIDC) é o mesmo |
 | **HashiCorp Vault, AWS Secrets Manager, Azure Key Vault** 📌 | Onde vivem os segredos em produção (nunca no Git) |
 | **OWASP Top 10** 📌 | A lista de vulnerabilidades que tens de saber explicar numa entrevista |
@@ -76,7 +76,7 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 |---|---|
 | **OpenAPI / Swagger** ⭐ | `src/api/openapi.yaml`, servido em `localhost:8088` |
 | **Postman, Insomnia, Bruno** 📌 | Clientes HTTP para testar APIs à mão. Quase todas as equipas partilham coleções |
-| **GraphQL, gRPC** 👀 | Alternativas a REST (módulo 12) |
+| **GraphQL, gRPC** 👀 | Alternativas a REST (módulo 13) |
 
 ### Containers, orquestração e cloud
 | Ferramenta | Notas |
@@ -102,7 +102,7 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 ### Observabilidade (o que te salva às 3h da manhã)
 | Ferramenta | Notas |
 |---|---|
-| **Prometheus + Grafana** ⭐ | Métricas e dashboards. O par mais comum (módulo 18) |
+| **Prometheus + Grafana** ⭐ | Métricas e dashboards. O par mais comum (módulo 19) |
 | **OpenTelemetry** 📌 | O padrão para instrumentar traces, métricas e logs |
 | **ELK (Elasticsearch, Logstash, Kibana), Loki** 📌 | Pesquisa de logs |
 | **Datadog, New Relic, Dynatrace** 👀 | Plataformas pagas que fazem tudo |
@@ -173,10 +173,10 @@ Em algum momento algo vai falhar em produção. O processo típico:
 2. Comunicar no canal do incidente.
 3. **Postmortem sem culpados** (*blameless*): o que aconteceu, porque é que o sistema deixou acontecer, o que muda para não se repetir.
 
-Os módulos 06, 07 e 10 (DLQ, reconexão, health checks, o bug do Nginx com o IP da API) são exatamente o tipo de problema que aparece em incidentes reais.
+Os módulos 06, 07 e 11 (DLQ, reconexão, health checks, o bug do Nginx com o IP da API) são exatamente o tipo de problema que aparece em incidentes reais.
 
 ### Documentar decisões: ADRs
-Um **Architecture Decision Record** é um ficheiro curto: contexto, decisão, alternativas, consequências. O módulo 12 está escrito nesse espírito. Quando chegares a uma equipa, procura a pasta `docs/adr` ou equivalente: é a forma mais rápida de perceber **porque** é que o sistema é assim.
+Um **Architecture Decision Record** é um ficheiro curto: contexto, decisão, alternativas, consequências. O módulo 13 está escrito nesse espírito. Quando chegares a uma equipa, procura a pasta `docs/adr` ou equivalente: é a forma mais rápida de perceber **porque** é que o sistema é assim.
 
 ---
 
@@ -205,7 +205,7 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 - Cache: como invalidas? O que é um *cache stampede*?
 - Autenticação vs autorização; 401 vs 403; o que é um JWT e porque não se guardam segredos lá dentro; o que é OIDC e PKCE.
 - Pirâmide de testes; mock vs fake.
-- **System design** (a partir de pleno, mas aparece em júnior): "desenha um encurtador de URLs" ou "desenha um sistema de notificações". Usa a estrutura deste workshop: API, BD, cache, fila, worker, e explica os trade-offs (módulo 12).
+- **System design** (a partir de pleno, mas aparece em júnior): "desenha um encurtador de URLs" ou "desenha um sistema de notificações". Usa a estrutura deste workshop: API, BD, cache, fila, worker, e explica os trade-offs (módulo 13).
 
 ---
 
@@ -213,12 +213,12 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 
 | Área | Porquê importa | Como começar |
 |---|---|---|
-| **.NET** ✅ já implementado | Muitas vagas em empresas Microsoft | Lê o módulo 20 (`src/notifications`); o exercício é refazer o WORKER (RabbitMQ) em .NET, não a API Node |
-| **ORM em Node** | Muitas equipas Node usam Prisma | Converte o `taskRepository` para Prisma e compara o SQL gerado com o JPA do módulo 17 |
+| **.NET** ✅ já implementado | Muitas vagas em empresas Microsoft | Lê o módulo 21 (`src/notifications`); o exercício é refazer o WORKER (RabbitMQ) em .NET, não a API Node |
+| **ORM em Node** | Muitas equipas Node usam Prisma | Converte o `taskRepository` para Prisma e compara o SQL gerado com o JPA do módulo 18 |
 | **Cloud real** | Onde as apps correm | Conta gratuita na AWS ou Azure: põe a API num serviço de contentores com uma BD gerida |
 | **Terraform** | IaC é padrão | Cria com Terraform os recursos do ponto anterior |
 | **Traces e logs centralizados** | Diagnosticar produção | Exercícios D13 (OpenTelemetry) e D16 (Loki) |
-| **Refresh tokens / BFF** | Sessões seguras numa SPA | Módulo 14, pergunta 2 |
+| **Refresh tokens / BFF** | Sessões seguras numa SPA | Módulo 15, pergunta 2 |
 | **Acessibilidade e performance web** | Qualidade do frontend | Lighthouse nas DevTools do Chrome |
 | **Soft skills** | Decidem promoções | Só se aprendem a trabalhar com pessoas. Pratica explicar o workshop a um colega |
 
@@ -227,7 +227,7 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 | Semana | Foco |
 |---|---|
 | 1 | Já fizeste fork ([Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)). Branches + PRs para cada exercício, e vê o CI a correr a sério |
-| 2–3 | Exercícios D9–D12 do módulo 17: Testcontainers e refazer a API Node em **Spring Boot** |
+| 2–3 | Exercícios D9–D12 do módulo 18: Testcontainers e refazer a API Node em **Spring Boot** |
 | 4 | Prisma no projeto Node + Prettier + Husky (hooks de pre-commit) |
 | 5 | Deploy numa cloud (AWS ou Azure) com uma BD gerida |
 | 6 | Terraform para o que fizeste na semana 5 |
@@ -240,7 +240,7 @@ No fim disto, tens um projeto de portfólio que mostra praticamente tudo o que u
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 15`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 16`.
 
 **1.** O que é 'trunk-based development'?
 

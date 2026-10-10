@@ -158,7 +158,7 @@ docker compose -f config/docker-compose.yml start rabbitmq
 
 Resultado: a API responde erro (500), mas a tarefa **foi gravada** (confirma com `GET /api/tasks`). O cliente acha que falhou e pode repetir, criando duplicados. Isto é o problema, em concreto.
 
-Soluções (discutimos no módulo 12):
+Soluções (discutimos no módulo 13):
 
 - **Outbox pattern**: grava o evento **na mesma transação SQL** que a mudança, numa tabela `outbox`. Um processo separado lê a tabela e publica. Atómico, porque é só uma BD.
 - **Change Data Capture** (ex.: Debezium): lê o log de transações da BD e publica.

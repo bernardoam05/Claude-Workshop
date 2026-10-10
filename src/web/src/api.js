@@ -6,7 +6,7 @@ const PROVIDER_KEY = 'workshop-provider'; // 'local' ou 'keycloak': decide como 
 const ID_TOKEN_KEY = 'workshop-id-token'; // só para o logout no Keycloak (id_token_hint)
 
 // Sessão: o token JWT fica no localStorage. É prático, mas qualquer script na página o consegue ler.
-// Uma alternativa mais segura é um cookie httpOnly (ver módulo 12). Lemos/escrevemos sempre dentro de try:
+// Uma alternativa mais segura é um cookie httpOnly (ver módulo 13). Lemos/escrevemos sempre dentro de try:
 // o localStorage pode não existir (modo privado, cookies bloqueados).
 export const session = {
   getToken() {

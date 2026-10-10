@@ -15,7 +15,7 @@ Os dados aqui têm **estrutura fixa** e **relações** (uma tarefa tem id, títu
 - **Transações**: ou tudo acontece, ou nada.
 - **Consultas ad-hoc**: `SELECT ... GROUP BY` sem precisar de código novo.
 
-Alternativa (NoSQL, ex.: MongoDB): flexível no schema, mas perdes as garantias acima e tens de as reimplementar na aplicação. Não é "melhor" nem "pior": é um trade-off (módulo 12).
+Alternativa (NoSQL, ex.: MongoDB): flexível no schema, mas perdes as garantias acima e tens de as reimplementar na aplicação. Não é "melhor" nem "pior": é um trade-off (módulo 13).
 
 ## 2. Lê o schema
 

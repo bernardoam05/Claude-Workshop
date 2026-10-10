@@ -1,4 +1,4 @@
-# 14 · Autenticação: manual vs Identity Provider (Keycloak)
+# 15 · Autenticação: manual vs Identity Provider (Keycloak)
 
 **Objetivo:** perceber as duas formas de autenticar utilizadores, porque é que as empresas quase sempre usam a segunda, e o que cada uma exige de ti.
 
@@ -154,7 +154,7 @@ O protocolo é o mesmo (OIDC), por isso o que aprendeste aqui transfere-se. Só 
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 14`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 15`.
 
 **1.** No fluxo Authorization Code + PKCE, para que serve o 'code_verifier'?
 

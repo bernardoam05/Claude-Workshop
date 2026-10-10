@@ -45,10 +45,11 @@ export default function AuthForm({ onAuthenticated, oidc, initialError }) {
   };
 
   return (
-    <section className="auth">
-      <h2>{mode === 'login' ? 'Entrar' : 'Criar conta'}</h2>
-      <form onSubmit={handleSubmit}>
+    <section className="rounded-xl border border-border bg-surface p-5">
+      <h2 className="mt-0 mb-4 text-lg font-semibold">{mode === 'login' ? 'Entrar' : 'Criar conta'}</h2>
+      <form className="mb-3 flex flex-col gap-2" onSubmit={handleSubmit}>
         <input
+          className="rounded-lg border border-border bg-bg px-3 py-2 text-text"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -57,6 +58,7 @@ export default function AuthForm({ onAuthenticated, oidc, initialError }) {
           required
         />
         <input
+          className="rounded-lg border border-border bg-bg px-3 py-2 text-text"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -64,23 +66,32 @@ export default function AuthForm({ onAuthenticated, oidc, initialError }) {
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
           required
         />
-        <button type="submit" disabled={busy}>
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-lg bg-accent px-4 py-2 font-medium text-white disabled:cursor-wait disabled:opacity-60"
+        >
           {mode === 'login' ? 'Entrar' : 'Criar conta'}
         </button>
       </form>
-      <button type="button" className="link" onClick={switchMode}>
+      <button type="button" className="px-1 py-0.5 text-accent" onClick={switchMode}>
         {mode === 'login' ? 'Não tenho conta' : 'Já tenho conta'}
       </button>
 
       {oidc && (
         <>
-          <p className="divider">ou</p>
-          <button type="button" className="secondary" onClick={handleKeycloak} disabled={busy}>
+          <p className="my-3 text-center text-muted">ou</p>
+          <button
+            type="button"
+            className="w-full rounded-lg border border-accent px-4 py-2 text-accent disabled:cursor-wait disabled:opacity-60"
+            onClick={handleKeycloak}
+            disabled={busy}
+          >
             Entrar com Keycloak
           </button>
         </>
       )}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <p className="mt-3 rounded-lg bg-danger/10 px-3 py-2 text-danger" role="alert">{error}</p>}
     </section>
   );
 }

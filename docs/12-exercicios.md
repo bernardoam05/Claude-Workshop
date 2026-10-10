@@ -1,4 +1,4 @@
-# 11 · Exercícios
+# 12 · Exercícios
 
 Os exercícios estão em três níveis. **Não avances de nível sem fazer pelo menos metade do anterior.**
 
@@ -68,7 +68,7 @@ Explica: porque é que a API às vezes falha no arranque? Porque é que o `resta
 ### B7. Nome de serviço errado
 No `nginx.conf`, muda `http://api:3000` para `http://apix:3000`. Reconstrói o `web`. Lê os logs do contentor `web`.
 
-Responde: porque é que o contentor do Nginx **morre** no arranque? Que mensagem aparece? Porque é que isto é diferente de um `502` (que vês em B-experiência do módulo 09)?
+Responde: porque é que o contentor do Nginx **morre** no arranque? Que mensagem aparece? Porque é que isto é diferente de um `502` (que vês em B-experiência do módulo 10)?
 
 ### B8. A mensagem envenenada e o reprocessamento
 1. Publica uma mensagem inválida pelo painel do RabbitMQ (`task.created`, payload `"não é json"`).
@@ -178,7 +178,7 @@ Hoje, o papel `admin` do Keycloak já dá acesso a `/api/activity/*` e `/api/not
 Limita cada IP a 10 pedidos por segundo em `/api/` com `limit_req`. Prova com um ciclo de `curl` que os pedidos a mais recebem `503` (ou `429` se configurares). Explica porque é que isto está no Nginx e não na API.
 
 ### C19. Desafio final: o painel de notificações no frontend
-> **Nota:** este exercício pedia originalmente para construir um consumidor novo (fila própria, idempotente, com DLQ) — isso já está feito a sério, em C#/.NET (módulo 20, `src/notifications`). O que **falta** é só o frontend, e é mesmo isso que falta fazer: a prática de escrita continua, só muda o ficheiro.
+> **Nota:** este exercício pedia originalmente para construir um consumidor novo (fila própria, idempotente, com DLQ) — isso já está feito a sério, em C#/.NET (módulo 21, `src/notifications`). O que **falta** é só o frontend, e é mesmo isso que falta fazer: a prática de escrita continua, só muda o ficheiro.
 
 O backend já existe e funciona (`GET /api/notifications/summary` e `/recent`, só para admins). Falta a parte React:
 
@@ -190,7 +190,7 @@ O backend já existe e funciona (`GET /api/notifications/summary` e `/recent`, s
 
 ## Nível D: Lacunas de mercado
 
-Estes exercícios acrescentam competências que o projeto ainda não tem (ver `13-competencias-mercado.md`). Cada um é independente dos outros.
+Estes exercícios acrescentam competências que o projeto ainda não tem (ver `14-competencias-mercado.md`). Cada um é independente dos outros.
 
 ### D1. Pipeline de CI (GitHub Actions) ✅ já implementado
 > Já existe em `.github/workflows/ci.yml`. Lê-o e faz a experiência: parte um teste da API e vê que o job `smoke` deixa de correr, por causa de `needs`. O enunciado original fica abaixo para referência.

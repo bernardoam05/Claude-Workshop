@@ -16,15 +16,18 @@ export default function TaskForm({ onCreate }) {
   }
 
   return (
-    <form className="task-form" onSubmit={handleSubmit}>
+    <form className="mb-4 flex gap-2" onSubmit={handleSubmit}>
       <input
+        className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-text"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
         placeholder="Nova tarefa..."
         maxLength={200}
         aria-label="Título da tarefa"
       />
-      <button type="submit">Adicionar</button>
+      <button type="submit" className="rounded-lg bg-accent px-4 py-2 font-medium text-white">
+        Adicionar
+      </button>
     </form>
   );
 }

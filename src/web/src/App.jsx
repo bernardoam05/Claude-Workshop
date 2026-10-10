@@ -90,8 +90,8 @@ export default function App() {
 
   if (!authenticated) {
     return (
-      <main>
-        <h1>Gestor de tarefas</h1>
+      <main className="mx-auto mt-12 max-w-[560px] px-4">
+        <h1 className="mb-5 text-2xl font-semibold">Gestor de tarefas</h1>
         <AuthForm
           // key: quando a configuração chega, o formulário é recriado e recebe o erro inicial atualizado
           key={authConfig ? 'ready' : 'loading'}
@@ -108,14 +108,14 @@ export default function App() {
   const handleDelete = (id) => run(() => api.removeTask(id));
 
   return (
-    <main>
-      <header className="app-header">
-        <h1>Gestor de tarefas</h1>
-        <button type="button" className="link" onClick={logout}>Terminar sessão</button>
+    <main className="mx-auto mt-12 max-w-[560px] px-4">
+      <header className="mb-5 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Gestor de tarefas</h1>
+        <button type="button" className="px-1 py-0.5 text-accent" onClick={logout}>Terminar sessão</button>
       </header>
       <StatsBar stats={stats} />
       <TaskForm onCreate={handleCreate} />
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <p className="mb-4 rounded-lg bg-danger/10 px-3 py-2 text-danger" role="alert">{error}</p>}
       <TaskList tasks={tasks} onToggle={handleToggle} onDelete={handleDelete} />
     </main>
   );

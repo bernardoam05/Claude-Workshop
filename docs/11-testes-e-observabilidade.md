@@ -1,4 +1,4 @@
-# 10 · Testes e observabilidade
+# 11 · Testes e observabilidade
 
 **Objetivo:** perceber **o que** testar, **com que nível de isolamento**, e como saber, em produção, se o sistema está saudável.
 
@@ -133,7 +133,7 @@ Com `eventId` em todos os logs de um fluxo, consegues seguir **uma** tarefa desd
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 10`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 11`.
 
 **1.** Na pirâmide de testes, que nível deve ter o MAIOR número de testes?
 

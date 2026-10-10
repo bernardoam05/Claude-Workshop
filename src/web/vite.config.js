@@ -1,8 +1,11 @@
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  plugins: [react()],
+  // tailwindcss() tem de vir antes do react(): processa o CSS (incluindo as classes usadas
+  // dentro dos .jsx) antes do plugin do React entrar em ação.
+  plugins: [tailwindcss(), react()],
   server: {
     port: 5173,
     // Em desenvolvimento, o Vite reencaminha /api para a API local.

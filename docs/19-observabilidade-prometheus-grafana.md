@@ -1,4 +1,4 @@
-# 18 · Observabilidade: Prometheus e Grafana
+# 19 · Observabilidade: Prometheus e Grafana
 
 **Objetivo:** saber instrumentar um serviço com métricas, consultá-las com PromQL, construir um dashboard e definir alertas. É o que te deixa responder a "está tudo bem em produção?" com números e não com palpites.
 
@@ -119,7 +119,7 @@ Para alterar: edita no Grafana (admin / admin), exporta o JSON (Share → Export
 Boas práticas que estas regras seguem:
 - Alertar sobre **sintomas** (erros, latência, trabalho acumulado), não sobre causas (CPU a 80%). CPU alta sem impacto não deve acordar ninguém às 3h.
 - `for: 1m`: a condição tem de durar, para não alertar por um pico de um segundo.
-- Cada alerta deve ter um **runbook**: o que verificar e o que fazer (módulo 11, P6).
+- Cada alerta deve ter um **runbook**: o que verificar e o que fazer (módulo 12, P6).
 
 Em produção, o **Alertmanager** recebe os alertas, agrupa-os, silencia-os durante manutenções, e envia para Slack, email ou PagerDuty. Não o incluímos aqui.
 
@@ -155,7 +155,7 @@ Em produção, o **Alertmanager** recebe os alertas, agrupa-os, silencia-os dura
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 18`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 19`.
 
 **1.** Porque é que a label 'route' usa o padrão (/api/tasks/:id) e não o caminho real (/api/tasks/42)?
 

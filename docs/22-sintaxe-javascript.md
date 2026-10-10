@@ -1,4 +1,4 @@
-# 21 · Sintaxe de JavaScript/TypeScript usada neste projeto
+# 22 · Sintaxe de JavaScript/TypeScript usada neste projeto
 
 **Isto não é um curso de JavaScript.** É uma referência rápida para as construções que vais mesmo encontrar nos ficheiros deste workshop (`src/api`, `src/worker`, `src/web`, `scripts/`). Não precisas de ler isto de uma vez — abre-o sempre que uma linha não fizer sentido, procura a construção, e volta ao ficheiro. Cada entrada tem a linha **real** do projeto, não um exemplo inventado.
 

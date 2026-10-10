@@ -1,4 +1,4 @@
-# 19 · CI/CD com GitHub Actions
+# 20 · CI/CD com GitHub Actions
 
 **Objetivo:** perceber o que é integração contínua, ler o `.github/workflows/ci.yml` deste projeto linha a linha, e saber escrever um workflow novo sem copiar às cegas.
 
@@ -82,14 +82,14 @@ api:
 Linha a linha:
 
 - **`runs-on: ubuntu-latest`**: uma máquina Linux nova, do GitHub. Nunca é a mesma máquina duas vezes; tudo o que não vier do `checkout` ou de uma *action* desaparece no fim.
-- **`timeout-minutes: 10`**: se o job ainda estiver a correr aos 10 minutos, é morto. Sem isto, um teste pendurado (lembras-te do Kafka sem timeout, módulo 16?) consumiria minutos gratuitos até ao limite da conta, à espera de nada.
+- **`timeout-minutes: 10`**: se o job ainda estiver a correr aos 10 minutos, é morto. Sem isto, um teste pendurado (lembras-te do Kafka sem timeout, módulo 17?) consumiria minutos gratuitos até ao limite da conta, à espera de nada.
 - **`defaults.run.working-directory`**: todos os `run:` deste job correm dentro de `src/api`, sem teres de repetir `cd src/api &&` em cada linha.
 - **`actions/checkout@v4`**: o primeiro passo de **quase todo** o job em **todo** o GitHub Actions. O runner nasce vazio; este step clona o teu repositório, no commit exato que disparou o workflow, para dentro da máquina.
 - **`actions/setup-node@v4`**: instala o Node 22 **nesta máquina**, e `cache: npm` guarda a pasta `~/.npm` entre execuções (identificada pelo hash do `package-lock.json` indicado em `cache-dependency-path`). Sem isto, cada execução descarregava as dependências do zero.
 - **`npm ci`** (não `npm install`): instala exatamente o que está no lock file. Se o lock file estiver desalinhado com o `package.json`, falha — de propósito, porque é um sinal de que alguém editou um sem atualizar o outro.
 - **`npm run lint` / `npm test`**: os mesmos comandos que correste à mão nos módulos anteriores. **O CI não inventa verificações novas** — só corre, de forma automática e isolada, os comandos que já tens.
 
-Os jobs `worker`, `web` e `activity` seguem o mesmo padrão, trocando `setup-node` por `setup-java` + `cache: maven` no caso do `activity` (módulo 17).
+Os jobs `worker`, `web` e `activity` seguem o mesmo padrão, trocando `setup-node` por `setup-java` + `cache: maven` no caso do `activity` (módulo 18).
 
 ## 6. `needs`: ordenar jobs
 
@@ -131,7 +131,7 @@ Isto é diferente de `docker compose` (secção seguinte): `services:` é nativo
 run: docker compose -f config/docker-compose.yml up -d --build --wait web api worker activity keycloak
 ```
 
-Os runners `ubuntu-latest` já vêm com **Docker instalado e a correr**. É por isso que conseguimos usar o mesmo `docker-compose.yml` que usas na tua máquina, sem o reescrever para o CI. A única adaptação foi a lista explícita de serviços (em vez de subir os 14): o runner tem menos recursos do que gostaríamos, por isso só sobe o que o `smoke-test.sh` e os E2E realmente precisam. O módulo 18 explica porque o Grafana e o Prometheus ficam de fora.
+Os runners `ubuntu-latest` já vêm com **Docker instalado e a correr**. É por isso que conseguimos usar o mesmo `docker-compose.yml` que usas na tua máquina, sem o reescrever para o CI. A única adaptação foi a lista explícita de serviços (em vez de subir os 14): o runner tem menos recursos do que gostaríamos, por isso só sobe o que o `smoke-test.sh` e os E2E realmente precisam. O módulo 19 explica porque o Grafana e o Prometheus ficam de fora.
 
 ```yaml
 - name: Libertar espaço em disco
@@ -187,12 +187,12 @@ deploy:
     - run: docker build -t ghcr.io/${{ github.repository }}/api:${{ github.sha }} src/api
     - run: docker push ghcr.io/${{ github.repository }}/api:${{ github.sha }}
     # Depois: atualizar config/k8s/api.yaml com esta tag e fazer "kubectl apply" (módulo 05 do K8s),
-    # ou um "docker compose pull && up -d" num servidor, ou um passo do Argo CD/Flux (módulo 15).
+    # ou um "docker compose pull && up -d" num servidor, ou um passo do Argo CD/Flux (módulo 16).
 ```
 
 **`secrets.GITHUB_TOKEN`:** um token automático, criado e destruído pelo próprio GitHub Actions a cada execução — nunca o escreves tu. Para segredos **teus** (uma chave de API de uma cloud, por exemplo), usa **Settings → Secrets and variables → Actions** no repositório, e lê-os com `${{ secrets.NOME }}`. Nunca aparecem nos logs (o GitHub oculta-os automaticamente, mesmo que os imprimas por engano).
 
-**OIDC em vez de segredos de longa duração:** repara no `id-token: write`. É a mesma ideia do Keycloak (módulo 14): em vez de guardares uma password ou uma chave da AWS/Azure como secret (que nunca expira e é um alvo permanente), o GitHub Actions emite um **token de curta duração**, assinado, que a cloud verifica (com o mesmo mecanismo de chaves públicas do OIDC) antes de autorizar o deploy. Isto é hoje a prática recomendada para dar a um pipeline de CI acesso a uma cloud.
+**OIDC em vez de segredos de longa duração:** repara no `id-token: write`. É a mesma ideia do Keycloak (módulo 15): em vez de guardares uma password ou uma chave da AWS/Azure como secret (que nunca expira e é um alvo permanente), o GitHub Actions emite um **token de curta duração**, assinado, que a cloud verifica (com o mesmo mecanismo de chaves públicas do OIDC) antes de autorizar o deploy. Isto é hoje a prática recomendada para dar a um pipeline de CI acesso a uma cloud.
 
 ## 11. Minutos, custo e cache
 
@@ -225,7 +225,7 @@ Um workflow que corre mas que ninguém é **obrigado** a respeitar não protege 
 ## Experiências
 
 1. **Vê uma execução a sério:** depois do teu próximo push, vai a `https://github.com/<o-teu-utilizador>/Claude-Workshop/actions` e abre a execução. Expande um job e lê os logs de cada step — são exatamente os comandos deste módulo.
-2. **Faz um job falhar de propósito:** no teu fork, parte um teste da API (como no módulo 10) e faz push num branch. Abre um Pull Request e vê o CI a correr e a falhar no job `api`. Confirma que `integration` e `smoke` **nem chegam a arrancar** (por causa do `needs`).
+2. **Faz um job falhar de propósito:** no teu fork, parte um teste da API (como no módulo 11) e faz push num branch. Abre um Pull Request e vê o CI a correr e a falhar no job `api`. Confirma que `integration` e `smoke` **nem chegam a arrancar** (por causa do `needs`).
 3. **Mede o efeito da cache:** no separador Actions de uma execução, abre o step `setup-node` e repara em "Cache restored from key...". Depois muda uma dependência no `package.json` (sem atualizar o lock) e vê o `npm ci` falhar — é a proteção a funcionar.
 4. **Timeout a sério:** adiciona temporariamente `sleep 700` a um `run:` do job `api` (que tem `timeout-minutes: 10`) e faz push. Confirma que o job é cancelado aos 10 minutos, com uma mensagem clara, em vez de ficar pendurado até ao limite por omissão. Desfaz a alteração.
 
@@ -247,7 +247,7 @@ Um workflow que corre mas que ninguém é **obrigado** a respeitar não protege 
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 19`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 20`.
 
 **1.** Porque é que o job 'smoke' tem needs: [api, worker, activity, web, integration]?
 

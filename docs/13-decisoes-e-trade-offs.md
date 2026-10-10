@@ -1,4 +1,4 @@
-# 12 · Decisões e trade-offs
+# 13 · Decisões e trade-offs
 
 **Objetivo:** este é o módulo de **pensamento crítico**. Cada decisão deste projeto tem alternativas válidas. O que se pretende não é decorar as escolhas, mas saber **justificar** uma escolha, reconhecer o custo que ela tem, e dizer **quando** a mudarias.
 
@@ -133,7 +133,7 @@ Este sistema é um **laboratório**. Para ir para produção, falta, pelo menos:
 - [ ] **Outbox** para o dual-write.
 - [ ] **Migrações com lock** e rollback.
 - [ ] **Segredos fora do compose**: vêm de um cofre (Vault, AWS Secrets Manager, variáveis do orquestrador).
-- [ ] **Logs estruturados, métricas e traces** (módulo 10).
+- [ ] **Logs estruturados, métricas e traces** (módulo 11).
 - [ ] **Backups** da BD e **teste de restauro** (um backup nunca testado não é um backup).
 - [x] **CI**: testes, build, integração e teste de fumo a cada push (`.github/workflows/ci.yml`).
 - [ ] **Publicar imagens versionadas** num registo, a partir do CI.
@@ -170,7 +170,7 @@ Escreve, em 10 linhas, a tua resposta. Deves cobrir:
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 12`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 13`.
 
 **1.** Porque se escolheu SERIAL em vez de UUID para o id das tarefas?
 

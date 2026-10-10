@@ -14,27 +14,28 @@ git clone git@github.com:<o-teu-utilizador>/Claude-Workshop.git
 cd Claude-Workshop
 ```
 
-Depois, abre **[`docs/00-indice.md`](docs/00-indice.md)** — é o mapa de todo o workshop: a arquitetura, o roteiro dos 19 módulos, como arrancar o sistema, e como testares a ti próprio (há um quiz de linha de comandos com correção automática).
+Depois, abre **[`docs/00-indice.md`](docs/00-indice.md)** — é o mapa de todo o workshop: a arquitetura, o roteiro dos 20 módulos, como arrancar o sistema, e como testares a ti próprio (há um quiz de linha de comandos com correção automática).
 
 ## O que vais construir e aprender
 
 | Camada | Tecnologia | Módulo |
 |---|---|---|
-| Frontend | React + Vite, Nginx | [08](docs/08-frontend-react.md), [09](docs/09-nginx-proxy-e-origem.md) |
+| Frontend | React + Vite, Nginx | [08](docs/08-frontend-react.md), [10](docs/10-nginx-proxy-e-origem.md) |
+| Estilos | CSS, Tailwind | [09](docs/09-estilos-css.md) |
 | API | Node.js/Express, arquitetura em camadas | [04](docs/04-api-em-camadas.md) |
 | Dados | PostgreSQL, migrações | [03](docs/03-postgresql.md) |
 | Cache | Redis, cache-aside | [05](docs/05-redis-e-cache.md) |
 | Mensagens | RabbitMQ, worker (TypeScript) | [06](docs/06-mensagens-rabbitmq.md), [07](docs/07-worker.md) |
-| Streaming | Kafka, consumer groups | [16](docs/16-kafka.md) |
-| Microserviço | Java / Spring Boot | [17](docs/17-spring-boot.md) |
-| Microserviço | C# / .NET | [20](docs/20-dotnet.md) |
-| Identidade | JWT manual + Keycloak (OIDC/PKCE) | [14](docs/14-autenticacao-manual-vs-keycloak.md) |
-| Observabilidade | Prometheus + Grafana | [18](docs/18-observabilidade-prometheus-grafana.md) |
+| Streaming | Kafka, consumer groups | [17](docs/17-kafka.md) |
+| Microserviço | Java / Spring Boot | [18](docs/18-spring-boot.md) |
+| Microserviço | C# / .NET | [21](docs/21-dotnet.md) |
+| Identidade | JWT manual + Keycloak (OIDC/PKCE) | [15](docs/15-autenticacao-manual-vs-keycloak.md) |
+| Observabilidade | Prometheus + Grafana | [19](docs/19-observabilidade-prometheus-grafana.md) |
 | Containers | Docker, Docker Compose, Kubernetes | [02](docs/02-docker.md) |
-| CI/CD | GitHub Actions | [19](docs/19-ci-cd-github-actions.md) |
-| Testes | Unitários, integração, E2E (Playwright) | [10](docs/10-testes-e-observabilidade.md) |
+| CI/CD | GitHub Actions | [20](docs/20-ci-cd-github-actions.md) |
+| Testes | Unitários, integração, E2E (Playwright) | [11](docs/11-testes-e-observabilidade.md) |
 
-Mais: [decisões e trade-offs](docs/12-decisoes-e-trade-offs.md) explicados a sério, um [mapa honesto de competências de mercado](docs/13-competencias-mercado.md), e um módulo sobre [como se trabalha numa empresa](docs/15-trabalhar-numa-empresa.md) (Git, PRs, entrevistas, ferramentas da indústria).
+Mais: [decisões e trade-offs](docs/13-decisoes-e-trade-offs.md) explicados a sério, um [mapa honesto de competências de mercado](docs/14-competencias-mercado.md), e um módulo sobre [como se trabalha numa empresa](docs/16-trabalhar-numa-empresa.md) (Git, PRs, entrevistas, ferramentas da indústria).
 
 ## Arranque rápido
 
@@ -56,7 +57,7 @@ node scripts/quiz.mjs geral    # perguntas que ligam vários módulos entre si
 node scripts/quiz.mjs exame    # tudo junto
 ```
 
-Acertar as perguntas prova que reconheces os conceitos — não prova que os sabes aplicar. Para isso, usa os [exercícios do módulo 11](docs/11-exercicios.md).
+Acertar as perguntas prova que reconheces os conceitos — não prova que os sabes aplicar. Para isso, usa os [exercícios do módulo 12](docs/12-exercicios.md).
 
 ## Licença
 

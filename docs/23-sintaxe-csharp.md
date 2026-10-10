@@ -1,4 +1,4 @@
-# 22 · Sintaxe de C# usada neste projeto
+# 23 · Sintaxe de C# usada neste projeto
 
 **Isto não é um curso de C#.** É uma referência rápida para as construções que vais encontrar em `src/notifications`. Não precisas de a ler de uma vez — procura a construção quando uma linha não fizer sentido, lê a explicação, volta ao ficheiro. Cada entrada usa uma linha **real** do projeto.
 
@@ -58,7 +58,7 @@ var sql = $"""
 ```
 
 - `$"texto {variavel}"`: como os template literals de JS (`` `${}` ``), mas com `$` em vez de crases.
-- `"""texto"""` (string em bruto, *raw string*): permite escrever várias linhas e usar `"` sem ter de escapar nada. Combinada com `$`, continua a interpolar `{variavel}` normalmente — é o que o `ExecuteSqlInterpolatedAsync` usa (módulo 20), e que transforma cada `{valor}` num parâmetro seguro, não em texto concatenado.
+- `"""texto"""` (string em bruto, *raw string*): permite escrever várias linhas e usar `"` sem ter de escapar nada. Combinada com `$`, continua a interpolar `{variavel}` normalmente — é o que o `ExecuteSqlInterpolatedAsync` usa (módulo 21), e que transforma cada `{valor}` num parâmetro seguro, não em texto concatenado.
 
 ## `async`/`await` e `Task`
 
@@ -70,7 +70,7 @@ public static async Task<bool> InsertIfAbsentAsync(NotificationsDbContext db, Ta
 }
 ```
 
-O mesmo conceito do `async`/`await` de JavaScript (módulo 21): a função pausa em `await` sem bloquear a thread, até a operação assíncrona terminar. `Task` é o equivalente a uma `Promise`; `Task<T>` é uma Promise que vai resolver com um valor do tipo `T`. Por convenção (não obrigação), métodos assíncronos acabam em `Async` — é por isso que vês `BasicAckAsync`, `QueueDeclareAsync`, etc.
+O mesmo conceito do `async`/`await` de JavaScript (módulo 22): a função pausa em `await` sem bloquear a thread, até a operação assíncrona terminar. `Task` é o equivalente a uma `Promise`; `Task<T>` é uma Promise que vai resolver com um valor do tipo `T`. Por convenção (não obrigação), métodos assíncronos acabam em `Async` — é por isso que vês `BasicAckAsync`, `QueueDeclareAsync`, etc.
 
 ## Registos imutáveis (`record`)
 
@@ -79,7 +79,7 @@ public record TaskSnapshot(long? Id, string? Title, bool? Done, long? UserId);
 public record TaskEvent(string? EventId, string? Type, DateTimeOffset? OccurredAt, TaskSnapshot? Task);
 ```
 
-Um `record` é uma forma compacta de declarar uma classe **imutável**, só com dados. Esta única linha substitui o que, numa classe normal, seriam ~15 linhas (construtor, propriedades só de leitura, `Equals`, `GetHashCode`, `ToString`). É o equivalente, em espírito, a um `record` do Java (módulo 17) — mesma ideia, dois nomes iguais por coincidência, duas linguagens diferentes.
+Um `record` é uma forma compacta de declarar uma classe **imutável**, só com dados. Esta única linha substitui o que, numa classe normal, seriam ~15 linhas (construtor, propriedades só de leitura, `Equals`, `GetHashCode`, `ToString`). É o equivalente, em espírito, a um `record` do Java (módulo 18) — mesma ideia, dois nomes iguais por coincidência, duas linguagens diferentes.
 
 ## Construtores primários (C# 12+)
 
@@ -107,7 +107,7 @@ var items = await db.Notifications
     .ToListAsync();
 ```
 
-LINQ (*Language Integrated Query*) deixa-te escrever algo que PARECE uma sequência de métodos sobre uma coleção em memória, mas que o Entity Framework Core traduz para SQL real, só executado quando chamas `.ToListAsync()`/`.CountAsync()` (nunca antes — é *lazy*). `.Where(...)` filtra, `.Select(...)` transforma (como o `.map` de JS), `.GroupBy(...)` agrupa, `.OrderByDescending(...)` ordena. O módulo 20 compara isto com SQL à mão (Node) e com JPQL (Spring).
+LINQ (*Language Integrated Query*) deixa-te escrever algo que PARECE uma sequência de métodos sobre uma coleção em memória, mas que o Entity Framework Core traduz para SQL real, só executado quando chamas `.ToListAsync()`/`.CountAsync()` (nunca antes — é *lazy*). `.Where(...)` filtra, `.Select(...)` transforma (como o `.map` de JS), `.GroupBy(...)` agrupa, `.OrderByDescending(...)` ordena. O módulo 21 compara isto com SQL à mão (Node) e com JPQL (Spring).
 
 ## `using` (duas coisas diferentes, mesma palavra)
 
@@ -131,7 +131,7 @@ public void LeUmEventoValidoTalComoAApiNodeOPublica()
 }
 ```
 
-`[Fact]` é um **atributo**: metadados colados a um método, lidos por outra ferramenta em runtime (aqui, o xUnit, que usa `[Fact]` para saber "isto é um teste, corre-o"). É o equivalente, em espírito, às anotações `@Test` do Java/JUnit (módulo 17) — mesmo conceito (metadados declarativos), sintaxe `[ ]` em vez de `@`.
+`[Fact]` é um **atributo**: metadados colados a um método, lidos por outra ferramenta em runtime (aqui, o xUnit, que usa `[Fact]` para saber "isto é um teste, corre-o"). É o equivalente, em espírito, às anotações `@Test` do Java/JUnit (módulo 18) — mesmo conceito (metadados declarativos), sintaxe `[ ]` em vez de `@`.
 
 ## Genéricos (`List<T>`, `Task<T>`, `DbContextOptions<T>`)
 
@@ -145,4 +145,4 @@ O `<T>` entre `< >` diz "este tipo funciona com QUALQUER tipo `T`, mas uma vez e
 
 ## Como usar isto na prática
 
-Não leias isto de uma vez. Quando o módulo 20 te mandar abrir um ficheiro `.cs` e uma linha não fizer sentido: volta aqui, procura o símbolo (`?`, `record`, `using`, `<T>`), lê a explicação, e volta ao ficheiro.
+Não leias isto de uma vez. Quando o módulo 21 te mandar abrir um ficheiro `.cs` e uma linha não fizer sentido: volta aqui, procura o símbolo (`?`, `record`, `using`, `<T>`), lê a explicação, e volta ao ficheiro.

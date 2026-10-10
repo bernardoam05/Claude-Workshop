@@ -1,10 +1,10 @@
-# 20 · C# e .NET
+# 21 · C# e .NET
 
 **Objetivo:** ler e escrever um microserviço ASP.NET Core como os que vais encontrar em bancos, seguradoras e consultoras com forte presença Microsoft — e perceber onde se parece e onde difere do que já viste em Node e em Spring Boot.
 
 **Código:** `src/notifications/`. Lê por esta ordem: `Notifications.csproj` → `Program.cs` → `Config.cs` → `Data/` → `Events/` → `Messaging/RabbitMqConsumer.cs` → `Auth/KeycloakRoleClaims.cs`.
 
-> Se a sintaxe de C# ainda não for familiar (`record`, construtores primários, LINQ, `?`...), o [módulo 22](22-sintaxe-csharp.md) é uma referência rápida com linhas reais deste serviço.
+> Se a sintaxe de C# ainda não for familiar (`record`, construtores primários, LINQ, `?`...), o [módulo 23](23-sintaxe-csharp.md) é uma referência rápida com linhas reais deste serviço.
 
 ---
 
@@ -120,9 +120,9 @@ options.Events = new JwtBearerEvents
 };
 ```
 
-O JwtBearer do .NET, tal como o Spring Security (módulo 17), **não sabe** por omissão que o Keycloak põe os papéis em `realm_access: { roles: [...] }`. Sem este código, `RequireRole("admin")` falhava sempre com 403, exatamente como aconteceu no Spring. Já é a terceira vez que este workshop tropeça na mesma integração, em três linguagens diferentes — o que devia dizer-te algo: **isto não é um bug de uma biblioteca, é uma particularidade do Keycloak que qualquer integração tem de tratar.**
+O JwtBearer do .NET, tal como o Spring Security (módulo 18), **não sabe** por omissão que o Keycloak põe os papéis em `realm_access: { roles: [...] }`. Sem este código, `RequireRole("admin")` falhava sempre com 403, exatamente como aconteceu no Spring. Já é a terceira vez que este workshop tropeça na mesma integração, em três linguagens diferentes — o que devia dizer-te algo: **isto não é um bug de uma biblioteca, é uma particularidade do Keycloak que qualquer integração tem de tratar.**
 
-Repara também na dualidade de URLs (módulo 14): `options.MetadataAddress` usa o endpoint **interno** (o único que o contentor alcança); `ValidIssuer` usa o **público** (o que aparece no "iss" do token, porque foi o browser que falou com o Keycloak).
+Repara também na dualidade de URLs (módulo 15): `options.MetadataAddress` usa o endpoint **interno** (o único que o contentor alcança); `ValidIssuer` usa o **público** (o que aparece no "iss" do token, porque foi o browser que falou com o Keycloak).
 
 ## 9. Testes: três andares, como nos outros dois serviços
 
@@ -150,20 +150,20 @@ Multi-stage, como o Node, o React/Nginx e o Spring. Compara os tamanhos finais (
 
 ## 11. Porque RabbitMQ aqui, e não Kafka outra vez?
 
-Já tens Kafka a correr no `activity` (módulo 16). Dar ao `notifications` o **mesmo exchange do worker** (RabbitMQ, `tasks`), mas um **binding diferente** (`task.completed` em vez de `task.*`), prova algo que a teoria do módulo 06 só descreve: **vários consumidores independentes, com propósitos diferentes, reagem ao mesmo exchange, sem se atrapalharem.** Também mantém este serviço mais leve (sem precisar de ligar a dois brokers), e dá-te uma terceira vez para veres o padrão de idempotência (`ON CONFLICT DO NOTHING`) a repetir-se — exatamente igual ao worker e ao `activity`, em três linguagens.
+Já tens Kafka a correr no `activity` (módulo 17). Dar ao `notifications` o **mesmo exchange do worker** (RabbitMQ, `tasks`), mas um **binding diferente** (`task.completed` em vez de `task.*`), prova algo que a teoria do módulo 06 só descreve: **vários consumidores independentes, com propósitos diferentes, reagem ao mesmo exchange, sem se atrapalharem.** Também mantém este serviço mais leve (sem precisar de ligar a dois brokers), e dá-te uma terceira vez para veres o padrão de idempotência (`ON CONFLICT DO NOTHING`) a repetir-se — exatamente igual ao worker e ao `activity`, em três linguagens.
 
 ## 12. Exercícios
 
 - **D13. `WebApplicationFactory`:** o teste de endpoint que ficou de fora na secção 9. Substitui o `DbContext` por EF Core InMemory e remove o `BackgroundService` do host de teste; simula um JWT com `AddAuthentication("Test").AddScheme<TestAuthHandler>(...)`.
 - **D14. Outra rota:** `GET /api/notifications/by-user/{userId}`, só para admins, com uma query LINQ (`Where` + `OrderByDescending`).
-- **D15. Refazer o worker (RabbitMQ, Node) em .NET:** mesma fila, mesma idempotência, mesmos testes de contrato. É o D12 do módulo 17 (Spring), agora para quem prefere C#.
+- **D15. Refazer o worker (RabbitMQ, Node) em .NET:** mesma fila, mesma idempotência, mesmos testes de contrato. É o D12 do módulo 18 (Spring), agora para quem prefere C#.
 - **D16. `dotnet watch`:** corre `dotnet watch run` dentro do contentor de build e edita um endpoint — compara com o `--watch` do Node (módulo 04) e o que falta ao `mvn` (Spring) para teres hot-reload equivalente.
 
 <!-- quiz:start -->
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 20`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 21`.
 
 **1.** No .NET, onde vive a injeção de dependências usada neste workshop?
 

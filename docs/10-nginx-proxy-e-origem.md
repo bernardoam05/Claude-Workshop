@@ -1,4 +1,4 @@
-# 09 · Nginx, reverse proxy e origem
+# 10 · Nginx, reverse proxy e origem
 
 **Objetivo:** perceber porque o browser, a API e os ficheiros estáticos aparecem **como uma só origem**, o que é um reverse proxy, e o que é CORS (e porque o evitamos em vez de o configurar).
 
@@ -143,7 +143,7 @@ curl -i http://localhost:3000/api/health    # falha — não está publicada
 
 ## Quiz rápido (autoavaliação)
 
-Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 09`.
+Perguntas específicas deste módulo. Responde primeiro sem espiar a resposta. Versão interativa e corrigida automaticamente: `node scripts/quiz.mjs 10`.
 
 **1.** Porque é que usar o Nginx como proxy evita o problema de CORS entre o frontend e a API?
 

@@ -11,7 +11,7 @@
 //
 // O que isto prova e o que NÃO prova: acertar as perguntas mostra que reconheces os
 // conceitos e os factos de cada módulo. Não prova que consegues ESCREVER um Dockerfile
-// do zero ou depurar uma fila a sério — isso só os exercícios do módulo 11 testam,
+// do zero ou depurar uma fila a sério — isso só os exercícios do módulo 12 testam,
 // e aí a correção é a tua própria (com as soluções em <details> para comparares).
 //
 // Nota de implementação: usamos o ITERADOR ASSÍNCRONO do readline (rl[Symbol.asyncIterator]),
@@ -131,7 +131,7 @@ function printStatus(results) {
   if (results.exame) {
     console.log(`  exame final: ${results.exame.score}/${results.exame.total} (${Math.round(results.exame.pct * 100)}%) em ${results.exame.date.slice(0, 10)}`);
   }
-  console.log('\n(Nota: os módulos 00 e 11 não têm quiz de propósito — 00 é o índice, e o 11 É o próprio teste: os exercícios práticos, com soluções em <details> dentro de cada um.)\n');
+  console.log('\n(Nota: os módulos 00 e 12 não têm quiz de propósito — 00 é o índice, e o 12 É o próprio teste: os exercícios práticos, com soluções em <details> dentro de cada um.)\n');
 }
 
 async function main() {
