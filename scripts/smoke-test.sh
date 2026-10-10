@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Teste de fumo: percorre o fluxo completo através do proxy
-# (web → api → Postgres/Redis/RabbitMQ → worker → Postgres), incluindo autenticação.
+# (web → api → Postgres/Redis/RabbitMQ/Kafka → worker/activity/notifications → Postgres),
+# incluindo autenticação (local e Keycloak) e os três consumidores de eventos.
 # Uso: ./scripts/smoke-test.sh   (com o docker compose já a correr)
 #      BASE_URL=http://localhost:8081 ./scripts/smoke-test.sh   (se usaste WEB_PORT=8081)
 set -euo pipefail
@@ -91,6 +92,28 @@ if [ "$CODE" = "401" ]; then
     sleep 1
   done
   [ -n "$OK" ] && pass "Kafka → serviço Spring processou o evento ($BEFORE → $AFTER)" || fail "o serviço activity não recebeu o evento do Kafka"
+
+  # 6) RabbitMQ + serviço .NET (notifications). Liga a "task.completed" no MESMO exchange do
+  #    worker — prova de que vários consumidores independentes reagem ao mesmo evento.
+  total_notifications() {
+    curl -fsS "$BASE/api/notifications/summary" -H "Authorization: Bearer $CARLA" | sed -n 's/.*"totalNotifications":\([0-9]*\).*/\1/p'
+  }
+  CODE=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/notifications/summary" -H "Authorization: Bearer $ALICE")
+  [ "$CODE" = "403" ] && pass "notifications com alice (sem papel admin) → 403" || fail "alice devia dar 403 em notifications (deu $CODE)"
+
+  BEFORE=$(total_notifications)
+  ID2=$(curl -fsS -X POST "$BASE/api/tasks" "${AUTH[@]}" -H 'Content-Type: application/json' \
+    -d '{"title":"via rabbitmq notifications"}' | sed -n 's/.*"id":\([0-9]*\).*/\1/p')
+  curl -fsS -X PATCH "$BASE/api/tasks/$ID2" "${AUTH[@]}" -H 'Content-Type: application/json' -d '{"done":true}' >/dev/null
+
+  # API → RabbitMQ (routing key task.completed) → serviço .NET → Postgres. Assíncrono: esperamos.
+  OK=""
+  for _ in $(seq 1 20); do
+    AFTER=$(total_notifications)
+    if [ "$AFTER" -gt "$BEFORE" ]; then OK=1; break; fi
+    sleep 1
+  done
+  [ -n "$OK" ] && pass "RabbitMQ → serviço .NET processou o evento ($BEFORE → $AFTER)" || fail "o serviço notifications não recebeu o evento"
 else
-  echo "– serviço activity não está disponível (HTTP $CODE); passos de Kafka ignorados"
+  echo "– serviço activity não está disponível (HTTP $CODE); passos de Kafka e notifications ignorados"
 fi

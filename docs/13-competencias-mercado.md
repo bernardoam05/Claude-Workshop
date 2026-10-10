@@ -40,7 +40,7 @@ Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitaçõ
 | Métricas, dashboards e alertas (Prometheus, Grafana) | ✅ | módulo 18: API, Spring e RabbitMQ instrumentados, dashboard e 5 alertas como código |
 | Logs estruturados e traces (Loki, OpenTelemetry) | ❌ | exercícios D13 e D16 |
 | Java + Spring Boot | ✅ | módulo 17: `src/activity` com JPA, Flyway, Spring Security (RBAC com Keycloak), Spring Kafka, Actuator, JUnit/Mockito/MockMvc |
-| .NET | ❌ | não coberto; os conceitos do módulo 17 transferem-se quase 1:1 (ASP.NET Core, EF Core) |
+| .NET | ✅ | módulo 20: `src/notifications`, Minimal APIs, DI nativa, EF Core, RabbitMQ.Client v7, JWT Bearer + Keycloak (RBAC), xUnit |
 | CI/CD (GitHub Actions) | ✅ | módulo 19 + `.github/workflows/ci.yml`: testes, build, integração e teste de fumo, com `needs`, cache, artefactos e OIDC explicados |
 | Git no dia a dia (branches, PRs, rebase, conflitos) | 🟡 | já fizeste fork (ver [Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)); falta só praticar branches e PRs a sério |
 | Kubernetes | 🟡 | `config/k8s/api.yaml` (Deployment, Service, probes, segurança). Validado com o esquema oficial, **nunca aplicado a um cluster** |

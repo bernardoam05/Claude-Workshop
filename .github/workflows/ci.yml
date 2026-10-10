@@ -64,6 +64,36 @@ jobs:
           cache: maven            # guarda ~/.m2 entre execuções: o Maven não volta a descarregar tudo
       - run: mvn -B test
 
+  notifications:
+    name: Notifications (.NET) · testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: workshop
+          POSTGRES_PASSWORD: workshop
+          POSTGRES_DB: workshop_test   # o nome tem de conter "test": é a guarda de segurança do teste de integração
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U workshop"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_TEST_URL: postgres://workshop:workshop@localhost:5432/workshop_test
+    defaults:
+      run:
+        working-directory: src/notifications/Notifications.Tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet test   # inclui os unitários (TaskEventParser, mapeamento de papéis) e o de integração com Postgres
+
   web:
     name: Web · build de produção
     runs-on: ubuntu-latest
@@ -120,7 +150,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20   # falha depressa em vez de gastar os minutos gratuitos do mês à espera
     # Só corre se todas as peças compilarem e testarem: não gastamos tempo a construir imagens partidas.
-    needs: [api, worker, activity, web, integration]
+    needs: [api, worker, activity, notifications, web, integration]
     env:
       JWT_SECRET: ci-only-secret-not-for-production
     steps:
@@ -128,7 +158,7 @@ jobs:
       - name: Libertar espaço em disco
         # Os runners gratuitos do GitHub têm pouco disco livre. Isto remove toolchains pré-instaladas
         # que este pipeline não usa (.NET, Android, GHC), para sobrar espaço para as imagens Docker
-        # (Postgres, Redis, RabbitMQ, Keycloak, Kafka e as 4 imagens construídas aqui).
+        # (Postgres, Redis, RabbitMQ, Keycloak, Kafka e as 5 imagens construídas aqui).
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
           docker image prune -af || true
@@ -140,7 +170,7 @@ jobs:
         # Os outros nomes trazem as suas dependências automaticamente (postgres, redis, rabbitmq, kafka, kafka-init).
         # Grafana, Prometheus, Kafka UI e Swagger ficam de fora: são só para exploração manual (módulos 16/18),
         # ninguém os usa neste pipeline, e poupam memória e tempo de build.
-        run: docker compose -f config/docker-compose.yml up -d --build --wait web api worker activity keycloak
+        run: docker compose -f config/docker-compose.yml up -d --build --wait web api worker activity notifications keycloak
       - name: Teste de fumo
         run: ./scripts/smoke-test.sh
       - name: Testes E2E (Playwright, browser real)

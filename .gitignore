@@ -1,10 +1,12 @@
-# Dependências instaladas: reconstroem-se a partir do package-lock.json / pom.xml.
+# Dependências instaladas: reconstroem-se a partir do package-lock.json / pom.xml / *.csproj.
 node_modules/
 
 # Saída de build: gerada, nunca escrita à mão.
 dist/
 build/
 target/
+bin/
+obj/
 
 # Segredos locais. O compose lê JWT_SECRET/WEB_PORT do ambiente; um .env nunca vai para o Git.
 .env

@@ -81,6 +81,9 @@ flowchart LR
   KF -->|"consumer group"| J["activity<br/>(Java / Spring Boot)"]
   J -->|"schema activity"| P
   W -->|"/api/activity/*"| J
+  Q -->|"consome task.completed"| NO["notifications<br/>(.NET)"]
+  NO -->|"schema notifications"| P
+  W -->|"/api/notifications/*"| NO
   B -.->|"login OIDC"| KC[Keycloak]
   PR[Prometheus] -.->|"scrape /metrics"| A
   PR -.-> J
@@ -131,6 +134,7 @@ Fluxo de um clique em "concluir tarefa":
 | `src/api/src/observability/metrics.js` | Métricas Prometheus da API |
 | `config/prometheus/`, `config/grafana/` | Scrape, alertas, fonte de dados e dashboard (como código) |
 | `.github/workflows/ci.yml` | Pipeline de CI lido linha a linha no módulo 19 |
+| `src/notifications/` | Microserviço **.NET/C#**: consome RabbitMQ (task.completed), EF Core, JWT Bearer + Keycloak (RBAC) |
 
 ---
 
@@ -157,6 +161,7 @@ Fluxo de um clique em "concluir tarefa":
 | 17 | [Java e Spring Boot](17-spring-boot.md) | DI, JPA, Flyway, Spring Security, testes | 4 h |
 | 18 | [Prometheus e Grafana](18-observabilidade-prometheus-grafana.md) | Métricas, PromQL, dashboards, alertas | 2 h |
 | 19 | [CI/CD com GitHub Actions](19-ci-cd-github-actions.md) | Jobs, services, cache, artefactos, OIDC | 2,5 h |
+| 20 | [C# e .NET](20-dotnet.md) | Minimal APIs, DI nativa, EF Core, RabbitMQ.Client v7 | 3 h |
 
 Podes fazer por ordem. Os módulos 02, 03 e 06 são os mais densos.
 

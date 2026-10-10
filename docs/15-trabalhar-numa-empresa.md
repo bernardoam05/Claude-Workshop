@@ -26,7 +26,7 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 | Ferramenta | Notas |
 |---|---|
 | **Java + Spring Boot** ⭐ 📌 | A mais pedida em Portugal (banca, seguros, telecom, consultoras). Se tiveres de escolher uma segunda stack, é esta |
-| **C# + .NET** 📌 | Muito forte em empresas Microsoft e consultoras |
+| **C# + .NET** ⭐ | Muito forte em empresas Microsoft e consultoras (módulo 20) |
 | **Node.js (Express, NestJS)** ⭐ | Express aqui; **NestJS** é o mais usado em projetos Node grandes (estrutura parecida com Spring) |
 | **Python (FastAPI, Django)** 📌 | Dados, ML, automação, e APIs |
 | **Go** 👀 | Infraestrutura, serviços de alto desempenho |
@@ -213,7 +213,7 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 
 | Área | Porquê importa | Como começar |
 |---|---|---|
-| **.NET** | Muitas vagas em empresas Microsoft | O serviço Spring (módulo 17) tem equivalente direto em ASP.NET Core + EF Core |
+| **.NET** ✅ já implementado | Muitas vagas em empresas Microsoft | Lê o módulo 20 (`src/notifications`); o exercício é refazer o WORKER (RabbitMQ) em .NET, não a API Node |
 | **ORM em Node** | Muitas equipas Node usam Prisma | Converte o `taskRepository` para Prisma e compara o SQL gerado com o JPA do módulo 17 |
 | **Cloud real** | Onde as apps correm | Conta gratuita na AWS ou Azure: põe a API num serviço de contentores com uma BD gerida |
 | **Terraform** | IaC é padrão | Cria com Terraform os recursos do ponto anterior |

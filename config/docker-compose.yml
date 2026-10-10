@@ -229,6 +229,30 @@ services:
       start_period: 30s                                 # a JVM e o Spring demoram a arrancar
     restart: unless-stopped
 
+  # Microserviço .NET/C#: consome RabbitMQ (routing key "task.completed", não "task.*" — é um
+  # consumidor independente do worker, no MESMO exchange) e serve /api/notifications/* a admins.
+  notifications:
+    build: ../src/notifications
+    mem_limit: 256m
+    environment:
+      DATABASE_URL: postgres://workshop:workshop@postgres:5432/workshop
+      RABBITMQ_URL: amqp://workshop:workshop@rabbitmq:5672
+      OIDC_ISSUER: http://localhost:8180/realms/workshop
+      OIDC_JWKS_URL: http://keycloak:8080/realms/workshop/protocol/openid-connect/certs
+      OIDC_AUDIENCE: workshop-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 15s                                 # ASP.NET Core arranca rápido, mas as migrações EF Core + o RabbitMQ levam uns segundos
+    restart: unless-stopped
+
   # ---------------------------------------------------------------------------------------------
   # Observabilidade. Prometheus recolhe métricas; Grafana mostra-as.
   prometheus:
