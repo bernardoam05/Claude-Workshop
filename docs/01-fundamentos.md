@@ -8,6 +8,243 @@
 
 ---
 
+## Walkthrough linha a linha
+
+Isto é diferente do resto do módulo: aqui não se explica o CONCEITO (isso vem a seguir), explica-se o que **cada linha, por ordem, destes três ficheiros concretos** faz. Abre o ficheiro ao lado deste texto e segue as duas colunas juntas. Depois de fazer isto para os três, as secções 1 a 7 (a teoria) vão fazer muito mais sentido — porque já viste o código que elas explicam.
+
+### `src/api/src/app.js`
+
+```js
+import express from 'express';
+import { createRequireAuth } from './middleware/auth.js';
+import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { createAuthRouter } from './routes/auth.js';
+import { createTasksRouter } from './routes/tasks.js';
+```
+As primeiras 5 linhas não fazem nada ainda — só trazem código de outros ficheiros para este. `express` é uma biblioteca instalada (`npm install express`); os outros 4 `import` trazem funções que **nós** escrevemos noutros ficheiros deste projeto (repara no `./`, que significa "um ficheiro aqui ao lado", ao contrário de `express`, que vem de `node_modules`).
+
+```js
+export function createApp({ service, authService, healthCheck, oidcPublicConfig = null, metrics = null }) {
+```
+Aqui começa a única coisa que este ficheiro faz: declarar uma função chamada `createApp`. `export` quer dizer que outros ficheiros a podem importar (é o `index.js` quem a vai chamar, module 04). Os `{ }` no parâmetro são **destructuring** (módulo 21): em vez de receber um argumento qualquer e teres de escrever `args.service`, `args.authService`, etc., já chegam separados, com estes nomes. `= null` em dois deles é um valor por omissão: se quem chamar `createApp` não der `metrics`, a variável `metrics` vale `null` em vez de rebentar.
+
+```js
+  const app = express();
+  const requireAuth = createRequireAuth(authService.verifyToken);
+```
+`express()` cria uma aplicação Express vazia — ainda sem nenhuma rota. `createRequireAuth(...)` (que vem do `import` da linha 2) recebe a função que sabe validar um token (`authService.verifyToken`) e devolve um **middleware** novo, pronto a usar-se em qualquer rota que precise de autenticação. Repara: `createApp` não sabe COMO se valida um token — só pede essa capacidade a quem o chamou (`authService`). É o padrão de injeção de dependências do módulo 04.
+
+```js
+  if (metrics) {
+    app.use(metrics.httpMiddleware);
+    app.get('/metrics', async (req, res) => {
+      res.set('Content-Type', metrics.registry.contentType);
+      res.send(await metrics.registry.metrics());
+    });
+  }
+```
+Se alguém passou `metrics` (módulo 18), liga aqui o middleware que mede CADA pedido, e cria uma rota `/metrics` que devolve os números recolhidos. Se `metrics` for `null` (o valor por omissão lá de cima), este bloco inteiro não corre — a app funciona sem métricas. `app.get('/metrics', async (req, res) => { ... })` é a forma de dizer "quando chegar um `GET /metrics`, corre esta função"; `req` é o pedido, `res` é a resposta que vais construir e enviar.
+
+```js
+  app.use(express.json({ limit: '10kb' }));
+```
+`app.use(...)` regista um middleware que corre em **todos** os pedidos, sem exceção de caminho. `express.json(...)` é um middleware que vem com a própria biblioteca: lê o corpo do pedido (se vier como JSON) e transforma-o num objeto JavaScript normal, disponível depois em `req.body`. `{ limit: '10kb' }` recusa corpos maiores do que isso — uma proteção simples contra pedidos gigantes.
+
+```js
+  app.get('/api/health', async (req, res) => {
+    try {
+      await healthCheck();
+      res.json({ status: 'ok' });
+    } catch (err) {
+      res.status(503).json({ status: 'degraded', reason: err.message });
+    }
+  });
+```
+Uma rota só para esta função: `GET /api/health`. `healthCheck` foi recebido como parâmetro (lá na linha 9) — este ficheiro não sabe o que ela verifica (módulo 04 mostra que, no `index.js`, ela verifica a BD e o Redis). Se `healthCheck()` correr sem lançar erro, responde `{ status: 'ok' }`. Se lançar (o `await` deixa o erro "subir" até ao `catch`), responde com o código HTTP `503` e a razão.
+
+```js
+  app.use('/api', createAuthRouter(authService, oidcPublicConfig));
+  app.use('/api', createTasksRouter(service, requireAuth));
+```
+Estas duas linhas ligam **conjuntos** de rotas (criados noutros ficheiros — `routes/auth.js` e `routes/tasks.js`) ao prefixo `/api`. `createTasksRouter(service, requireAuth)` é lido a seguir, no segundo ficheiro deste walkthrough.
+
+```js
+  app.use(notFound);
+  app.use(errorHandler);
+
+  return app;
+}
+```
+Os dois últimos middlewares ficam **depois** de todas as rotas, de propósito: se um pedido chegou até aqui, é porque nenhuma rota lá acima respondeu a ele (`notFound`, módulo 04), ou porque uma rota lançou um erro (`errorHandler` só corre quando algo é lançado com `throw`). `return app` devolve a aplicação construída — ainda **sem** estar a ouvir nenhuma porta; quem faz `app.listen(...)` é o `index.js`.
+
+### `src/api/src/routes/tasks.js`
+
+```js
+import { Router } from 'express';
+import { HttpError } from '../middleware/errorHandler.js';
+import { createTaskSchema, idParamSchema, updateTaskSchema } from '../validation/taskSchemas.js';
+```
+`Router` é uma peça do Express para agrupar rotas sem precisar da app inteira. `HttpError` e os 3 esquemas são código nosso, de outros ficheiros (repara no `../`: "sobe uma pasta, depois entra").
+
+```js
+export function createTasksRouter(service, requireAuth) {
+  const router = Router();
+  router.use(requireAuth);
+```
+Esta função recebe o `service` (a lógica de negócio, módulo 04) e o `requireAuth` que `app.js` já tinha construído. `Router()` cria um "mini-Express" só com rotas de tarefas. `router.use(requireAuth)` aplica o middleware de autenticação a **todas** as rotas deste router — é por isto que todas as rotas a seguir já têm `req.user` disponível, sem o repetirem.
+
+```js
+  router.get('/tasks', async (req, res) => {
+    const { tasks, source } = await service.listTasks(req.user.userId);
+    res.set('X-Cache', source === 'cache' ? 'HIT' : 'MISS');
+    res.json(tasks);
+  });
+```
+`req.user.userId` só existe porque `requireAuth` correu antes e o pôs lá. `service.listTasks(...)` é chamado — este ficheiro não sabe SQL nem Redis, só pede o resultado ao serviço, e este devolve um objeto `{ tasks, source }` que logo se desempacota (destructuring, outra vez). `res.set(...)` acrescenta um cabeçalho à resposta (visível com `curl -i`); `res.json(tasks)` envia a lista como JSON.
+
+```js
+  router.post('/tasks', async (req, res) => {
+    const parsed = createTaskSchema.safeParse(req.body);
+    if (!parsed.success) throw new HttpError(400, parsed.error.issues[0].message);
+
+    const task = await service.createTask(req.user.userId, parsed.data.title);
+    res.status(201).json(task);
+  });
+```
+`createTaskSchema.safeParse(req.body)` (zod, módulo 04) tenta validar o corpo do pedido. `safeParse` nunca lança erro — devolve um objeto com `success: true/false`. Se for `false`, `throw new HttpError(400, ...)` lança um erro que vai ser apanhado pelo `errorHandler` do `app.js` (repara: nenhum `try/catch` aqui — o Express 5 trata erros lançados dentro de funções `async` automaticamente, módulo 01). Se passar a validação, `parsed.data.title` é o título já validado e limpo (sem espaços a mais, por exemplo).
+
+```js
+  router.patch('/tasks/:id', async (req, res) => {
+    const id = parseId(req.params.id);
+    const parsed = updateTaskSchema.safeParse(req.body);
+    if (!parsed.success) throw new HttpError(400, 'O campo "done" tem de ser booleano');
+
+    const task = await service.updateTask(req.user.userId, id, parsed.data.done);
+    if (!task) throw new HttpError(404, 'Tarefa não encontrada');
+    res.json(task);
+  });
+```
+`:id` no caminho da rota é um parâmetro de URL — `req.params.id` apanha o que vier aí (sempre como string). `parseId(...)` (função escrita no fim deste ficheiro) converte e valida. Se `service.updateTask(...)` devolver `null` — porque o id não existe, ou pertence a outro utilizador —, a rota lança `404`. O serviço nunca diz "não existe" e "não é teu" de formas diferentes, de propósito (não queres que um utilizador descubra que o id de outra pessoa existe).
+
+```js
+  router.delete('/tasks/:id', async (req, res) => {
+    const id = parseId(req.params.id);
+    const removed = await service.deleteTask(req.user.userId, id);
+    if (!removed) throw new HttpError(404, 'Tarefa não encontrada');
+    res.status(204).end();
+  });
+```
+Mesmo padrão. `res.status(204).end()` envia uma resposta de sucesso sem corpo nenhum (`204 No Content` — módulo 01 explica porquê este código e não `200`).
+
+```js
+  router.get('/stats', async (req, res) => {
+    res.json(await service.getStats(req.user.userId));
+  });
+
+  return router;
+}
+```
+A rota mais curta do ficheiro: pede as estatísticas ao serviço e devolve-as, sem transformar nada. `return router` devolve este conjunto de rotas, que o `app.js` liga com `app.use('/api', createTasksRouter(...))`.
+
+```js
+function parseId(raw) {
+  const parsed = idParamSchema.safeParse(raw);
+  if (!parsed.success) throw new HttpError(400, 'ID inválido');
+  return parsed.data;
+}
+```
+Esta função **não** tem `export` — só é usada aqui dentro, pelas rotas `PATCH` e `DELETE`, para não repetirem a mesma validação duas vezes.
+
+### `src/web/src/api.js`
+
+```js
+const BASE = '/api';
+const TOKEN_KEY = 'workshop-token';
+const PROVIDER_KEY = 'workshop-provider';
+const ID_TOKEN_KEY = 'workshop-id-token';
+```
+Quatro constantes de texto, usadas como chaves para guardar coisas no `localStorage` do browser (memória que sobrevive a recarregar a página). Estarem aqui, nomeadas, em vez de escritas à mão em cada sítio, evita um erro de digitação silencioso mais à frente.
+
+```js
+export const session = {
+  getToken() {
+    try {
+      return localStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  },
+  ...
+```
+`session` é um objeto com métodos (não uma classe, módulo 21) para gerir o que está guardado no browser. `getToken()` lê o token guardado. O `try/catch` existe porque o `localStorage` pode não estar disponível (modo privado do browser, por exemplo) — sem o `try`, isso rebentava a aplicação inteira só por tentar ler uma preferência.
+
+```js
+  setToken(token, provider = 'local', idToken = null) {
+    try {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(PROVIDER_KEY, provider);
+      if (idToken) localStorage.setItem(ID_TOKEN_KEY, idToken);
+    } catch {
+      /* sem armazenamento: a sessão dura só enquanto a página estiver aberta */
+    }
+  },
+```
+Guarda o token, de ONDE veio (`local` ou `keycloak` — módulo 14 explica porquê isto importa para o logout), e, se existir, o `idToken` do Keycloak. `provider = 'local'` é outro valor por omissão: quem chamar `setToken(token)` sem mais nada assume que é login local.
+
+```js
+  clear() {
+    try {
+      [TOKEN_KEY, PROVIDER_KEY, ID_TOKEN_KEY].forEach((k) => localStorage.removeItem(k));
+    } catch {
+      /* nada a limpar */
+    }
+  },
+};
+```
+`[TOKEN_KEY, PROVIDER_KEY, ID_TOKEN_KEY]` é um array com as 3 chaves. `.forEach(fn)` corre `fn` para cada elemento do array — aqui, remove cada uma. É equivalente a escrever as 3 linhas de `removeItem` à mão, mas sem repetir código.
+
+```js
+async function request(path, options = {}) {
+  const token = session.getToken();
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+```
+Esta função **não** tem `export` — é privada deste ficheiro, chamada por todas as funções de `api` mais abaixo. `fetch(...)` é a função embutida do browser para fazer pedidos HTTP. `` `${BASE}${path}` `` junta `/api` com o caminho pedido (ex.: `/tasks`), usando template literals (módulo 21). `...options` (spread) copia tudo o que veio em `options` (como `method` ou `body`) para este novo objeto. `...(token ? { Authorization: ... } : {})`: se houver token, acrescenta o cabeçalho `Authorization`; se não houver, `{}` não acrescenta nada — é a forma compacta de um `if` dentro de um objeto.
+
+```js
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const error = new Error(body.error ?? `Erro HTTP ${res.status}`);
+    error.status = res.status;
+    throw error;
+  }
+
+  return res.status === 204 ? null : res.json();
+}
+```
+`res.ok` é `true` para códigos 200-299, `false` para o resto. Se a resposta não for "ok", tenta ler o corpo como JSON (se falhar — por exemplo, se vier HTML em vez de JSON — usa `{}` em vez de rebentar); constrói um erro com a mensagem que a API mandou (ou o código HTTP, se não houver mensagem); guarda o código em `error.status` (usado no `App.jsx` para detetar um 401 e terminar a sessão); e lança-o. Se a resposta for `204` (sem corpo, como o `DELETE`), devolve `null`; senão, descodifica o corpo como JSON.
+
+```js
+export const api = {
+  authConfig: () => request('/auth/config'),
+  register: (email, password) => request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  listTasks: () => request('/tasks'),
+  createTask: (title) => request('/tasks', { method: 'POST', body: JSON.stringify({ title }) }),
+  setDone: (id, done) => request(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify({ done }) }),
+  removeTask: (id) => request(`/tasks/${id}`, { method: 'DELETE' }),
+  getStats: () => request('/stats'),
+};
+```
+A única coisa que os componentes React (módulo 08) realmente importam. Cada função é uma arrow function de uma linha que só chama `request(...)` com o caminho e as opções certas. `JSON.stringify({ email, password })` transforma o objeto num texto JSON — o `fetch` precisa de texto, não de objetos. Nenhuma destas funções sabe o que é um token, um cabeçalho, ou um código de erro: isso já ficou todo resolvido dentro de `request`.
+
+---
+
 ## 1. Cliente e servidor
 
 Uma aplicação web é um **cliente** que pede e um **servidor** que responde.
