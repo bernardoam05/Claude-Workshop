@@ -227,7 +227,7 @@ Novidades desta versão: **autenticação** (módulo 04 e 13), **CI** (`.github/
 
 ## Autoavaliação: testa-te a sério
 
-Ler e assentir com a cabeça não é a mesma coisa que saber. Há duas formas, que são o mesmo conteúdo:
+Ler e assentir com a cabeça não é a mesma coisa que saber. Há duas formas de fazer o quiz — **escolhe uma por módulo, nunca as duas**: são literalmente as mesmas perguntas (vêm do mesmo ficheiro), por isso fazer as duas não ensina nada a mais, só repete.
 
 - **No próprio módulo:** cada ficheiro `docs/0X-*.md` termina com um "Quiz rápido" — perguntas **só daquele módulo**, com a resposta escondida em `<details>`, para leres sem precisar do terminal.
 - **No terminal, com correção automática:**
