@@ -26,17 +26,34 @@ git clone git@github.com:<o-teu-utilizador>/Claude-Workshop.git
 cd Claude-Workshop
 ```
 
-**Se ÉS o dono do template** (ex.: é a tua própria conta): o GitHub **não deixa** fazer fork de um repositório para a mesma conta onde já existe. Em vez disso, usa a funcionalidade "Template repository" do GitHub, feita exatamente para este caso:
+**Se ÉS o dono do template** (ex.: é a tua própria conta): o GitHub **não deixa** fazer fork de um repositório para a mesma conta onde já existe. Há duas alternativas, e a escolha depende de uma coisa: **vais querer trazer atualizações futuras do template, ou não?**
+
+**Opção A — "Use this template" (mais simples, SEM atualizações futuras):**
 
 1. `Settings` do repositório → marca a checkbox **"Template repository"**.
 2. Na página principal, aparece o botão verde **"Use this template" → "Create a new repository"**.
-3. Dá-lhe um nome (ex.: `claude-workshop-exercicios`). O GitHub cria uma cópia independente, com histórico próprio e limpo — sem ligação de fork.
-4. Clona-a normalmente:
+3. Dá-lhe um nome. O GitHub cria uma cópia independente, com histórico **completamente novo**, sem ligação nenhuma ao original.
+
+O preço desta simplicidade: sem histórico partilhado, não há forma nativa do Git de trazer atualizações futuras do template para esta cópia. Se eu melhorar o workshop mais tarde, não há um "sync" — seria copiar ficheiros à mão.
+
+**Opção B — clonar com dois remotos (mais um passo, COM atualizações futuras):**
 
 ```bash
-git clone git@github.com:bernardoam05/claude-workshop-exercicios.git
+# Cria primeiro, no GitHub, um repositório novo e VAZIO (ex.: claude-workshop-exercicios)
+git clone --origin template git@github.com:bernardoam05/Claude-Workshop.git claude-workshop-exercicios
 cd claude-workshop-exercicios
+git remote add origin git@github.com:bernardoam05/claude-workshop-exercicios.git
+git push -u origin main
 ```
+
+Isto mantém o mesmo histórico de commits do template. Mais tarde, para trazer atualizações:
+
+```bash
+git fetch template
+git merge template/main   # limpo se não tocaste nos mesmos ficheiros; conflito normal do Git se tocaste
+```
+
+**Se vais resolver exercícios a sério e queres continuar a receber melhorias ao workshop, usa a Opção B.** Faz os exercícios em **branches próprios**, mantendo o `main` o mais parecido possível com o template — sincronizas o `main` primeiro, e só depois trazes essas atualizações para dentro dos branches de exercícios.
 
 Porquê antes de tudo o resto:
 
