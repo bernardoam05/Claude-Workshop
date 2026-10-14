@@ -133,6 +133,189 @@ Em produção, o **Alertmanager** recebe os alertas, agrupa-os, silencia-os dura
 
 **Traces** são o passo seguinte: com OpenTelemetry, um pedido `POST /api/tasks` gera um *trace* que mostra o tempo gasto na API, no Postgres, no RabbitMQ, no Kafka e no serviço Spring, numa única linha temporal. É o exercício D13.
 
+## Prática: escreve tu
+
+Primeiro instrumentas uma aplicação, como se faz no dia a dia. Depois escreves, à mão, as três contas que o Prometheus faz por ti e que toda a gente usa sem saber bem o que são: o `rate()`, o `histogram_quantile()` e o `for:` dos alertas. Quem as escreveu uma vez nunca mais se engana a ler um dashboard.
+
+**Verificar:** `npm run verificar 19` (dentro de `pratica/`). Só um exercício: `npm run verificar 19 metricas`, `... 19 rate`, `... 19 quantil` ou `... 19 alerta`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Instrumentar com o `prom-client` (≈35 min)
+
+**Ficheiro:** `pratica/19-observabilidade-prometheus-grafana/metricas.js`
+
+Os três tipos de métrica que mais se usam (secção 3), cada um para o seu caso: um **Counter** de tarefas criadas por origem, um **Gauge** de mensagens pendentes e um **Histogram** da duração de um processamento. E um middleware que conta pedidos HTTP **pela rota**, e não pelo caminho: o teste faz pedidos a `/tarefas/1`, `/tarefas/2` e `/tarefas/3`, e exige uma só série, `route="/tarefas/:id"`. É a regra de cardinalidade da secção 4, verificada.
+
+Os testes leem o texto que o Prometheus leria em `GET /metrics` (secção 2).
+
+**Sintaxe que vais praticar:** `new client.Counter/Gauge/Histogram({ name, help, labelNames, buckets, registers })`, `.inc({ label })`, `.set(n)`, `.startTimer()`, `try`/`finally`, `res.on('finish', ...)`, `req.route` e `req.baseUrl`.
+
+<details>
+<summary>Pista</summary>
+
+O `startTimer()` de um Histogram devolve uma **função**: chamá-la regista o tempo passado desde o início, já em segundos. Chama-a num `finally`, para medir também as execuções que falham. No middleware, o `req.route` só fica preenchido **depois** de o router encontrar a rota: por isso lê-se dentro do `res.on('finish', ...)`, e não logo no início.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import client from 'prom-client';
+
+export function criarMetricas() {
+  // Um registry próprio: os testes (e duas instâncias na mesma app) não partilham contadores.
+  const registry = new client.Registry();
+  registry.setDefaultLabels({ service: 'pratica' });
+
+  const tarefasCriadas = new client.Counter({
+    name: 'tarefas_criadas_total', // convenção: contadores acabam em _total
+    help: 'Tarefas criadas, por origem',
+    labelNames: ['origem'],
+    registers: [registry],
+  });
+
+  const pendentes = new client.Gauge({
+    name: 'mensagens_pendentes',
+    help: 'Mensagens à espera na fila',
+    registers: [registry],
+  });
+
+  const processamento = new client.Histogram({
+    name: 'processamento_duracao_segundos', // convenção: a unidade no nome, e sempre segundos
+    help: 'Duração do processamento',
+    buckets: [0.01, 0.05, 0.1, 0.5, 1],
+    registers: [registry],
+  });
+
+  const pedidos = new client.Counter({
+    name: 'http_pedidos_total',
+    help: 'Pedidos HTTP, por método, rota e estado',
+    labelNames: ['method', 'route', 'status'],
+    registers: [registry],
+  });
+
+  return {
+    registry,
+    tarefaCriada: (origem) => tarefasCriadas.inc({ origem }),
+    definirPendentes: (n) => pendentes.set(n),
+
+    async medirProcessamento(fn) {
+      const parar = processamento.startTimer(); // devolve uma função que regista os segundos passados
+      try {
+        return await fn();
+      } finally {
+        parar(); // finally: corre com sucesso ou com erro
+      }
+    },
+
+    middleware(req, res, next) {
+      // Só no 'finish' se sabe o status, e só aí o req.route já foi preenchido pelo router.
+      res.on('finish', () => {
+        const route = req.route ? `${req.baseUrl}${req.route.path}` : 'unmatched';
+        pedidos.inc({ method: req.method, route, status: String(res.statusCode) });
+      });
+      next();
+    },
+  };
+}
+```
+</details>
+
+### P2 · `rate()` e `increase()`, com reinícios do contador (≈20 min)
+
+**Ficheiro:** `pratica/19-observabilidade-prometheus-grafana/rate.js`
+
+Um Counter só sobe, até o processo reiniciar e ele voltar a 0. Se o `rate()` fizesse só "último menos primeiro", cada deploy aparecia no dashboard como uma queda enorme. O teste com `1000, 1010, 5, 15` é exatamente isso. Escreve a versão que o Prometheus usa: quando o valor desce, a subida desse intervalo é o próprio valor novo.
+
+**Sintaxe que vais praticar:** `for` clássico com índice (para comparar cada amostra com a anterior), o operador ternário, `.at(-1)`.
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function increase(amostras) {
+  let total = 0;
+  for (let i = 1; i < amostras.length; i++) {
+    const anterior = amostras[i - 1].valor;
+    const atual = amostras[i].valor;
+    // Desceu? O contador recomeçou do 0: tudo o que tem agora foi contado depois do reinício.
+    total += atual >= anterior ? atual - anterior : atual;
+  }
+  return total;
+}
+
+export function rate(amostras) {
+  if (amostras.length < 2) return 0;
+  const segundos = amostras.at(-1).t - amostras[0].t;
+  return increase(amostras) / segundos;
+}
+```
+
+O Prometheus faz mais uma coisa que esta versão não faz: **extrapola** até aos limites da janela pedida (`[5m]`), porque as amostras raramente caem exatamente no início e no fim. É por isso que um `increase()` de um contador de inteiros pode dar `2.7`.
+</details>
+
+### P3 · `histogram_quantile()`: de onde vem um p95 (≈25 min)
+
+**Ficheiro:** `pratica/19-observabilidade-prometheus-grafana/quantil.js`
+
+O dashboard do projeto mostra a latência p95 com `histogram_quantile(0.95, ...)`. Mas o Prometheus nunca guardou a duração de cada pedido: só quantos couberam em cada bucket. O p95 é **estimado**: encontra-se o bucket onde cai o pedido número 95 (de 100) e interpola-se lá dentro, assumindo que os pedidos estão espalhados por igual. O algoritmo está passo a passo no ficheiro.
+
+**Sintaxe que vais praticar:** `findIndex`, `?.` e `??` para o caso "não há bucket anterior", destructuring com renomeação (`const { le: fim, contagem } = ...`), `Infinity`, `NaN`.
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function histogramQuantile(q, buckets) {
+  const total = buckets.at(-1).contagem;
+  if (total === 0) return NaN;
+
+  const posicao = q * total;
+  const i = buckets.findIndex((b) => b.contagem >= posicao);
+  const anterior = buckets[i - 1]; // undefined se i for 0
+
+  // No bucket +Inf não há limite superior para interpolar: o melhor que se sabe é "acima de X".
+  if (buckets[i].le === Infinity) return anterior.le;
+
+  const inicio = anterior?.le ?? 0;
+  const antes = anterior?.contagem ?? 0;
+  const { le: fim, contagem } = buckets[i];
+  // Assume que as observações estão espalhadas por igual dentro do bucket. É por isso que um p95
+  // calculado de um histograma é uma ESTIMATIVA, tão boa quanto os buckets escolhidos.
+  return inicio + ((fim - inicio) * (posicao - antes)) / (contagem - antes);
+}
+```
+
+Consequência prática: um p95 só é tão bom quanto os buckets. Se o limite de latência que te importa é 300 ms e não tens nenhum bucket perto de 0.3, o valor que o Grafana mostra é uma interpolação entre limites distantes. Os buckets escolhem-se a pensar nos valores que vais querer ler.
+</details>
+
+### P4 · O `for:` de um alerta (≈15 min)
+
+**Ficheiro:** `pratica/19-observabilidade-prometheus-grafana/alerta.js`
+
+A secção 8 mostra regras com `for: 5m`. O que isso quer dizer, exatamente: a condição tem de ser verdadeira **em todas as avaliações seguidas** durante esse tempo. Até lá, o alerta está `pending`; se a condição falhar uma vez, volta a `inactive` e a contagem recomeça. Um dos testes mostra porque é que isto existe: um pico curto não acorda ninguém às 3 da manhã.
+
+**Sintaxe que vais praticar:** `.map` com destructuring no parâmetro (`({ t, valor }) => ...`), uma variável de fora alterada dentro do `.map` (closure), `??=`.
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function avaliarAlerta(serie, { condicao, durante }) {
+  let desde = null; // quando a condição ficou verdadeira (null = não está)
+  return serie.map(({ t, valor }) => {
+    if (!condicao(valor)) {
+      desde = null;
+      return 'inactive';
+    }
+    desde ??= t; // ??= só atribui se ainda for null: guarda o INÍCIO da sequência
+    return t - desde >= durante ? 'firing' : 'pending';
+  });
+}
+```
+</details>
+
 ## 10. Experiências
 
 1. **Gerar tráfego e ver o dashboard mexer:**

@@ -66,6 +66,195 @@ Os exercícios do bloco D (em `12-exercicios.md`) cobrem o que ficou de fora: **
 
 Para Git, no teu fork (ver [Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)), cria um branch por exercício e abre um PR para ti próprio. Só com isto praticas o fluxo de equipa.
 
+## Prática: escreve tu
+
+Este módulo é sobre o mercado, e uma parte do mercado é a **entrevista técnica**. Os quatro exercícios seguintes são clássicos de *live coding* em entrevistas de JavaScript (frontend e backend). Nenhum é um "puzzle" de algoritmos: são coisas que se escrevem mesmo no trabalho, e cada um obriga a dominar uma parte da linguagem que o resto do workshop só usa de passagem: closures, `this`, classes com campos privados, `Map`, Promises em paralelo.
+
+**Verificar:** `npm run verificar 14` (dentro de `pratica/`). Só um exercício: `npm run verificar 14 tempo`, `... 14 LruCache`, `... 14 mapLimit` ou `... 14 retry`.
+
+Treina-os como numa entrevista: **lê o enunciado, explica em voz alta** como vais fazer, e só depois escreve. Numa entrevista a sério, a explicação conta tanto como o código.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · `debounce` e `throttle` (≈25 min)
+
+**Ficheiro:** `pratica/14-competencias-mercado/tempo.js`
+
+`debounce` executa uma função só quando as chamadas **param** (pesquisar quando o utilizador deixa de escrever). `throttle` executa **no máximo uma vez** a cada N ms (reagir ao scroll). Os testes usam um relógio falso (`t.mock.timers`), que faz o tempo andar à ordem do teste.
+
+**Sintaxe que vais praticar:** funções que devolvem funções (closures), `setTimeout`/`clearTimeout`, parâmetros rest (`...args`), `fn.apply(this, args)`, e a diferença entre `function` e arrow function no que toca ao `this`.
+
+<details>
+<summary>Pista</summary>
+
+A função devolvida tem de ser uma `function` normal, e não uma arrow function: só assim recebe o `this` de quem a chama (`obj.guardar()`). Dentro do `setTimeout`, usa uma arrow function, que **herda** esse `this` em vez de criar um novo.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function debounce(fn, ms) {
+  let timer = null; // a closure lembra-se do temporizador entre chamadas
+  // function (e não arrow) para receber o `this` de quem chama, e passá-lo à fn com apply.
+  return function (...args) {
+    clearTimeout(timer); // cada chamada nova cancela a anterior e recomeça a contagem
+    timer = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
+export function throttle(fn, ms) {
+  let ultimaExecucao = -Infinity;
+  return function (...args) {
+    const agora = Date.now();
+    if (agora - ultimaExecucao >= ms) {
+      ultimaExecucao = agora;
+      fn.apply(this, args);
+    }
+  };
+}
+```
+</details>
+
+### P2 · Uma cache LRU (≈25 min)
+
+**Ficheiro:** `pratica/14-competencias-mercado/LruCache.js`
+
+Uma cache com capacidade fixa que, quando enche, deita fora o que foi usado **há mais tempo**. É a pergunta de entrevista mais clássica sobre estruturas de dados, e em JavaScript tem uma resposta elegante: um `Map` guarda as chaves pela **ordem de inserção**.
+
+**Sintaxe que vais praticar:** `class`, campos privados (`#mapa`), getters (`get size()`), `Map` (`has`/`get`/`set`/`delete`/`keys()`), iteradores (`.keys().next().value`), devolver `this` para encadear chamadas.
+
+<details>
+<summary>Pista</summary>
+
+"Usar" uma chave é tirá-la do `Map` e voltar a pô-la: assim passa para o fim. A primeira chave do `Map` é sempre a usada há mais tempo, e obtém-se com `this.#mapa.keys().next().value`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export class LruCache {
+  // Campos com # são privados de verdade: nem cache.#mapa, nem Object.keys(cache) os veem.
+  #capacidade;
+  #mapa = new Map(); // um Map lembra-se da ORDEM de inserção: o primeiro é o usado há mais tempo
+
+  constructor(capacidade) {
+    this.#capacidade = capacidade;
+  }
+
+  get size() {
+    return this.#mapa.size;
+  }
+
+  has(chave) {
+    return this.#mapa.has(chave);
+  }
+
+  get(chave) {
+    if (!this.#mapa.has(chave)) return undefined; // has, e não `if (!valor)`: 0 e null são valores
+    const valor = this.#mapa.get(chave);
+    // "Usar" = passar para o fim da fila: apagar e voltar a inserir.
+    this.#mapa.delete(chave);
+    this.#mapa.set(chave, valor);
+    return valor;
+  }
+
+  set(chave, valor) {
+    this.#mapa.delete(chave);
+    this.#mapa.set(chave, valor);
+    if (this.#mapa.size > this.#capacidade) {
+      // keys().next().value é a primeira chave inserida, ou seja, a usada há mais tempo.
+      this.#mapa.delete(this.#mapa.keys().next().value);
+    }
+    return this;
+  }
+}
+```
+</details>
+
+### P3 · Um pool de Promises com limite (≈30 min)
+
+**Ficheiro:** `pratica/14-competencias-mercado/mapLimit.js`
+
+Processar 1000 itens assíncronos, mas só N de cada vez. `Promise.all` lança todos ao mesmo tempo, o que rebenta a rede ou a BD. Fazer "lotes de N" é melhor, mas desperdiça tempo: o lote inteiro espera pelo mais lento. Um dos testes deteta exatamente essa solução. Pedimos um **pool**: assim que um acaba, começa o seguinte.
+
+**Sintaxe que vais praticar:** `async` functions como "trabalhadores", `Promise.all`, `Array.from({ length: n }, fn)`, `while` com `await` dentro, `try`/`catch` com `throw` para propagar.
+
+<details>
+<summary>Pista</summary>
+
+Cria `limite` funções "trabalhadoras" que partilham um contador `proximo`. Cada uma, num `while`, tira o próximo índice (`const i = proximo++`), processa-o e guarda o resultado em `resultados[i]` (pelo índice, não com `push`, para manter a ordem). Depois, `await Promise.all(trabalhadores)`. Não há corridas no `proximo++`: o JavaScript só tem uma thread.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export async function mapLimit(itens, limite, fn) {
+  const resultados = new Array(itens.length);
+  let proximo = 0;
+  let falhou = false;
+
+  // Cada "trabalhador" tira o próximo índice livre e processa-o, até não haver mais.
+  // Como o JavaScript só tem uma thread, o `proximo++` nunca é feito por dois ao mesmo tempo.
+  async function trabalhador() {
+    while (proximo < itens.length && !falhou) {
+      const i = proximo++;
+      try {
+        resultados[i] = await fn(itens[i], i);
+      } catch (err) {
+        falhou = true; // os outros trabalhadores acabam o que têm em mãos, mas não pegam em mais
+        throw err;
+      }
+    }
+  }
+
+  // `limite` trabalhadores em paralelo (ou menos, se houver menos itens).
+  const trabalhadores = Array.from({ length: Math.min(limite, itens.length) }, trabalhador);
+  await Promise.all(trabalhadores); // rejeita assim que um trabalhador rejeita
+  return resultados;
+}
+```
+</details>
+
+### P4 · Retry com exponential backoff (≈20 min)
+
+**Ficheiro:** `pratica/14-competencias-mercado/retry.js`
+
+O `connectWithRetry` do projeto (`src/api/src/messaging/publisher.js`) espera sempre o mesmo tempo entre tentativas. Escreve uma versão genérica em que a espera **duplica** a cada falha, e que não repete erros que não valem a pena (uma password errada não fica certa à quinta tentativa).
+
+**Sintaxe que vais praticar:** destructuring de opções com valores por omissão (`{ tentativas = 3, ... } = {}`), `for (;;)` com `return` e `throw` como saídas, `return await` dentro de `try`.
+
+<details>
+<summary>Pista</summary>
+
+`return fn()` dentro de um `try` **não** apanha a rejeição: devolve a Promise antes de ela rejeitar, e o `catch` nunca corre. Tem de ser `return await fn()`. É um dos raros casos em que `return await` não é redundante.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+const esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function retry(fn, { tentativas = 3, atrasoInicialMs = 100, deveRepetir = () => true } = {}) {
+  let atraso = atrasoInicialMs;
+  for (let tentativa = 1; ; tentativa++) {
+    try {
+      return await fn(); // o `await` é obrigatório: sem ele, o catch nunca via a rejeição
+    } catch (err) {
+      if (tentativa >= tentativas || !deveRepetir(err)) throw err;
+      await esperar(atraso);
+      atraso *= 2;
+    }
+  }
+}
+```
+
+Em produção junta-se *jitter* (um pouco de aleatoriedade em cada espera). Sem ele, mil clientes que falharam ao mesmo tempo tentam outra vez **ao mesmo tempo**, e voltam a deitar o servidor abaixo.
+</details>
+
 <!-- quiz:start -->
 
 ## Quiz rápido (autoavaliação)

@@ -166,6 +166,242 @@ A BD garante consistência **dentro** de uma transação. Não garante consistê
 
 ---
 
+## Prática: escreve tu
+
+Os testes deste módulo correm num **PostgreSQL a sério**, mas dentro do Node: o [PGlite](https://pglite.dev) é o Postgres compilado para WebAssembly. Não precisas de Docker, e cada teste começa com uma base de dados nova, em memória. O SQL que escreves aqui corre igual no Postgres do `docker-compose`.
+
+**Verificar:** `npm run verificar 03` (dentro de `pratica/`). Só um exercício: `npm run verificar 03 schema`, `... 03 queries` ou `... 03 taskRepository`.
+
+Faz por ordem: o P2 e o P3 correm sobre as tabelas que **tu** crias no P1.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Escrever uma migração (≈30 min)
+
+**Ficheiro:** `pratica/03-postgresql/schema.sql` (o `base.sql` já cria `users` e `task_events`)
+
+Cria duas tabelas e um índice:
+
+- `projects`: `id` gerado pela BD, `owner_id` (obrigatório, aponta para `users`; apagar o utilizador apaga os seus projetos), `name` (obrigatório, 1 a 100 caracteres, **único por dono**: dois utilizadores podem ter um projeto "Casa", o mesmo utilizador não), `created_at` (preenchido pela BD).
+- `tasks`: `id`, `project_id` (obrigatório, aponta para `projects`, com o mesmo comportamento ao apagar), `title` (obrigatório, 1 a 200 caracteres), `done` (por omissão `false`), `due_date` (uma data **sem** hora, opcional), `created_at`.
+- um índice em `tasks(project_id)`.
+
+A migração tem de poder correr **duas vezes** sem erro.
+
+Os testes não leem o teu SQL: tentam **violar** cada regra (inserir um nome vazio, um dono que não existe, um nome repetido...) e confirmam que o Postgres recusa com o código de erro certo. É assim que se testa um schema: pelas regras que ele garante.
+
+**Sintaxe que vais praticar:** `CREATE TABLE IF NOT EXISTS`, `SERIAL PRIMARY KEY`, `NOT NULL`, `DEFAULT`, `CHECK (...)`, `REFERENCES ... ON DELETE CASCADE`, `UNIQUE (a, b)`, `CREATE INDEX IF NOT EXISTS`.
+
+<details>
+<summary>Pista</summary>
+
+Relê as migrações em `src/api/src/db/migrations/`: têm quase tudo o que precisas. A unicidade "por dono" é uma restrição sobre **duas** colunas ao mesmo tempo, escrita como uma linha à parte dentro do `CREATE TABLE`. E repara: o Postgres cria um índice sozinho para `PRIMARY KEY` e `UNIQUE`, mas **não** para chaves estrangeiras. É por isso que o índice em `project_id` tem de ser pedido.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```sql
+CREATE TABLE IF NOT EXISTS projects (
+  id         SERIAL PRIMARY KEY,
+  owner_id   INTEGER     NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  name       TEXT        NOT NULL CHECK (char_length(name) BETWEEN 1 AND 100),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (owner_id, name)            -- único POR dono, não na tabela inteira
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id         SERIAL PRIMARY KEY,
+  project_id INTEGER     NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
+  title      TEXT        NOT NULL CHECK (char_length(title) BETWEEN 1 AND 200),
+  done       BOOLEAN     NOT NULL DEFAULT FALSE,
+  due_date   DATE,                   -- sem NOT NULL: nem todas as tarefas têm prazo
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- O Postgres cria índices sozinho para PRIMARY KEY e UNIQUE, mas NÃO para chaves estrangeiras.
+CREATE INDEX IF NOT EXISTS tasks_project_id_idx ON tasks (project_id);
+```
+</details>
+
+### P2 · Seis consultas (≈45 min)
+
+**Ficheiros:** `pratica/03-postgresql/queries/01-...sql` a `06-...sql` (o enunciado de cada uma está no próprio ficheiro)
+
+O `seed.sql` enche as tuas tabelas com 3 utilizadores, 4 projetos e 11 tarefas. Escreve uma consulta por ficheiro. O teste compara o resultado **exato**: nomes das colunas, tipos e ordem das linhas.
+
+Vão aparecer, por esta ordem: `JOIN`, `ORDER BY ... NULLS LAST`, `LEFT JOIN` com contagens (para não perder o projeto sem tarefas), aritmética de datas, `NOT EXISTS`, `GROUP BY` e, no fim, `HAVING`.
+
+Uma armadilha de propósito: o `count(*)` devolve `bigint`, e o driver `pg` entrega `bigint` como **string** (relê a secção 5). O ambiente de testes reproduz isso. Se o teu resultado tiver `total: '2'` em vez de `total: 2`, já sabes porquê.
+
+**Sintaxe que vais praticar:** `SELECT ... FROM ... JOIN ... ON`, `LEFT JOIN`, `WHERE`, `GROUP BY`, `HAVING`, `count(...) FILTER (WHERE ...)`, `::int`, `CURRENT_DATE`, `AS`.
+
+<details>
+<summary>Pista</summary>
+
+- No P2b, `count(*)` contaria a linha "vazia" que o `LEFT JOIN` cria para o projeto sem tarefas. `count(t.id)` não conta, porque `t.id` é `NULL` nessa linha.
+- No P2c, em Postgres, subtrair duas datas (`date - date`) dá um número inteiro de dias.
+- No P2f, o `WHERE` filtra **linhas** antes de agrupar; o `HAVING` filtra **grupos** depois.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```sql
+-- 01-pendentes-mestrado.sql
+SELECT t.title
+FROM tasks t
+JOIN projects p ON p.id = t.project_id
+WHERE p.name = 'Mestrado' AND NOT t.done
+ORDER BY t.due_date NULLS LAST, t.title;
+
+-- 02-resumo-por-projeto.sql
+-- LEFT JOIN mantém os projetos sem tarefas; count(t.id) conta só as linhas com tarefa (o NULL não conta).
+SELECT
+  p.name                                    AS project,
+  count(t.id)::int                          AS total,
+  count(t.id) FILTER (WHERE t.done)::int    AS done
+FROM projects p
+LEFT JOIN tasks t ON t.project_id = p.id
+GROUP BY p.id, p.name
+ORDER BY p.name;
+
+-- 03-atrasadas.sql
+-- date - date dá um inteiro (dias) em Postgres.
+SELECT t.title, p.name AS project, CURRENT_DATE - t.due_date AS days_late
+FROM tasks t
+JOIN projects p ON p.id = t.project_id
+WHERE NOT t.done AND t.due_date < CURRENT_DATE
+ORDER BY days_late DESC;
+
+-- 04-utilizadores-sem-projetos.sql
+SELECT u.email
+FROM users u
+WHERE NOT EXISTS (SELECT 1 FROM projects p WHERE p.owner_id = u.id)
+ORDER BY u.email;
+
+-- 05-ranking-concluidas.sql
+SELECT u.email, count(*)::int AS completed
+FROM users u
+JOIN projects p ON p.owner_id = u.id
+JOIN tasks t ON t.project_id = p.id
+WHERE t.done
+GROUP BY u.id, u.email
+ORDER BY completed DESC;
+
+-- 06-projetos-sobrecarregados.sql
+-- WHERE filtra LINHAS antes de agrupar; HAVING filtra GRUPOS depois de agrupar.
+SELECT p.name AS project, count(*)::int AS pending
+FROM projects p
+JOIN tasks t ON t.project_id = p.id
+WHERE NOT t.done
+GROUP BY p.id, p.name
+HAVING count(*) >= 3
+ORDER BY pending DESC;
+```
+
+O P2d também se resolve com `LEFT JOIN projects p ON ... WHERE p.id IS NULL`. As duas formas são corretas; o `NOT EXISTS` diz a intenção de forma mais direta ("não existe nenhum projeto").
+</details>
+
+### P3 · Um repositório em JavaScript (≈45 min)
+
+**Ficheiro:** `pratica/03-postgresql/taskRepository.js`
+
+Agora o SQL sai dos ficheiros `.sql` e entra no código, como em `src/api/src/repositories/taskRepository.js`. Implementa cinco funções. Cada uma treina uma coisa diferente:
+
+| Função | O que treina |
+|---|---|
+| `create` | `INSERT ... RETURNING`, parâmetros `$1`, aliases para camelCase |
+| `complete` | `UPDATE ... RETURNING` e devolver `null` quando nada mudou |
+| `search` | `ILIKE` com parâmetros, e um teste de **SQL injection** que tens de passar |
+| `addEvent` | `ON CONFLICT DO NOTHING` e `rowCount` para saber se inseriu (idempotência, secção 9) |
+| `createProjectWithTasks` | uma **transação** completa: `BEGIN`, `COMMIT`, `ROLLBACK`, e libertar a ligação |
+
+**Sintaxe que vais praticar:** `await db.query(sql, [params])`, destructuring de `{ rows }` e `{ rowCount }`, `try`/`catch`/`finally`, template literals para o SQL (mas **nunca** para os valores).
+
+<details>
+<summary>Pista</summary>
+
+- Uma transação tem de correr toda **na mesma ligação**. Com um pool, `db.query` pode usar uma ligação diferente a cada chamada; por isso pede-se um client com `db.connect()` e usa-se esse client para tudo. O `finally` com `client.release()` corre com ou sem erro.
+- O teste de `search` com `'%'` é subtil: em `ILIKE`, `%` e `_` são wildcards. Mesmo passando o texto como parâmetro (o que impede SQL injection), um `%` do utilizador ainda significa "qualquer coisa". É preciso escapá-lo antes: `text.replace(/[\\%_]/g, '\\$&')`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+const COLUMNS = 'id, project_id AS "projectId", title, done';
+
+// Em ILIKE, % e _ são wildcards. Escapamo-los para o texto do utilizador ser procurado tal como está.
+const escapeLike = (text) => text.replace(/[\\%_]/g, '\\$&');
+
+export function createTaskRepository(db) {
+  return {
+    async create(projectId, title) {
+      const { rows } = await db.query(
+        `INSERT INTO tasks (project_id, title) VALUES ($1, $2) RETURNING ${COLUMNS}`,
+        [projectId, title],
+      );
+      return rows[0];
+    },
+
+    async complete(id) {
+      const { rows } = await db.query(`UPDATE tasks SET done = true WHERE id = $1 RETURNING ${COLUMNS}`, [id]);
+      return rows[0] ?? null;
+    },
+
+    async search(ownerId, text) {
+      const { rows } = await db.query(
+        `SELECT t.title
+         FROM tasks t
+         JOIN projects p ON p.id = t.project_id
+         WHERE p.owner_id = $1 AND t.title ILIKE $2
+         ORDER BY t.title`,
+        [ownerId, `%${escapeLike(text)}%`],
+      );
+      return rows.map((r) => r.title);
+    },
+
+    async addEvent(eventId, type, taskId) {
+      const { rowCount } = await db.query(
+        `INSERT INTO task_events (event_id, type, task_id) VALUES ($1, $2, $3)
+         ON CONFLICT (event_id) DO NOTHING`,
+        [eventId, type, taskId],
+      );
+      return rowCount === 1;
+    },
+
+    async createProjectWithTasks(ownerId, name, titles) {
+      // Uma transação tem de correr toda na MESMA ligação: por isso pedimos um client ao pool.
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        const { rows: [project] } = await client.query(
+          'INSERT INTO projects (owner_id, name) VALUES ($1, $2) RETURNING id, name',
+          [ownerId, name],
+        );
+        const tasks = [];
+        for (const title of titles) {
+          const { rows } = await client.query(
+            `INSERT INTO tasks (project_id, title) VALUES ($1, $2) RETURNING ${COLUMNS}`,
+            [project.id, title],
+          );
+          tasks.push(rows[0]);
+        }
+        await client.query('COMMIT');
+        return { ...project, tasks };
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release(); // sempre, com ou sem erro: senão o pool fica sem ligações
+      }
+    },
+  };
+}
+```
+</details>
+
 ## Perguntas de pensamento crítico
 
 1. A coluna `done` é `BOOLEAN NOT NULL DEFAULT FALSE`. Que bug evita cada uma das três partes?

@@ -162,6 +162,157 @@ $C build --no-cache api   # reconstruir ignorando a cache
 
 ---
 
+## Prática: escreve tu
+
+Até aqui leste os Dockerfiles do projeto. Agora escreves os teus, do zero, para uma app pequena que já está feita em `pratica/02-docker/app/server.js` (não precisas de lhe mexer). Os ficheiros que vais escrever começam vazios.
+
+**Verificar:** `npm run verificar 02` (dentro de `pratica/`, com o Docker a correr). Para um só exercício: `npm run verificar 02 dockerfile`, `... 02 compose` ou `... 02 multistage`.
+
+O verificador é um script de shell (`pratica/02-docker/verificar.sh`) que faz o que tu farias à mão: `docker build`, `docker run`, `docker inspect`, `curl`. **Lê-o**: cada verificação é um comando Docker que vale a pena saber.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Dockerfile e `.dockerignore` (≈30 min)
+
+**Ficheiros:** `pratica/02-docker/app/Dockerfile` e `pratica/02-docker/app/.dockerignore`
+
+Escreve um Dockerfile que cumpra **todas** estas regras (o verificador confirma uma a uma):
+
+- base `node:22-alpine`;
+- copia `package.json` e `package-lock.json` e corre `npm ci --omit=dev` **antes** de copiar o código (cache de camadas, secção 3);
+- o processo **não** corre como root;
+- `EXPOSE 3000` e `CMD` na forma exec (`["node", "server.js"]`), não na forma shell (`CMD node server.js`);
+- um `HEALTHCHECK` que chama `GET /health` a cada 5 segundos;
+- um `.dockerignore` que impede o `node_modules` do teu computador de entrar na imagem (o verificador cria um falso para testar).
+
+**Sintaxe que vais praticar:** `FROM`, `WORKDIR`, `COPY`, `RUN`, `USER`, `EXPOSE`, `HEALTHCHECK --interval=... CMD ...`, `CMD [...]`.
+
+<details>
+<summary>Pista</summary>
+
+A imagem `node:22-alpine` já traz um utilizador chamado `node`. Para o healthcheck não precisas de instalar o `curl`: o Alpine tem `wget` (`wget -qO- http://localhost:3000/health || exit 1`). Porque é que a forma exec importa? Na forma shell, o processo 1 do contentor é o `sh`, não o `node`, e o `docker stop` manda o sinal ao processo errado.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```dockerfile
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Manifestos primeiro: enquanto não mudarem, o npm ci vem da cache.
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY server.js ./
+
+USER node
+EXPOSE 3000
+
+# O wget vem no Alpine (busybox). Se /health falhar 3 vezes seguidas, o contentor fica "unhealthy".
+HEALTHCHECK --interval=5s --timeout=2s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
+CMD ["node", "server.js"]
+```
+
+`.dockerignore`:
+
+```
+node_modules
+npm-debug.log
+.env
+.git
+Dockerfile
+.dockerignore
+```
+</details>
+
+### P2 · Compose com uma dependência real (≈30 min)
+
+**Ficheiro:** `pratica/02-docker/compose.yaml`
+
+A app fala com o Redis se receber a variável `REDIS_URL`. Escreve um compose com dois serviços:
+
+- `app`, construída a partir de `./app`, publicada **só** em `127.0.0.1:3100` (porta 3000 dentro do contentor), com `REDIS_URL=redis://redis:6379`;
+- `redis`, imagem `redis:7-alpine`, **sem** portas publicadas, com um healthcheck (`redis-cli ping`) e os dados num volume com nome montado em `/data`;
+- a `app` só arranca quando o `redis` estiver **saudável** (não só "arrancado": relê a secção 8).
+
+O verificador sobe tudo com `docker compose up --wait`, confirma que a app fala com o Redis, e depois **para o Redis** para provar que a app deteta a falha (`/health` passa a `503`).
+
+**Sintaxe que vais praticar:** `services:`, `build:`, `image:`, `ports:`, `environment:`, `depends_on:` com `condition:`, `healthcheck:`, `volumes:` (no serviço e no topo do ficheiro).
+
+<details>
+<summary>Pista</summary>
+
+Porque é que `redis://redis:6379` funciona? Dentro da rede do compose, cada serviço é encontrado pelo **nome do serviço**. `localhost`, dentro do contentor da app, seria a própria app. A forma curta de `depends_on` (`depends_on: [redis]`) só espera que o contentor arranque; a forma longa com `condition: service_healthy` espera pelo healthcheck.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```yaml
+services:
+  app:
+    build: ./app
+    ports:
+      - "127.0.0.1:3100:3000"   # só acessível a partir desta máquina
+    environment:
+      REDIS_URL: redis://redis:6379   # "redis" é o nome do serviço: o DNS interno do compose resolve-o
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    # sem "ports": o redis só é visível dentro da rede do compose
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+volumes:
+  redis-data:
+```
+</details>
+
+### P3 · Multi-stage build (≈20 min)
+
+**Ficheiro:** `pratica/02-docker/site/Dockerfile`
+
+O `site/build.js` gera um `dist/index.html` (é um "build" em miniatura, como o `vite build`). Escreve um Dockerfile com **dois estágios**: o primeiro usa Node para correr `npm run build`; o segundo é `nginx:1.27-alpine` e recebe **só** a pasta `dist`. O verificador confirma que a imagem final serve a página, **não tem Node** e tem menos de 80 MB.
+
+**Sintaxe que vais praticar:** `FROM ... AS nome`, `COPY --from=nome ...`.
+
+<details>
+<summary>Pista</summary>
+
+O Nginx serve, por omissão, o que estiver em `/usr/share/nginx/html`. Compara no fim: `docker images | grep pratica02` mostra a diferença de tamanho entre a imagem da app (com Node) e a do site (sem Node).
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```dockerfile
+# Estágio 1: precisa de Node só para correr o build.
+FROM node:22-alpine AS build
+WORKDIR /site
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY build.js ./
+RUN npm run build
+
+# Estágio 2: só o resultado. O Node fica para trás, com o estágio 1.
+FROM nginx:1.27-alpine
+COPY --from=build /site/dist /usr/share/nginx/html
+EXPOSE 80
+```
+</details>
+
 ## Experiências guiadas
 
 1. **Cache de camadas:** faz `build` duas vezes seguidas. Na segunda, tudo deve estar `CACHED`.

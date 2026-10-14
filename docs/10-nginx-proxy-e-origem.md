@@ -119,6 +119,141 @@ curl -i http://localhost:3000/api/health    # falha — não está publicada
 
 ---
 
+## Prática: escreve tu
+
+Vais escrever um `nginx.conf` **do zero**, num só ficheiro, em três camadas. O verificador sobe um Nginx a sério em Docker, com o teu ficheiro, mais dois backends "eco" (`api` e `relatorios`) que respondem a dizer **que caminho e que cabeçalhos receberam**. Assim vês exatamente o que o teu proxy encaminhou. Depois faz pedidos com `curl`, como um browser.
+
+**Ficheiro:** `pratica/10-nginx-proxy-e-origem/nginx.conf` (o site estático já está em `site/`)
+
+**Verificar:** `npm run verificar 10` (dentro de `pratica/`, com o Docker a correr). Só uma parte: `npm run verificar 10 estaticos`, `... 10 proxy` ou `... 10 extra`. Antes de tudo, o verificador corre `nginx -t`, que valida a sintaxe e mostra a linha exata de cada erro.
+
+O ficheiro é montado em `/etc/nginx/conf.d/default.conf`, por isso já está **dentro** do bloco `http { }`: escreves `server { ... }` (e, no P3, uma linha antes dele).
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Ficheiros estáticos, SPA e cache (≈30 min)
+
+- `/` e qualquer rota da SPA (`/tarefas/42`) devolvem o `index.html`.
+- **Mas** um ficheiro em falta em `/assets/` dá `404`, e não o `index.html`. Se o browser pedir um `.js` e receber HTML, o erro que aparece na consola é incompreensível ("Unexpected token '<'").
+- `/assets/*` com `Cache-Control: public, max-age=31536000, immutable` (um ano: os ficheiros do Vite têm um hash no nome, por isso um ficheiro novo tem sempre um nome novo).
+- o `index.html` com `Cache-Control: no-cache` ("guarda, mas confirma sempre se mudou"), para um deploy novo aparecer logo.
+
+**Sintaxe que vais praticar:** `server`, `listen`, `root`, `index`, `location /` e `location /assets/`, `try_files $uri /index.html` e `try_files $uri =404`, `add_header ... always`.
+
+### P2 · Reverse proxy com dois backends (≈30 min)
+
+- `/api/...` vai para o backend `api` (porta 3000), com o caminho **intacto**.
+- `/api/relatorios/...` vai para o backend `relatorios` (é o prefixo mais longo que ganha, como no `nginx.conf` do projeto com o `/api/activity/`).
+- os backends recebem `Host`, `X-Real-IP`, `X-Forwarded-For` e `X-Forwarded-Proto` (secção 8).
+- o verificador **recria** a API com outro IP: o teu Nginx tem de a encontrar sozinho (relê o comentário do `resolver` em `src/web/nginx.conf`: é exatamente o bug do 502 que aconteceu neste projeto).
+- com a API em baixo, a resposta é `502` com um corpo **JSON** `{"error": "..."}`, e não a página HTML do Nginx: o frontend espera sempre JSON de `/api`.
+
+**Sintaxe que vais praticar:** `resolver`, `set $variavel ...`, `proxy_pass http://$variavel`, `proxy_set_header`, `$host`/`$remote_addr`/`$proxy_add_x_forwarded_for`/`$scheme`, `error_page 502 = @nome`, `location @nome`, `default_type`, `return 502 '...'`.
+
+### P3 · Segurança e desempenho (≈25 min)
+
+- **todas** as respostas, incluindo `404` e erros, com `X-Content-Type-Options: nosniff` e `X-Frame-Options: DENY`.
+- `gzip` para CSS, JavaScript e JSON.
+- em `/api/`, corpos acima de 1 KB dão `413`.
+- em `/api/`, um **limite de pedidos** por IP: 10 por segundo com uma folga de 20 para rajadas; acima disso, `429`. É o treino do exercício [C18](12-exercicios.md#c18-rate-limiting-no-nginx), e a versão Nginx do que escreveste em JavaScript no módulo 05.
+
+**Sintaxe que vais praticar:** `add_header ... always`, `gzip on`, `gzip_types`, `client_max_body_size`, `limit_req_zone` (fora do `server`), `limit_req zone=... burst=... nodelay`, `limit_req_status`.
+
+<details>
+<summary>Pista (lê só se o teste do <code>nosniff</code> no <code>/</code> não passar)</summary>
+
+É a armadilha mais famosa do Nginx: um `add_header` dentro de um `location` **anula todos** os `add_header` herdados do `server`. Se o `location /` acrescenta o `Cache-Control`, os cabeçalhos de segurança do `server` deixam de aparecer ali, sem aviso. A solução é repeti-los dentro dos `location` que têm `add_header` próprio.
+</details>
+
+<details>
+<summary>Pista (lê só se o teste da API recriada não passar)</summary>
+
+`proxy_pass http://api:3000;` resolve o nome `api` **uma vez**, no arranque, e guarda o IP para sempre. Com uma **variável** (`set $upstream api:3000; proxy_pass http://$upstream;`), o Nginx é obrigado a resolver o nome em cada pedido, usando o `resolver` (o DNS do Docker está em `127.0.0.11`).
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```nginx
+# Contexto http (este ficheiro já está dentro dele): uma "zona" de memória partilhada com um
+# contador por IP. $binary_remote_addr ocupa 4 bytes por IPv4, por isso 10 MB chegam para ~160 mil IPs.
+limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+
+server {
+  listen 80;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  # DNS interno do Docker, perguntado de novo a cada 5 s (só funciona com proxy_pass por VARIÁVEL).
+  resolver 127.0.0.11 valid=5s;
+
+  gzip on;
+  gzip_types text/css application/javascript application/json;   # o text/html já vem incluído
+
+  # Cabeçalhos de segurança. "always" = também em respostas de erro (404, 502...).
+  # ATENÇÃO: um add_header dentro de um location ANULA todos os add_header herdados do server.
+  # Por isso os locations que acrescentam Cache-Control repetem estes dois.
+  add_header X-Content-Type-Options nosniff always;
+  add_header X-Frame-Options DENY always;
+
+  # P1 · SPA: qualquer rota desconhecida devolve o index.html, que nunca fica em cache sem confirmar
+  # (no-cache = "podes guardar, mas pergunta-me sempre se mudou"). Assim um deploy novo aparece logo.
+  location / {
+    try_files $uri /index.html;
+    add_header Cache-Control "no-cache" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+  }
+
+  # P1 · Assets com hash no nome (como os do Vite): podem ficar em cache um ano, porque um ficheiro
+  # novo tem um nome novo. =404 em vez de /index.html: um JS em falta não pode receber HTML.
+  location /assets/ {
+    try_files $uri =404;
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+  }
+
+  # P2 · O prefixo mais longo ganha: /api/relatorios/... vem aqui, o resto de /api/... vai para o de baixo.
+  location /api/relatorios/ {
+    limit_req zone=api burst=20 nodelay;
+    limit_req_status 429;
+    client_max_body_size 1k;
+
+    set $relatorios_upstream relatorios:3000;
+    proxy_pass http://$relatorios_upstream;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    error_page 502 503 504 = @backend_indisponivel;
+  }
+
+  location /api/ {
+    # P3 · Até 10 pedidos/s por IP, com uma "folga" de 20 para rajadas curtas; o resto leva 429.
+    limit_req zone=api burst=20 nodelay;
+    limit_req_status 429;
+    client_max_body_size 1k;   # uma API de tarefas não precisa de corpos grandes
+
+    set $api_upstream api:3000;
+    proxy_pass http://$api_upstream;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    error_page 502 503 504 = @backend_indisponivel;
+  }
+
+  # P2 · Um "location com nome" (@...) só é usado internamente, por error_page. O frontend recebe
+  # sempre JSON da API, mesmo quando quem responde é o Nginx.
+  location @backend_indisponivel {
+    default_type application/json;
+    return 502 '{"error":"Serviço indisponível. Tenta outra vez dentro de momentos."}';
+  }
+}
+```
+</details>
+
 ## Experiências
 
 1. Mede a diferença: `curl -w '%{http_code}\n' -o /dev/null -s http://localhost:8080/` e `.../nonexistent`. O primeiro devolve `index.html` (200) e o segundo também (SPA). Porquê?

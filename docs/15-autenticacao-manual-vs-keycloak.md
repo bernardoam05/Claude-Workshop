@@ -128,6 +128,205 @@ O protocolo é o mesmo (OIDC), por isso o que aprendeste aqui transfere-se. Só 
 
 ---
 
+## Prática: escreve tu
+
+Em produção, **nunca** se escreve criptografia à mão: usam-se bibliotecas revistas por especialistas (`jsonwebtoken`, `bcrypt`, `jose`). Mas escrevê-la **uma vez**, para aprender, é a melhor forma de perceber o que essas bibliotecas fazem e porque é que os seus avisos existem. Os testes comparam o teu código com as bibliotecas reais e com os exemplos oficiais das especificações.
+
+**Verificar:** `npm run verificar 15` (dentro de `pratica/`). Só um exercício: `npm run verificar 15 jwt`, `... 15 passwords`, `... 15 pkce` ou `... 15 autorizacao`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Um JWT, à mão (≈40 min)
+
+**Ficheiro:** `pratica/15-autenticacao-manual-vs-keycloak/jwt.js`
+
+Um JWT HS256 são três partes em base64url: `cabeçalho.payload.assinatura`, em que a assinatura é um HMAC-SHA256 das duas primeiras. Escreve `assinar` e `verificar` só com `node:crypto`. Os testes confirmam que a biblioteca `jsonwebtoken` (a que a API usa) aceita os teus tokens e que tu aceitas os dela.
+
+E depois os ataques: um payload adulterado (alguém muda `"papel": "user"` para `"admin"`), um token com `"alg": "none"` e sem assinatura (o ataque mais famoso aos JWT, que funcionou contra bibliotecas reais), e um token expirado.
+
+**Sintaxe que vais praticar:** `createHmac('sha256', segredo).update(dados).digest('base64url')`, `Buffer.from(texto).toString('base64url')` e o inverso, `timingSafeEqual`, destructuring de arrays (`const [h, p, s] = token.split('.')`), parâmetros por omissão calculados (`agora = agoraEmSegundos()`).
+
+<details>
+<summary>Pista</summary>
+
+- A assinatura é calculada sobre o texto **já codificado** `"<cabeçalho em base64url>.<payload em base64url>"`, e não sobre os objetos.
+- Nunca deixes o token escolher o algoritmo. Verifica `alg === 'HS256'` **antes** de olhar para a assinatura.
+- `timingSafeEqual` lança se os dois buffers tiverem tamanhos diferentes: compara os tamanhos primeiro.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+const base64url = (texto) => Buffer.from(texto).toString('base64url');
+const assinatura = (dados, segredo) => createHmac('sha256', segredo).update(dados).digest('base64url');
+const agoraEmSegundos = () => Math.floor(Date.now() / 1000);
+
+export function assinar(payload, segredo, { expiraEm, agora = agoraEmSegundos() } = {}) {
+  const claims = expiraEm === undefined ? payload : { ...payload, iat: agora, exp: agora + expiraEm };
+  const dados = `${base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))}.${base64url(JSON.stringify(claims))}`;
+  return `${dados}.${assinatura(dados, segredo)}`;
+}
+
+export function verificar(token, segredo, { agora = agoraEmSegundos() } = {}) {
+  const partes = token.split('.');
+  if (partes.length !== 3) throw new Error('Token mal formado');
+  const [cabecalhoB64, payloadB64, assinaturaRecebida] = partes;
+
+  let cabecalho;
+  let payload;
+  try {
+    cabecalho = JSON.parse(Buffer.from(cabecalhoB64, 'base64url').toString());
+    payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+  } catch {
+    throw new Error('Token mal formado');
+  }
+
+  // A decisão sobre o algoritmo é NOSSA, nunca do token. Quem confia no "alg" que vem lá dentro
+  // aceita um token com alg "none" e sem assinatura.
+  if (cabecalho.alg !== 'HS256') throw new Error('Algoritmo não permitido');
+
+  const esperada = Buffer.from(assinatura(`${cabecalhoB64}.${payloadB64}`, segredo));
+  const recebida = Buffer.from(assinaturaRecebida);
+  // timingSafeEqual demora o mesmo tempo quer os bytes difiram no início quer no fim:
+  // um atacante não consegue adivinhar a assinatura byte a byte medindo tempos de resposta.
+  // (E exige o mesmo tamanho, daí a verificação antes.)
+  if (esperada.length !== recebida.length || !timingSafeEqual(esperada, recebida)) {
+    throw new Error('Assinatura inválida');
+  }
+
+  if (payload.exp !== undefined && payload.exp <= agora) throw new Error('Token expirado');
+  return payload;
+}
+```
+
+Agora relê o `verifyLocal` do `authService.js`: `{ algorithms: ['HS256'] }` é exatamente o teu `if (cabecalho.alg !== 'HS256')`.
+</details>
+
+### P2 · Guardar passwords (≈20 min)
+
+**Ficheiro:** `pratica/15-autenticacao-manual-vs-keycloak/passwords.js`
+
+O projeto usa `bcrypt`. Aqui usas o `scrypt` do Node, que faz o mesmo trabalho com as peças à vista: um **sal** aleatório por password (para duas pessoas com a mesma password terem hashes diferentes) e uma função **deliberadamente lenta** (para que testar milhões de passwords seja caro). Tudo vai numa string só (`scrypt$<sal>$<hash>`), como o bcrypt faz no seu formato `$2b$10$...`.
+
+**Sintaxe que vais praticar:** `promisify` (transformar uma função de callback numa que devolve uma Promise), `randomBytes`, `Buffer` ↔ base64, template literals para montar o formato e `split('$')` para o desmontar.
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
+
+// O scrypt do Node usa callbacks; o promisify transforma-o numa função que devolve uma Promise.
+const scryptAsync = promisify(scrypt);
+const TAMANHO_HASH = 64;
+
+export async function hashPassword(password) {
+  // O sal faz com que duas pessoas com a mesma password tenham hashes diferentes,
+  // e torna inúteis as tabelas pré-calculadas de hashes de passwords comuns.
+  const sal = randomBytes(16);
+  const hash = await scryptAsync(password, sal, TAMANHO_HASH);
+  return `scrypt$${sal.toString('base64')}$${hash.toString('base64')}`;
+}
+
+export async function verificarPassword(password, guardado) {
+  const [algoritmo, salB64, hashB64] = guardado.split('$');
+  if (algoritmo !== 'scrypt' || !salB64 || !hashB64) return false;
+
+  const esperado = Buffer.from(hashB64, 'base64');
+  if (esperado.length !== TAMANHO_HASH) return false;
+  const calculado = await scryptAsync(password, Buffer.from(salB64, 'base64'), TAMANHO_HASH);
+  return timingSafeEqual(calculado, esperado);
+}
+```
+</details>
+
+### P3 · PKCE (≈15 min)
+
+**Ficheiro:** `pratica/15-autenticacao-manual-vs-keycloak/pkce.js`
+
+A secção 3 explica o fluxo Authorization Code + PKCE. O coração do PKCE são duas linhas: um *verifier* aleatório e o seu *challenge* (o SHA-256 em base64url). O primeiro teste usa o **exemplo oficial do RFC 7636**: se o teu código der aquele resultado, dá o mesmo que o Keycloak.
+
+**Sintaxe que vais praticar:** `createHash('sha256')`, `randomBytes(32).toString('base64url')`, devolver um objeto com propriedades abreviadas.
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { createHash, randomBytes } from 'node:crypto';
+
+// 32 bytes aleatórios → 43 caracteres em base64url, que só usa [A-Za-z0-9-_]: cabe no alfabeto do RFC.
+export function gerarVerifier() {
+  return randomBytes(32).toString('base64url');
+}
+
+export function calcularChallenge(verifier) {
+  return createHash('sha256').update(verifier).digest('base64url');
+}
+
+// O browser guarda o verifier e manda só o challenge ao Keycloak. No fim, para trocar o "code" por
+// um token, manda o verifier: o Keycloak calcula o SHA-256 e compara. Quem intercetar o code não
+// tem o verifier, e o code sozinho não serve para nada.
+export function gerarPkce() {
+  const verifier = gerarVerifier();
+  return { verifier, challenge: calcularChallenge(verifier), method: 'S256' };
+}
+```
+
+Compara com o `src/web/src/oidc.js`: no browser não há `node:crypto`, por isso lá usa-se `crypto.subtle.digest('SHA-256', ...)`, que é assíncrono. A ideia é a mesma.
+</details>
+
+### P4 · Autenticação e autorização como middlewares (≈25 min)
+
+**Ficheiro:** `pratica/15-autenticacao-manual-vs-keycloak/autorizacao.js`
+
+Três peças, com responsabilidades separadas, como na secção 7:
+
+- `exigirAutenticacao`: "quem és?" Sem token válido, `401`.
+- `exigirPapel('admin')`: "podes fazer isto?" Autenticado mas sem o papel, `403`.
+- `podeEditar(utilizador, tarefa)`: uma regra de **dono ou admin**, uma função pura que se testa sem HTTP nenhum.
+
+**Sintaxe que vais praticar:** funções que devolvem middlewares, parâmetros rest (`...papeis`), `.some()` com `.includes()`, `return res.status(...)` para parar o pipeline.
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function exigirAutenticacao(verificarToken) {
+  return async (req, res, next) => {
+    const [esquema, token] = (req.get('authorization') ?? '').split(' ');
+    if (esquema !== 'Bearer' || !token) {
+      return res.status(401).json({ error: 'Autenticação necessária' });
+    }
+    try {
+      req.utilizador = await verificarToken(token);
+    } catch {
+      return res.status(401).json({ error: 'Token inválido ou expirado' });
+    }
+    next();
+  };
+}
+
+// 401 = "não sei quem és"; 403 = "sei quem és, e não podes".
+export function exigirPapel(...papeis) {
+  return (req, res, next) => {
+    const tem = req.utilizador.papeis.some((p) => papeis.includes(p));
+    if (!tem) return res.status(403).json({ error: 'Sem permissão' });
+    next();
+  };
+}
+
+export function podeEditar(utilizador, tarefa) {
+  return tarefa.userId === utilizador.userId || utilizador.papeis.includes('admin');
+}
+```
+
+O `src/api/src/middleware/auth.js` faz o mesmo que o teu `exigirAutenticacao`, mas passa os erros com `next(new HttpError(...))` para o middleware de erro central, em vez de responder ali. Ambas as formas são válidas; a do projeto mantém todas as respostas de erro num só sítio (módulo 04, secção 5).
+</details>
+
 ## Experiências
 
 1. **Decifrar um token:** faz login com Keycloak, abre as DevTools → Application → Local Storage → `workshop-token`. Cola o valor em jwt.io (é só base64, não é segredo, e por isso **nunca** se põem dados sensíveis num JWT). Encontra `iss`, `aud`, `sub`, `exp`.

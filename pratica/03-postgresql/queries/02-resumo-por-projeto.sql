@@ -1,0 +1,3 @@
+-- P2b · Um resumo por projeto, INCLUINDO projetos sem tarefas.
+-- Colunas: project (nome), total, done (concluídas). total e done têm de vir como NÚMEROS.
+-- Ordem: project.

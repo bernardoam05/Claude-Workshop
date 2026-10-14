@@ -1,0 +1,3 @@
+-- P1 · Escreve aqui a migração que cria as tabelas "projects" e "tasks" e um índice.
+-- As regras estão em docs/03-postgresql.md, secção "Prática".
+-- Tem de poder correr DUAS vezes seguidas sem erro (como uma migração a sério).

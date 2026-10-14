@@ -1,0 +1,35 @@
+/* Já feito: os mesmos design tokens do src/web/src/styles.css (módulo 09, secções 5 e 7),
+   mais uma cor de sucesso. Usa-os nos componentes do P2 e do P3 como classes: bg-accent, text-muted... */
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-text: #1d2330;
+  --color-muted: #6b7280;
+  --color-accent: #2563eb;
+  --color-danger: #dc2626;
+  --color-success: #16a34a;
+  --color-border: #e2e5ea;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0f1218;
+    --color-surface: #181c24;
+    --color-text: #e6e8ec;
+    --color-muted: #8b93a1;
+    --color-border: #2a2f3a;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}

@@ -1,0 +1,2 @@
+-- P2c · Tarefas atrasadas: por fazer e com due_date antes de hoje.
+-- Colunas: title, project, days_late (quantos dias de atraso, número). Ordem: days_late, da mais atrasada para a menos.

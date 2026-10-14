@@ -1,0 +1,15 @@
+{
+  // As mesmas regras estritas do src/worker/tsconfig.json. Aqui não se gera JavaScript (noEmit):
+  // o tsc só verifica os tipos, e os testes correm com o tsx, que tira as anotações e executa.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["*.ts"]
+}

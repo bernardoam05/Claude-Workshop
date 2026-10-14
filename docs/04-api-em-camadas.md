@@ -127,6 +127,260 @@ Quando fazes `docker stop`, o Docker envia `SIGTERM` e espera uns segundos antes
 
 ---
 
+## Prática: escreve tu
+
+Vais construir uma funcionalidade nova, **notas**, atravessando as três camadas deste módulo, uma de cada vez: validação → serviço → rotas. Cada camada tem os seus testes, e cada uma é testada **sozinha**, com versões falsas das outras. É a mesma técnica dos testes em `src/api/test/`.
+
+**Verificar:** `npm run verificar 04` (dentro de `pratica/`). Só uma camada: `npm run verificar 04 noteSchemas`, `... 04 noteService` ou `... 04 notesRouter`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Validação com zod (≈40 min)
+
+**Ficheiro:** `pratica/04-api-em-camadas/noteSchemas.js`
+
+Escreve três esquemas:
+
+- `createNoteSchema`: `title` (obrigatório, sem espaços nas pontas, 1 a 120 caracteres, com as mensagens "O título é obrigatório" e "Máximo de 120 caracteres"), `body` (até 2000 caracteres, por omissão `''`), `tags` (até 5, cada uma com 1 a 20 caracteres, em minúsculas, sem repetidas, por omissão `[]`), `pinned` (booleano, por omissão `false`). **Campos desconhecidos são rejeitados.**
+- `updateNoteSchema`: os mesmos campos, todos opcionais, **sem** valores por omissão, e pelo menos um tem de vir ("Indica pelo menos um campo para alterar").
+- `listQuerySchema`: para a query string `?tag=...&pinned=true|false&limit=...`; `limit` entre 1 e 50, por omissão 20.
+
+Há duas armadilhas reais escondidas nos testes, e as duas apanham programadores experientes:
+
+1. Se fizeres o `updateNoteSchema` com `createNoteSchema.partial()`, os valores por omissão continuam lá. Um `PATCH` que só muda o título passa a mandar `pinned: false`, e **desafixa** a nota sem ninguém pedir.
+2. `z.coerce.boolean()` converte `'false'` em `true`, porque em JavaScript qualquer string não vazia é verdadeira (`Boolean('false') === true`).
+
+**Sintaxe que vais praticar:** `z.object`/`z.strictObject`, `z.string().trim().min().max()`, `z.array(...)`, `.default(...)`, `.optional()`, `.transform(...)`, `.refine(...)`, `z.enum([...])`, `z.coerce.number()`, `new Set(...)` com spread.
+
+<details>
+<summary>Pista</summary>
+
+Define cada campo **uma vez** numa constante (`const title = z.string()...`) e usa-a nos dois esquemas: no de criação com `.default(...)`, no de alteração com `.optional()`. Para a mensagem de "campo em falta" (quando nem sequer chega uma string), o zod 4 aceita `z.string({ error: '...' })`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { z } from 'zod';
+
+// Cada campo definido UMA vez e reutilizado pelos dois esquemas de escrita.
+// { error } no z.string() é a mensagem para quando nem sequer vem uma string (ex.: o campo falta).
+const title = z
+  .string({ error: 'O título é obrigatório' })
+  .trim()
+  .min(1, 'O título é obrigatório')
+  .max(120, 'Máximo de 120 caracteres');
+const body = z.string().max(2000, 'Máximo de 2000 caracteres');
+const tags = z
+  .array(z.string().trim().toLowerCase().min(1, 'Tag vazia').max(20, 'Máximo de 20 caracteres por tag'))
+  .max(5, 'Máximo de 5 tags')
+  .transform((lista) => [...new Set(lista)]); // Set remove as repetidas; o spread volta a fazer um array
+const pinned = z.boolean();
+
+// strictObject: um campo que não conhecemos (ex.: userId) é um erro, não é ignorado em silêncio.
+export const createNoteSchema = z.strictObject({
+  title,
+  body: body.default(''),
+  tags: tags.default([]),
+  pinned: pinned.default(false),
+});
+
+// Sem .default() aqui: num PATCH, um campo ausente quer dizer "não mexer", não "pôr o valor por omissão".
+export const updateNoteSchema = z
+  .strictObject({
+    title: title.optional(),
+    body: body.optional(),
+    tags: tags.optional(),
+    pinned: pinned.optional(),
+  })
+  .refine((dados) => Object.keys(dados).length > 0, { message: 'Indica pelo menos um campo para alterar' });
+
+export const listQuerySchema = z.object({
+  tag: z.string().trim().toLowerCase().min(1).optional(),
+  // z.coerce.boolean() estaria ERRADO: Boolean('false') é true (qualquer string não vazia é verdadeira).
+  pinned: z.enum(['true', 'false']).transform((v) => v === 'true').optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+```
+</details>
+
+### P2 · Erros do domínio e camada de serviço (≈45 min)
+
+**Ficheiros:** `pratica/04-api-em-camadas/errors.js` e `pratica/04-api-em-camadas/noteService.js`
+
+Primeiro as classes de erro (`DomainError`, `NotFoundError`, `ConflictError`, com herança). Depois o serviço, que recebe o repositório e um **relógio** por injeção de dependências (secção 2) e aplica as regras:
+
+- `list(userId, { tag, pinned, limit })`: só as notas do utilizador; filtros opcionais; afixadas primeiro, depois a mais recentemente alterada.
+- `create(userId, dados)`: guarda com `userId`, `createdAt` e `updatedAt` vindos do relógio. **No máximo 3 notas afixadas por utilizador** (`ConflictError`).
+- `update(userId, id, alterações)`: só os campos pedidos, `updatedAt` novo; o limite de afixadas também se aplica, mas afixar uma nota já afixada não conta duas vezes.
+- `remove(userId, id)`.
+- Nota inexistente **ou de outro utilizador**: `NotFoundError('Nota')`, nos dois casos (porquê o mesmo erro? relê o comentário em `taskService.updateTask`).
+
+O serviço **não sabe** que existe HTTP. Não há `404` aqui, só "não encontrado".
+
+**Sintaxe que vais praticar:** `class X extends Y`, `super(...)`, `this.constructor.name`, `instanceof`, `.filter().sort().slice()`, comparadores de `sort` (`(a, b) => ...`), spread de objetos (`{ ...data, userId }`).
+
+<details>
+<summary>Pista</summary>
+
+Duas funções auxiliares dentro do `createNoteService` poupam muita repetição: `findOwn(userId, id)` (busca e lança `NotFoundError` se não for do utilizador) e `assertCanPin(userId)` (conta as afixadas e lança `ConflictError`). Para ordenar por dois critérios: `b.pinned - a.pinned || b.updatedAt.localeCompare(a.updatedAt)`. Em JavaScript, `true - false` é `1`, e o `||` só usa o segundo critério quando o primeiro dá `0` (empate).
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+// errors.js
+export class DomainError extends Error {
+  constructor(message) {
+    super(message);
+    // this.constructor.name é o nome da classe concreta: "NotFoundError", "ConflictError"...
+    // Assim as subclasses herdam isto sem repetir a linha.
+    this.name = this.constructor.name;
+  }
+}
+
+export class NotFoundError extends DomainError {
+  constructor(what) {
+    super(`${what} não encontrada`);
+  }
+}
+
+export class ConflictError extends DomainError {}
+```
+
+```js
+// noteService.js
+import { ConflictError, NotFoundError } from './errors.js';
+
+const MAX_PINNED = 3;
+
+export function createNoteService({ repository, clock }) {
+  // "Inexistente" e "de outro utilizador" dão o mesmo erro: não revelamos que a nota existe.
+  async function findOwn(userId, id) {
+    const note = await repository.findById(id);
+    if (!note || note.userId !== userId) throw new NotFoundError('Nota');
+    return note;
+  }
+
+  async function assertCanPin(userId) {
+    const notes = await repository.findAllByUser(userId);
+    if (notes.filter((n) => n.pinned).length >= MAX_PINNED) {
+      throw new ConflictError(`Máximo de ${MAX_PINNED} notas afixadas`);
+    }
+  }
+
+  return {
+    async list(userId, { tag, pinned, limit = 20 }) {
+      const notes = await repository.findAllByUser(userId);
+      return notes
+        .filter((n) => tag === undefined || n.tags.includes(tag))
+        .filter((n) => pinned === undefined || n.pinned === pinned)
+        // Comparador: negativo = a primeiro. true - false = 1, por isso b.pinned - a.pinned põe as afixadas à frente.
+        .sort((a, b) => b.pinned - a.pinned || b.updatedAt.localeCompare(a.updatedAt))
+        .slice(0, limit);
+    },
+
+    async create(userId, data) {
+      if (data.pinned) await assertCanPin(userId);
+      const now = clock();
+      return repository.insert({ ...data, userId, createdAt: now, updatedAt: now });
+    },
+
+    async update(userId, id, changes) {
+      const note = await findOwn(userId, id);
+      // Só conta como "afixar" se passar de false para true.
+      if (changes.pinned && !note.pinned) await assertCanPin(userId);
+      return repository.update(id, { ...changes, updatedAt: clock() });
+    },
+
+    async remove(userId, id) {
+      await findOwn(userId, id);
+      await repository.delete(id);
+    },
+  };
+}
+```
+</details>
+
+### P3 · Camada HTTP (≈40 min)
+
+**Ficheiro:** `pratica/04-api-em-camadas/notesRouter.js`
+
+Escreve o router Express: quatro rotas, validação com os teus esquemas do P1, e **um** middleware de erro dentro do router que traduz erros de validação em `400`, `NotFoundError` em `404` e `ConflictError` em `409`. Um erro que não reconhece **segue em frente** com `next(err)`: o `500` não é decisão deste router.
+
+Os testes têm duas partes. A primeira usa um **serviço falso** que regista as chamadas: prova que o router valida, converte (o `:id` chega como string `'3'` e tem de seguir como número `3`) e traduz, sem depender do teu P2. A segunda junta as três camadas a sério.
+
+**Sintaxe que vais praticar:** `Router()`, `router.get/post/patch/delete`, `req.params`, `req.query`, `req.body`, `res.status(204).end()`, middleware de erro com `instanceof`.
+
+<details>
+<summary>Pista</summary>
+
+Uma função `validate(schema, input)` que faz `safeParse` e **lança** um erro com a primeira mensagem deixa cada rota com duas ou três linhas. Como o Express 5 apanha erros lançados em funções `async`, esse erro vai parar ao middleware de erro do router sem nenhum `try`/`catch`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { Router } from 'express';
+import { z } from 'zod';
+import { ConflictError, NotFoundError } from './errors.js';
+import { createNoteSchema, listQuerySchema, updateNoteSchema } from './noteSchemas.js';
+
+const idSchema = z.coerce.number().int().positive();
+
+// Erro de validação "embrulhado" para o middleware de erro deste router o reconhecer.
+class ValidationError extends Error {}
+
+// parse que, em vez de devolver { success, error }, lança logo um ValidationError com a 1.ª mensagem.
+function validate(schema, input) {
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) throw new ValidationError(parsed.error.issues[0].message);
+  return parsed.data;
+}
+
+export function createNotesRouter(service) {
+  const router = Router();
+
+  router.get('/notes', async (req, res) => {
+    const query = validate(listQuerySchema, req.query);
+    res.json(await service.list(req.user.userId, query));
+  });
+
+  router.post('/notes', async (req, res) => {
+    const data = validate(createNoteSchema, req.body);
+    res.status(201).json(await service.create(req.user.userId, data));
+  });
+
+  router.patch('/notes/:id', async (req, res) => {
+    const id = validate(idSchema, req.params.id);
+    const changes = validate(updateNoteSchema, req.body);
+    res.json(await service.update(req.user.userId, id, changes));
+  });
+
+  router.delete('/notes/:id', async (req, res) => {
+    const id = validate(idSchema, req.params.id);
+    await service.remove(req.user.userId, id);
+    res.status(204).end();
+  });
+
+  // A tradução domínio → HTTP vive aqui, num só sítio. O serviço nunca soube o que é um 404.
+  router.use((err, req, res, next) => {
+    if (err instanceof ValidationError) return res.status(400).json({ error: err.message });
+    if (err instanceof NotFoundError) return res.status(404).json({ error: err.message });
+    if (err instanceof ConflictError) return res.status(409).json({ error: err.message });
+    next(err);
+  });
+
+  return router;
+}
+```
+</details>
+
+**Depois de passar:** escreveste o equivalente a `validation/` + `services/` + `routes/` do projeto. Repara no que **não** precisaste para testar cada camada: o P1 não precisou de servidor, o P2 não precisou de HTTP, e a primeira parte do P3 não precisou do serviço verdadeiro. É isso que as camadas compram.
+
 ## Experiências
 
 1. Adiciona um campo que não existe ao corpo: `curl -X POST ... -d '{"title":"a","foo":1}'`. O zod ignora campos desconhecidos por omissão. É bom ou mau? Pensa no que acontece se um cliente enviar `"done": true` a `POST` (a criação)?

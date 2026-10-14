@@ -190,6 +190,234 @@ TypeScript é JavaScript com **anotações de tipo**, que só existem durante a 
 
 ---
 
+## Prática: escreve tu
+
+Esta chuleta serve para **ler** JavaScript. Os exercícios seguintes servem para o **escrever** sem pensar: funções curtas, cada uma a obrigar-te a usar uma construção concreta das secções acima. São os exercícios mais "de ginásio" da prática toda: repete-os daqui a uma semana, sem olhar para a solução, e vê quanto ficou.
+
+**Verificar:** `npm run verificar 22` (dentro de `pratica/`). Só um exercício: `npm run verificar 22 basico`, `... 22 arrays`, `... 22 assincrono` ou `... 22 classes`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · O básico moderno (≈25 min)
+
+**Ficheiro:** `pratica/22-sintaxe-javascript/basico.js`. Seis funções pequenas: destructuring nos parâmetros (com valores por omissão), `?.` e `??`, template literals, rest e spread em arrays e objetos, chaves calculadas, object shorthand e métodos.
+
+Um dos testes distingue `??` de `||`: uma cidade `''` (vazia) é uma cidade, não "sem cidade". Com `||`, uma string vazia, um `0` ou um `false` também seriam trocados pelo valor por omissão.
+
+<details>
+<summary>Pista</summary>
+
+Para tirar uma propriedade de um objeto sem o alterar, o truque é um destructuring com rest: `const { [campo]: _, ...resto } = objeto`. O `[campo]` usa o **valor** da variável como nome da propriedade, o `_` recebe o valor que não interessa, e o `...resto` fica com tudo o resto.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+// Destructuring logo nos parâmetros, com valores por omissão para o que pode faltar.
+export function resumirUtilizador({ nome, morada, papeis = [] }) {
+  // ?. pára e dá undefined se morada não existir; ?? só troca null/undefined (um '' fica '').
+  const cidade = morada?.cidade ?? 'sem cidade';
+  return `${nome} (${cidade}) · ${papeis.length} papéis`;
+}
+
+export function separar(lista) {
+  const [primeiro, ...resto] = lista;
+  return { primeiro, resto }; // shorthand: { primeiro: primeiro, resto: resto }
+}
+
+export function semCampo(objeto, campo) {
+  // [campo]: chave calculada; _ é o valor que deitamos fora; ...resto apanha as outras propriedades.
+  const { [campo]: _, ...resto } = objeto;
+  return resto;
+}
+
+export function fundir(base, ...extras) {
+  // Os spreads aplicam-se por ordem: as propriedades repetidas são escritas por cima.
+  return extras.reduce((acumulado, extra) => ({ ...acumulado, ...extra }), { ...base });
+}
+
+export function criarPonto(x, y) {
+  return {
+    x,
+    y,
+    distanciaA(outro) {
+      return Math.hypot(outro.x - this.x, outro.y - this.y);
+    },
+  };
+}
+
+// `= {}` no fim: sem argumento nenhum, desestrutura um objeto vazio em vez de rebentar com undefined.
+export function lerOpcoes({ porta = 3000, host = 'localhost', debug = false } = {}) {
+  return { porta, host, debug };
+}
+```
+</details>
+
+### P2 · Métodos de array, sem `for` (≈30 min)
+
+**Ficheiro:** `pratica/22-sintaxe-javascript/arrays.js`. Oito consultas sobre uma lista de tarefas, com uma regra que o teste verifica: **nenhum `for`, nenhum `let`**. Cada função é uma expressão encadeada (`filter`, `map`, `reduce`, `find`, `some`, `flatMap`, `toSorted`, `Object.groupBy`, `Object.entries`/`fromEntries`). A lista de testes está congelada (`Object.freeze`): um `.sort()` que a altere rebenta.
+
+<details>
+<summary>Pista</summary>
+
+Para tirar repetidos de um array: `[...new Set(array)]`. Para transformar um objeto, passa-o a pares, transforma os pares e volta a montá-lo: `Object.fromEntries(Object.entries(obj).map(([chave, valor]) => [chave, novoValor]))`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export const titulosFeitos = (tarefas) => tarefas.filter((t) => t.feita).map((t) => t.titulo);
+
+export const minutosPorFazer = (tarefas) =>
+  tarefas.filter((t) => !t.feita).reduce((soma, t) => soma + t.minutos, 0); // 0: valor inicial
+
+export const primeiraDoProjeto = (tarefas, projeto) => tarefas.find((t) => t.projeto === projeto);
+
+export const temTarefaLonga = (tarefas) => tarefas.some((t) => !t.feita && t.minutos > 60);
+
+export const todasAsTags = (tarefas) => [...new Set(tarefas.flatMap((t) => t.tags))].toSorted();
+
+// Object.groupBy (Node 21+) agrupa num objeto { chave: [elementos] }; depois trocam-se os
+// elementos pelos títulos, com Object.entries → map → Object.fromEntries.
+export const titulosPorProjeto = (tarefas) =>
+  Object.fromEntries(
+    Object.entries(Object.groupBy(tarefas, (t) => t.projeto)).map(([projeto, lista]) => [
+      projeto,
+      lista.map((t) => t.titulo),
+    ]),
+  );
+
+export const indexarPorId = (tarefas) => Object.fromEntries(tarefas.map((t) => [t.id, t]));
+
+// toSorted devolve uma cópia ordenada; o sort ordenava a própria lista (e rebentava, por estar congelada).
+export const porDuracao = (tarefas) => tarefas.toSorted((a, b) => b.minutos - a.minutos);
+```
+</details>
+
+### P3 · Promises e `async`/`await` (≈30 min)
+
+**Ficheiro:** `pratica/22-sintaxe-javascript/assincrono.js`. Esperar, correr em série, correr em paralelo, sobreviver a falhas parciais (`Promise.allSettled`) e pôr um limite de tempo (`Promise.race`). Os testes registam **quando** cada função começa e acaba, por isso uma versão "em paralelo" que afinal corre em série não passa. O último teste confirma que o `comTimeout` não deixa um temporizador pendurado (o Node não terminaria enquanto ele existisse).
+
+<details>
+<summary>Pista</summary>
+
+A diferença entre série e paralelo é só **onde** está o `await`. Em série: `for (const fn of fns) resultados.push(await fn())`, e cada uma espera pela anterior. Em paralelo: `fns.map((fn) => fn())` arranca todas, e só depois `await Promise.all(...)`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function esperar(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function emSerie(fns) {
+  const resultados = [];
+  for (const fn of fns) {
+    resultados.push(await fn()); // o await DENTRO do ciclo é que faz esperar por cada uma
+  }
+  return resultados;
+}
+
+export async function emParalelo(fns) {
+  // fns.map(fn => fn()) arranca todas JÁ; o Promise.all só espera.
+  return Promise.all(fns.map((fn) => fn()));
+}
+
+export async function tudoOuQuaseTudo(fns) {
+  const resultados = await Promise.allSettled(fns.map((fn) => fn()));
+  return {
+    ok: resultados.filter((r) => r.status === 'fulfilled').map((r) => r.value),
+    falhas: resultados.filter((r) => r.status === 'rejected').map((r) => r.reason.message),
+  };
+}
+
+export function comTimeout(promise, ms) {
+  let timer;
+  const despertador = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Tempo esgotado')), ms);
+  });
+  // A corrida: ganha a primeira a resolver ou a rejeitar. Ganhe quem ganhar, desliga-se o despertador.
+  return Promise.race([promise, despertador]).finally(() => clearTimeout(timer));
+}
+```
+</details>
+
+### P4 · Closures, classes e erros (≈30 min)
+
+**Ficheiro:** `pratica/22-sintaxe-javascript/classes.js`. Um contador com estado escondido numa closure (o padrão "fábrica" do projeto), uma classe `Conta` com um campo privado `#saldo`, um getter, um método estático e uma classe de erro própria, e um `try`/`catch`/`finally`.
+
+<details>
+<summary>Pista</summary>
+
+No `Conta.transferir`, a ordem das duas operações é que garante o "tudo ou nada": se o levantamento for feito **primeiro** e falhar, o depósito nunca chega a acontecer. Pela ordem inversa, o destino ficava com o dinheiro e a origem não perdia nada.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function criarContador(inicial = 0) {
+  let valor = inicial; // só as três funções abaixo o veem: é isso uma closure
+  return {
+    incrementar: () => ++valor,
+    decrementar: () => (valor = Math.max(0, valor - 1)),
+    valor: () => valor,
+  };
+}
+
+export class SaldoInsuficiente extends Error {
+  constructor(emFalta) {
+    super(`Saldo insuficiente: faltam ${emFalta}`);
+    this.name = 'SaldoInsuficiente';
+    this.emFalta = emFalta;
+  }
+}
+
+export class Conta {
+  #saldo = 0; // privado de verdade: fora da classe, conta.#saldo nem sequer compila
+
+  constructor(titular) {
+    this.titular = titular;
+  }
+
+  get saldo() {
+    return this.#saldo;
+  }
+
+  depositar(valor) {
+    if (!(valor > 0)) throw new RangeError('O depósito tem de ser positivo');
+    this.#saldo += valor;
+    return this; // devolver this permite encadear: conta.depositar(1).levantar(1)
+  }
+
+  levantar(valor) {
+    if (valor > this.#saldo) throw new SaldoInsuficiente(valor - this.#saldo);
+    this.#saldo -= valor;
+    return this;
+  }
+
+  static transferir(de, para, valor) {
+    de.levantar(valor); // se falhar, lança ANTES de mexer no destino: nada fica a meio
+    para.depositar(valor);
+  }
+}
+
+export function lerConfig(texto, aoTerminar = () => {}) {
+  try {
+    return { ok: true, valor: JSON.parse(texto) };
+  } catch {
+    return { ok: false, erro: 'JSON inválido' };
+  } finally {
+    aoTerminar(); // corre depois do return de qualquer um dos ramos
+  }
+}
+```
+</details>
+
 ## Como usar isto na prática
 
 Não leias isto de uma vez. Quando chegares a um módulo (01, 04, 05, 06, 07...) e abrires um ficheiro `.js`/`.ts` que o módulo te manda ler, e uma linha não fizer sentido: volta aqui, procura a construção pelo símbolo (`?.`, `=>`, `...`), lê a explicação, e volta ao ficheiro. Ao fim de alguns módulos, vais deixar de precisar.

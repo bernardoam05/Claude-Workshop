@@ -111,6 +111,244 @@ Imagina que queres um consumidor que envia uma notificação quando uma tarefa �
 
 ---
 
+## Prática: escreve tu
+
+Aqui escreves TypeScript, e o verificador faz duas coisas por ordem: primeiro corre o compilador (`tsc`), depois os testes. **Um erro de tipos é uma falha**, mesmo que o código corresse bem. É a mesma regra do `npm test` em `src/worker`.
+
+Os testes têm uma parte nova: **testes de tipos**. São linhas que **têm** de dar erro de compilação, marcadas com `// @ts-expect-error`. Se os teus tipos forem largos demais (um `any`, ou `type: string` em vez dos três literais), essas linhas deixam de dar erro, e o próprio `@ts-expect-error` passa a ser o erro: `Unused '@ts-expect-error' directive`. Assim os testes verificam não só o que o código **faz**, mas também o que os tipos **proíbem**.
+
+**Verificar:** `npm run verificar 07 events` (P1), `... 07 result` (P2), `... 07 notificationHandler` (P3), dentro de `pratica/`. Usa o filtro: sem ele, o compilador queixa-se também dos exercícios que ainda não começaste.
+
+Os ficheiros começam **só com comentários**: escreves tu as declarações de tipos e as assinaturas das funções, que é precisamente a sintaxe que interessa treinar.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Uma discriminated union e o seu type guard (≈40 min)
+
+**Ficheiro:** `pratica/07-worker/events.ts`
+
+O `handler.ts` do projeto tem um só tipo de evento. Aqui são três: `task.created`, `task.completed` e `task.deleted`, e o terceiro tem uma forma **diferente** (traz `taskId` e `userId`, não a tarefa). Escreve:
+
+- os tipos, como uma *discriminated union*: um campo `type` com um literal diferente em cada variante;
+- `isTaskEvent(value: unknown): value is TaskEvent`, que verifica em runtime **os campos de cada variante**;
+- `describeEvent(event)`, com um `switch` que o compilador garante ser **exaustivo**.
+
+**Sintaxe que vais praticar:** `interface`, `extends` entre interfaces, `type X = A | B | C`, tipos literais (`type: 'task.created'`), `unknown`, type guards (`value is T`), `Record<string, unknown>`, `switch` com estreitamento de tipos, `never`.
+
+<details>
+<summary>Pista</summary>
+
+- Põe os campos comuns (`eventId`, `occurredAt`) numa interface base e faz as três variantes `extends` dela.
+- No `isTaskEvent`, uma função auxiliar `isRecord(value): value is Record<string, unknown>` deixa-te escrever `value.task` sem conversões. Depois, um `switch (value.type)` com um `case` por variante.
+- Para a exaustividade: no `default` do `switch` do `describeEvent`, escreve `const exhaustive: never = event;`. Se todos os casos estiverem tratados, ali `event` é `never` e compila. Se um dia alguém acrescentar um quarto tipo e se esquecer deste `switch`, essa linha deixa de compilar.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```ts
+export interface TaskSnapshot {
+  id: number;
+  title: string;
+  done: boolean;
+  userId: number;
+}
+
+// Os campos comuns a todos os eventos, escritos uma vez.
+interface BaseEvent {
+  eventId: string;
+  occurredAt: string;
+}
+
+// `type` é o DISCRIMINANTE: um literal diferente em cada variante. É por ele que o compilador
+// sabe, depois de um `if (e.type === ...)`, qual das variantes tem nas mãos.
+export interface TaskCreated extends BaseEvent {
+  type: 'task.created';
+  task: TaskSnapshot;
+}
+
+export interface TaskCompleted extends BaseEvent {
+  type: 'task.completed';
+  task: TaskSnapshot;
+}
+
+export interface TaskDeleted extends BaseEvent {
+  type: 'task.deleted';
+  taskId: number;
+  userId: number;
+}
+
+export type TaskEvent = TaskCreated | TaskCompleted | TaskDeleted;
+
+// Objeto "normal" (não null, não array), com as propriedades acessíveis por nome.
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isSnapshot(value: unknown): value is TaskSnapshot {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'number' &&
+    typeof value.title === 'string' &&
+    typeof value.done === 'boolean' &&
+    typeof value.userId === 'number'
+  );
+}
+
+export function isTaskEvent(value: unknown): value is TaskEvent {
+  if (!isRecord(value)) return false;
+  if (typeof value.eventId !== 'string' || typeof value.occurredAt !== 'string') return false;
+
+  switch (value.type) {
+    case 'task.created':
+    case 'task.completed':
+      return isSnapshot(value.task);
+    case 'task.deleted':
+      return typeof value.taskId === 'number' && typeof value.userId === 'number';
+    default:
+      return false;
+  }
+}
+
+export function describeEvent(event: TaskEvent): string {
+  switch (event.type) {
+    case 'task.created':
+      return `Tarefa ${event.task.id} criada: "${event.task.title}"`;
+    case 'task.completed':
+      return `Tarefa ${event.task.id} concluída: "${event.task.title}"`;
+    case 'task.deleted':
+      return `Tarefa ${event.taskId} apagada`;
+    default: {
+      // Se alguém acrescentar um 4.º tipo ao TaskEvent e se esquecer dele aqui, `event` deixa de ser
+      // `never` e ESTA linha deixa de compilar. O compilador passa a lembrar-se por nós.
+      const exhaustive: never = event;
+      throw new Error(`tipo de evento desconhecido: ${JSON.stringify(exhaustive)}`);
+    }
+  }
+}
+```
+</details>
+
+### P2 · Erros como valores: um `Result` genérico (≈35 min)
+
+**Ficheiro:** `pratica/07-worker/result.ts`
+
+O `parseJson` do projeto **lança** quando o JSON é inválido. Uma alternativa muito usada em TypeScript (e a regra em Rust e Go) é **devolver** o erro como valor: `Result<T, E>` é ou `{ ok: true, value }` ou `{ ok: false, error }`. Quem chama é **obrigado** pelo compilador a verificar `ok` antes de mexer no valor, e os testes de tipos confirmam isso.
+
+Escreve o tipo, os construtores `ok` e `err`, `map`, `partition` e um `parseEvent` que **nunca lança**.
+
+**Sintaxe que vais praticar:** genéricos (`<T>`, `<T, U, E>`), parâmetros de tipo por omissão (`E = string`), arrow functions genéricas, tipos de funções como parâmetros (`fn: (value: T) => U`), `import { type X }`.
+
+<details>
+<summary>Pista</summary>
+
+O `ok` devolve `Result<T, never>`: o lado do erro "não existe". Como `never` cabe em qualquer tipo, um `ok(5)` pode ser usado onde se espera `Result<number, string>` ou `Result<number, QualquerErro>`. No `map`, quando `result.ok` é `false`, podes devolver o próprio `result`: o compilador aceita, porque uma falha `Result<T, E>` também serve como `Result<U, E>`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```ts
+import { isTaskEvent, type TaskEvent } from './events.js';
+
+export type Result<T, E = string> = { ok: true; value: T } | { ok: false; error: E };
+
+// `never` no lado que não existe: um ok(5) serve como Result<number, string>, Result<number, Erro>...
+export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
+export const err = <E>(error: E): Result<never, E> => ({ ok: false, error });
+
+export function map<T, U, E>(result: Result<T, E>, fn: (value: T) => U): Result<U, E> {
+  return result.ok ? ok(fn(result.value)) : result;
+}
+
+export function partition<T, E>(results: Result<T, E>[]): { values: T[]; errors: E[] } {
+  const values: T[] = [];
+  const errors: E[] = [];
+  for (const r of results) {
+    if (r.ok) values.push(r.value);
+    else errors.push(r.error);
+  }
+  return { values, errors };
+}
+
+export function parseEvent(buffer: Buffer): Result<TaskEvent> {
+  let value: unknown;
+  try {
+    value = JSON.parse(buffer.toString('utf8'));
+  } catch {
+    return err('JSON inválido');
+  }
+  return isTaskEvent(value) ? ok(value) : err('formato de evento inválido');
+}
+```
+
+Quando usar cada estilo? Exceções para o que é **inesperado** (a BD caiu); `Result` para o que é **esperado** e quem chama tem de tratar (input inválido). O worker do projeto usa exceções e distingue os dois casos pela classe (`MalformedEventError`). Ambos são defensáveis.
+</details>
+
+### P3 · O consumidor de notificações da secção 8 (≈35 min)
+
+**Ficheiro:** `pratica/07-worker/notificationHandler.ts`
+
+A secção 8 descreve um consumidor novo que notifica o dono quando uma tarefa é concluída. Escreve o seu handler, com a mesma disciplina do `handler.ts`: validação antes do efeito, idempotência com `ON CONFLICT`, dependências recebidas por parâmetro (a BD e a função `notify`).
+
+Há um problema novo, que o `handler.ts` não tem: **dois efeitos** (gravar na BD e enviar a notificação). Se gravas e o envio falha, a próxima entrega da mensagem vê "duplicado" e **ninguém** é notificado. O teste obriga-te a resolver isto com uma **ação de compensação**: se o `notify` falhar, apaga o registo e volta a lançar o erro.
+
+**Sintaxe que vais praticar:** `interface` com assinatura de método, `type` para funções, `export class ... extends Error`, destructuring tipado nos parâmetros (`{ db, notify }: { db: Queryable; notify: Notify }`), `Promise<HandleResult>`, estreitamento depois de um type guard.
+
+<details>
+<summary>Pista</summary>
+
+Depois de `if (!isTaskEvent(value)) throw ...` e `if (value.type !== 'task.completed') return 'ignorado'`, o compilador já sabe que `value` é um `TaskCompleted`: podes escrever `value.task.title` sem nenhuma conversão. Se tiveres de escrever `as`, há um type guard mal feito no P1.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```ts
+import { isTaskEvent } from './events.js';
+
+export interface Queryable {
+  query(sql: string, params: unknown[]): Promise<{ rows: unknown[] }>;
+}
+
+export type Notify = (userId: number, text: string) => Promise<void>;
+
+export type HandleResult = 'notificado' | 'duplicado' | 'ignorado';
+
+export class MalformedEventError extends Error {}
+
+export function createNotificationHandler({ db, notify }: { db: Queryable; notify: Notify }) {
+  return async function handle(value: unknown): Promise<HandleResult> {
+    if (!isTaskEvent(value)) throw new MalformedEventError('evento mal formado');
+    if (value.type !== 'task.completed') return 'ignorado';
+
+    // Aqui o compilador já sabe que é um TaskCompleted: value.task existe e está tipado.
+    const { eventId, task } = value;
+    const text = `Concluíste "${task.title}"`;
+
+    const { rows } = await db.query(
+      `INSERT INTO notifications (event_id, user_id, text) VALUES ($1, $2, $3)
+       ON CONFLICT (event_id) DO NOTHING
+       RETURNING event_id`,
+      [eventId, task.userId, text],
+    );
+    if (rows.length === 0) return 'duplicado';
+
+    try {
+      await notify(task.userId, text);
+    } catch (err) {
+      // Ação de compensação: sem ela, a próxima entrega via "duplicado" e a notificação perdia-se.
+      await db.query('DELETE FROM notifications WHERE event_id = $1', [eventId]);
+      throw err;
+    }
+    return 'notificado';
+  };
+}
+```
+
+A compensação também não é perfeita: se o processo morrer **depois** de o `notify` ter enviado e **antes** de devolver, a mensagem volta e é "duplicado" (bem). Mas se morrer **depois** do envio falhar e **antes** do `DELETE`, a notificação perde-se. Entre efeitos em sistemas diferentes não há garantias absolutas, só escolhas sobre qual falha é mais aceitável. É o mesmo problema do dual-write (módulo 06), noutra roupa.
+</details>
+
 ## Experiências
 
 1. **Escala:** `docker compose -f config/docker-compose.yml up -d --scale worker=3`. Cria 10 tarefas concluídas. Vê os logs dos três workers (`logs worker`). Quem processa o quê? A distribuição é justa? Repara que a fila tem **uma** só, por isso as três instâncias são *competing consumers*.

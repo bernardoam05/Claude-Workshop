@@ -351,6 +351,219 @@ Express 5 trata erros lançados em funções `async` automaticamente. Repara que
 
 ---
 
+## Prática: escreve tu
+
+Ler código ensina a reconhecer a sintaxe; só **escrever** ensina a produzi-la. Cada módulo tem agora uma pasta em `pratica/` com ficheiros por fazer e testes já escritos. Tu escreves o código, os testes dizem-te se está certo.
+
+**Preparar (uma vez só):**
+
+```bash
+cd pratica
+npm install
+```
+
+**Em cada exercício:**
+
+```bash
+npm run verificar 01            # corre todos os testes do módulo 01
+npm run verificar 01 config     # só os ficheiros de teste cujo nome contém "config"
+```
+
+Regras que fazem a diferença entre aprender e copiar:
+
+1. **Corre os testes antes de escrever uma linha.** Vê-os falhar. Lê o nome de cada teste: é a especificação.
+2. **Escreve sem copiar** do projeto. Podes *consultar* o `src/api` e o [módulo 22](22-sintaxe-javascript.md), mas escreve tu, letra a letra. A mão aprende o que os olhos só reconhecem.
+3. **Lê só a primeira falha**, corrige-a, corre outra vez. Dez falhas de uma vez assustam; uma de cada vez ensina.
+4. A **solução de referência** fica escondida. Abre-a só **depois** de os testes passarem, para comparar. Se a tua for diferente e passar, não está errada: compara e pensa qual preferes e porquê.
+
+### P1 · Configuração a partir do ambiente (≈15 min)
+
+**Ficheiro:** `pratica/01-fundamentos/config.js` · **Verificar:** `npm run verificar 01 config`
+
+Escreve `loadConfig(env)`, uma versão simplificada do `src/api/src/config.js`. Recebe um objeto como o `process.env` (onde **tudo é string**) e devolve `{ port, nodeEnv, isProduction, databaseUrl }`, com valores por omissão e validação. As regras completas estão no comentário do ficheiro.
+
+**Sintaxe que vais praticar:** destructuring com valores por omissão (`const { PORT = '3000' } = env`), `Number()` e `Number.isInteger()`, `throw new Error(...)`, `??`.
+
+<details>
+<summary>Pista</summary>
+
+`Number('abc')` dá `NaN`, `Number('3000.5')` dá `3000.5` e `Number('')` dá `0`. Um único `Number.isInteger(port) && port >= 1 && port <= 65535` apanha os três casos. Atenção: os valores por omissão do destructuring só se aplicam quando a propriedade é `undefined`, não quando é `''`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function loadConfig(env) {
+  const { PORT = '3000', NODE_ENV = 'development', DATABASE_URL } = env;
+
+  const port = Number(PORT);
+  // Number('') é 0 e Number('3000.5') é 3000.5: Number.isInteger + o intervalo apanham os dois.
+  if (PORT.trim() === '' || !Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`PORT inválida: "${PORT}" (tem de ser um inteiro entre 1 e 65535)`);
+  }
+
+  const isProduction = NODE_ENV === 'production';
+  if (isProduction && !DATABASE_URL) {
+    throw new Error('DATABASE_URL é obrigatória em produção');
+  }
+
+  return { port, nodeEnv: NODE_ENV, isProduction, databaseUrl: DATABASE_URL ?? null };
+}
+```
+</details>
+
+### P2 · Um servidor HTTP sem Express (≈40 min)
+
+**Ficheiro:** `pratica/01-fundamentos/httpServer.js` · **Verificar:** `npm run verificar 01 httpServer`
+
+Antes de usar o Express, escreve à mão o que ele faz por ti. Com o módulo `node:http` apenas, implementa `GET /health`, `GET /tasks`, `POST /tasks` (com validação), `405` para métodos não suportados e `404` para o resto. O contrato completo está no comentário do ficheiro e os testes estão em `tasksContract.js`.
+
+Vais perceber, à força, coisas que o Express esconde: que o corpo de um pedido chega **aos bocados** (é um *stream*), que alguém tem de fazer o `JSON.parse` e apanhar o erro, e que o `Content-Type` não se escreve sozinho.
+
+**Sintaxe que vais praticar:** `http.createServer((req, res) => ...)`, `res.writeHead(status, headers)`, `res.end(...)`, `for await (const chunk of req)`, `new URL(req.url, 'http://localhost')`, `try`/`catch` sem variável (`catch {`).
+
+<details>
+<summary>Pista</summary>
+
+Escreve primeiro uma função `sendJson(res, status, body, headers)` que faz `writeHead` + `end(JSON.stringify(body))`. Todas as respostas passam a ser uma linha. Depois, a estrutura é um `if` por caminho e, lá dentro, um `if` por método.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import http from 'node:http';
+
+export function createServer() {
+  const tasks = [];
+  let nextId = 1;
+
+  // Uma função pequena para não repetir os mesmos 3 passos em todas as respostas.
+  const sendJson = (res, status, body, headers = {}) => {
+    res.writeHead(status, { 'Content-Type': 'application/json', ...headers });
+    res.end(JSON.stringify(body));
+  };
+
+  // O corpo chega aos bocados (chunks): um pedido é um stream que se lê com for await.
+  const readBody = async (req) => {
+    let raw = '';
+    for await (const chunk of req) raw += chunk;
+    return raw;
+  };
+
+  return http.createServer(async (req, res) => {
+    const { pathname } = new URL(req.url, 'http://localhost');
+
+    if (pathname === '/health' && req.method === 'GET') {
+      return sendJson(res, 200, { status: 'ok' });
+    }
+
+    if (pathname === '/tasks') {
+      if (req.method === 'GET') return sendJson(res, 200, tasks);
+
+      if (req.method === 'POST') {
+        let body;
+        try {
+          body = JSON.parse(await readBody(req));
+        } catch {
+          return sendJson(res, 400, { error: 'JSON inválido' });
+        }
+
+        const title = typeof body?.title === 'string' ? body.title.trim() : '';
+        if (!title) return sendJson(res, 400, { error: 'O título é obrigatório' });
+
+        const task = { id: nextId++, title, done: false };
+        tasks.push(task);
+        return sendJson(res, 201, task);
+      }
+
+      return sendJson(res, 405, { error: 'Método não suportado' }, { Allow: 'GET, POST' });
+    }
+
+    return sendJson(res, 404, { error: 'Rota não existe' });
+  });
+}
+```
+</details>
+
+### P3 · A mesma API com Express e um middleware teu (≈30 min)
+
+**Ficheiro:** `pratica/01-fundamentos/expressApp.js` · **Verificar:** `npm run verificar 01 expressApp`
+
+Reescreve o P2 com Express 5. Os testes do contrato são **os mesmos** (é o mesmo `tasksContract.js`): só muda a ferramenta. Acrescenta um middleware escrito por ti que dá a cada pedido um `X-Request-Id` único, e um middleware de erro com 4 parâmetros.
+
+Quando terminares, compara o tamanho do P2 com o do P3. O que desapareceu foi o que o Express faz por ti. O que ficou é a tua lógica.
+
+**Sintaxe que vais praticar:** `express()`, `app.use(...)`, `app.route('/tasks').get(...).post(...).all(...)`, `res.status(...).json(...)`, middleware `(req, res, next)` e middleware de erro `(err, req, res, next)`.
+
+<details>
+<summary>Pista</summary>
+
+A **ordem** dos `app.use` é a ordem por que o pedido passa. O middleware do `X-Request-Id` tem de vir **primeiro** (senão as respostas de erro não o trazem), o de 404 depois de todas as rotas, e o de erro mesmo no fim. Para o 405, o `.all(...)` no fim de um `app.route` apanha todos os métodos que não foram tratados antes.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { randomUUID } from 'node:crypto';
+import express from 'express';
+
+export function createApp() {
+  const app = express();
+  const tasks = [];
+  let nextId = 1;
+
+  // O nosso middleware: corre em TODOS os pedidos, por isso vem antes de tudo o resto.
+  app.use((req, res, next) => {
+    req.id = randomUUID();
+    res.set('X-Request-Id', req.id);
+    next();
+  });
+
+  app.use(express.json());
+
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  // app.route agrupa os métodos do mesmo caminho; o .all no fim apanha os que sobram.
+  app
+    .route('/tasks')
+    .get((req, res) => {
+      res.json(tasks);
+    })
+    .post((req, res) => {
+      const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+      if (!title) return res.status(400).json({ error: 'O título é obrigatório' });
+
+      const task = { id: nextId++, title, done: false };
+      tasks.push(task);
+      res.status(201).json(task);
+    })
+    .all((req, res) => {
+      res.set('Allow', 'GET, POST').status(405).json({ error: 'Método não suportado' });
+    });
+
+  app.use((req, res) => {
+    res.status(404).json({ error: 'Rota não existe' });
+  });
+
+  // 4 parâmetros: é assim que o Express sabe que isto é um middleware de erro.
+  // O express.json() lança um erro com status 400 quando o JSON é inválido.
+  app.use((err, req, res, next) => {
+    const status = err.status ?? 500;
+    res.status(status).json({ error: status >= 500 ? 'Erro interno' : err.message });
+  });
+
+  return app;
+}
+```
+</details>
+
+**Depois de passar:** abre o `src/api/src/app.js` e o `middleware/errorHandler.js`. Já não estás a ler código de outra pessoa: estás a ler uma versão maior do que escreveste. E o middleware do `X-Request-Id` que escreveste no P3 é o primeiro passo do exercício [C16](12-exercicios.md#c16-correlação-com-x-request-id), agora no projeto a sério.
+
 ## Experiências
 
 1. Faz um pedido à mão e lê a resposta completa:

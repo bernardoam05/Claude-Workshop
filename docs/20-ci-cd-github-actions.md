@@ -222,6 +222,230 @@ Um workflow que corre mas que ninguém é **obrigado** a respeitar não protege 
 
 ---
 
+## Prática: escreve tu
+
+Três workflows, do mais simples ao de deploy, escritos do zero. O verificador lê o teu YAML (como o GitHub o leria) e confirma cada regra: os gatilhos, as permissões, a ordem dos passos, as dependências entre jobs. Não corre nada no GitHub, por isso não gasta minutos.
+
+**Ficheiros:** `pratica/20-ci-cd-github-actions/workflows/` (`ci-basico.yml`, `ci-completo.yml`, `deploy.yml`)
+
+**Verificar:** `npm run verificar 20` (dentro de `pratica/`). Só um exercício: `npm run verificar 20 ci-basico`, `... 20 ci-completo` ou `... 20 deploy`.
+
+O YAML é exigente com a **indentação**: dois espaços por nível, nunca tabs. Um passo mal indentado não dá erro, passa a pertencer a outro sítio. Se um teste disser que falta algo que estás a ver no ficheiro, conta os espaços.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Um CI básico (≈20 min)
+
+**Ficheiro:** `workflows/ci-basico.yml`
+
+- corre em `push` para o `main` e em qualquer `pull_request`;
+- permissões só de leitura (`contents: read`, secção 4);
+- um job `testes` em `ubuntu-latest`, com `timeout-minutes: 10`;
+- passos: `actions/checkout@v4`, `actions/setup-node@v4` com Node 22 e cache do npm, `npm ci`, `npm test`.
+
+**Sintaxe que vais praticar:** `on:` com `push.branches`, `permissions:`, `jobs.<nome>.runs-on`, `steps:` com `uses:`/`with:` e `run:`.
+
+<details>
+<summary>Solução de referência</summary>
+
+```yaml
+name: CI básico
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+```
+</details>
+
+### P2 · Matriz, `needs`, `services` e artefactos (≈40 min)
+
+**Ficheiro:** `workflows/ci-completo.yml`
+
+Um pipeline com quatro jobs, como o `.github/workflows/ci.yml` do projeto em ponto pequeno:
+
+- `lint` e `testes` em paralelo; os `testes` numa **matriz** de Node 20 e 22, sem parar uma versão quando a outra falha;
+- `integracao` só depois dos dois, com um **Postgres 16** em `services` (com healthcheck) e `DATABASE_URL` a apontar para ele; se falhar, guarda os logs como artefacto (`if: failure()`);
+- `build` só depois da `integracao`, e guarda o `dist/` como artefacto.
+
+**Sintaxe que vais praticar:** `strategy.matrix`, `fail-fast`, `${{ matrix.node-version }}`, `needs:` com um ou vários jobs, `services:` com `image`/`env`/`ports`/`options`, `env:` ao nível do job, `if: failure()`, `actions/upload-artifact@v4`.
+
+<details>
+<summary>Pista</summary>
+
+Relê as secções 6 (`needs`), 7 (`services`) e 9 (`if:`), e compara com os jobs `integration` e `smoke` do `.github/workflows/ci.yml` do projeto: o que precisas está quase todo lá. Dentro de um job, o Postgres de `services` está em `localhost:5432`, porque a porta está mapeada para a máquina do runner.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```yaml
+name: CI completo
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false            # se o Node 20 falhar, queremos saber se o 22 também falha
+      matrix:
+        node-version: [20, 22]    # um job por valor: "testes (20)" e "testes (22)"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  integracao:
+    needs: [lint, testes]          # não gasta minutos com integração se o básico já falhou
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: workshop
+          POSTGRES_PASSWORD: workshop
+          POSTGRES_DB: workshop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U workshop"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://workshop:workshop@localhost:5432/workshop_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:integration
+      - name: Guardar os logs se falhar
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-integracao
+          path: logs/
+
+  build:
+    needs: integracao
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+```
+</details>
+
+### P3 · Um workflow de deploy (≈30 min)
+
+**Ficheiro:** `workflows/deploy.yml`
+
+É o primeiro passo do "CD" da secção 10: quando se cria uma versão (uma tag `v1.2.0`), construir a imagem Docker e publicá-la no GitHub Container Registry.
+
+- gatilhos: tags `v*`, e também à mão (`workflow_dispatch`);
+- `concurrency`: nunca dois deploys ao mesmo tempo, e um deploy a meio **não** é cancelado;
+- permissões: ler o código e escrever pacotes, mais nada;
+- um job `imagem` no ambiente `producao`, que faz login no `ghcr.io` com o `GITHUB_TOKEN` e publica com `docker/build-push-action@v6`, com a tag da versão.
+
+**Sintaxe que vais praticar:** `on.push.tags`, `concurrency`, `environment`, `${{ secrets.GITHUB_TOKEN }}`, `${{ github.actor }}`, `${{ github.repository }}`, `${{ github.ref_name }}`.
+
+<details>
+<summary>Solução de referência</summary>
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    tags: ['v*']          # git tag v1.2.0 && git push --tags
+  workflow_dispatch:      # um botão "Run workflow" no separador Actions
+
+# Um deploy de cada vez. Um segundo deploy espera que o primeiro acabe (não o interrompe a meio).
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write         # para publicar a imagem no GitHub Container Registry
+
+jobs:
+  imagem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: producao # no GitHub, um ambiente pode exigir aprovação manual antes de correr
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}   # criado pelo GitHub para cada execução, expira no fim
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+```
+
+O `GITHUB_TOKEN` não é um segredo que tenhas criado: o GitHub gera um novo para cada execução, com as permissões que pediste em `permissions:`, e invalida-o no fim. É por isso que um workflow nunca precisa (nem deve ter) uma password tua.
+</details>
+
+**Depois de passar:** os teus workflows são válidos de verdade. Copia o `ci-basico.yml` para `.github/workflows/` de um repositório teu com um `package.json` e um `npm test`, faz push, e vê-o correr no separador Actions. Antes, podes validá-lo com o [`actionlint`](https://github.com/rhysd/actionlint) (secção 12), que apanha também erros de expressões `${{ }}` que este verificador não vê.
+
 ## Experiências
 
 1. **Vê uma execução a sério:** depois do teu próximo push, vai a `https://github.com/<o-teu-utilizador>/Claude-Workshop/actions` e abre a execução. Expande um job e lê os logs de cada step — são exatamente os comandos deste módulo.

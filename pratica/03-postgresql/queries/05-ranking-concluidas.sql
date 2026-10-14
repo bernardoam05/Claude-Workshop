@@ -1,0 +1,2 @@
+-- P2e · Por utilizador, quantas tarefas já concluiu (em todos os seus projetos).
+-- Só utilizadores com pelo menos uma concluída. Colunas: email, completed (número). Ordem: completed, maior primeiro.

@@ -137,6 +137,8 @@ Fluxo de um clique em "concluir tarefa":
 | `src/notifications/` | Microserviço **.NET/C#**: consome RabbitMQ (task.completed), EF Core, JWT Bearer + Keycloak (RBAC) |
 | `src/web/src/styles.css` | Tailwind CSS: `@theme` com os design tokens do projeto, dark mode via `@media` |
 | `src/web/vite.config.js` | Plugin `@tailwindcss/vite`: gera só as classes realmente usadas nos `.jsx` |
+| `pratica/` | Exercícios de escrita de código, um por módulo, com testes (secção "Prática" de cada módulo) |
+| `pratica/verificar.mjs` | `npm run verificar <NN>`: escolhe a ferramenta de testes certa para cada módulo |
 
 ---
 
@@ -178,9 +180,10 @@ Para cada módulo:
 1. **Lê** a teoria.
 2. **Abre** os ficheiros indicados e lê-os **antes** de ler a explicação do que fazem.
 3. **Corre** o sistema e observa o comportamento.
-4. **Quebra** de propósito uma coisa (há sugestões em cada módulo).
-5. **Responde** às perguntas de pensamento crítico **sem olhar** para as soluções.
-6. Só depois abre as soluções (estão em `<details>`).
+4. **Escreve** o código da secção "Prática: escreve tu" (ver abaixo).
+5. **Quebra** de propósito uma coisa (há sugestões em cada módulo).
+6. **Responde** às perguntas de pensamento crítico **sem olhar** para as soluções.
+7. Só depois abre as soluções (estão em `<details>`).
 
 > **Regra de ouro:** se não consegues explicar, linha a linha, o que um ficheiro faz e o que aconteceria se essa linha não existisse, ainda não o percebeste.
 
@@ -192,6 +195,31 @@ Os módulos assumem que já sabes ler JavaScript e C# — e é normal não saber
 - **[Sintaxe de C#](23-sintaxe-csharp.md)** — para o módulo 21 (`src/notifications`).
 
 Não são para ler de uma vez. Abre-os quando uma linha de código não fizer sentido, procura a construção, volta ao ficheiro.
+
+### A prática: ler ensina a reconhecer, escrever ensina a produzir
+
+Cada módulo tem uma secção **"Prática: escreve tu"**, com exercícios em `pratica/<NN>-<módulo>/`. Os ficheiros começam por fazer (ou vazios); os testes já estão escritos e dizem-te se o teu código está certo. Escreves tu, letra a letra, sem copiar do projeto.
+
+```bash
+cd pratica
+npm install                    # uma vez só
+npm run verificar 04           # corre os testes do módulo 04
+npm run verificar 04 schemas   # só os testes cujo ficheiro contém "schemas"
+```
+
+Cada módulo usa a ferramenta normal da sua tecnologia, e o `verificar` escolhe-a sozinho:
+
+| Módulos | Como se verifica |
+|---|---|
+| 01, 03 a 07, 11, 13 a 15, 17, 19, 20, 22 | `node --test` (o mesmo da API); o 07 corre também o compilador de TypeScript |
+| 08 | Vitest + Testing Library (componentes React num DOM simulado) |
+| 09 | Playwright no **Chrome** a sério (mede o layout) + `npm run estilos` para veres ao vivo |
+| 02, 10 | Docker a sério (`docker build`, `docker run`, `curl`) |
+| 16 | Repositórios Git de treino (`npm run git-cenario <nome>`) |
+| 18 | Maven + JUnit (ou em Docker, sem Maven instalado) |
+| 21, 23 | `dotnet test` + xUnit (ou em Docker, sem o SDK instalado) |
+
+O módulo 11 é diferente: lá **tu** escreves os testes, e o verificador confirma que eles apanham bugs plantados (*mutation testing*). O módulo 12 liga cada exercício do projeto ao treino isolado correspondente.
 
 ---
 

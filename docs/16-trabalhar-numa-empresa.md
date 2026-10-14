@@ -236,6 +236,114 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 
 No fim disto, tens um projeto de portfólio que mostra praticamente tudo o que uma vaga júnior/pleno pede, e que consegues explicar linha a linha numa entrevista. **Isso vale mais do que qualquer certificado.**
 
+## Prática: escreve tu
+
+Ler sobre Git ensina os nomes dos comandos. Só se aprende Git quando ele **corre mal**: um conflito, um bug que ninguém sabe quando entrou, um histórico que tem de ficar apresentável antes do PR. Estes três exercícios criam essas situações de propósito, em repositórios de treino que podes estragar à vontade.
+
+**Preparar um cenário** (dentro de `pratica/`):
+
+```bash
+npm run git-cenario conflito     # ou: bisect, rebase
+cd 16-trabalhar-numa-empresa/cenarios/conflito
+```
+
+Correr o mesmo comando outra vez **apaga** o cenário e começa do zero. Usa isso: repetir um exercício de Git até sair sem pensar é exatamente o objetivo.
+
+**Verificar** (dentro de `pratica/`): `npm run verificar 16 conflito`, `... 16 bisect` ou `... 16 rebase`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Resolver um conflito de merge (≈15 min)
+
+Estás no branch `feature/cache`, onde baixaste o TTL da cache para 30 s e acrescentaste `cacheMaxEntradas`. Entretanto, o Bruno mudou o **mesmo** ficheiro no `main`: subiu o TTL para 120 s e o `limitePedidos` para 200. Traz o `main` para o teu branch com um **merge** e resolve o conflito assim:
+
+- o TTL fica **30** (é a tua decisão, e o motivo do teu branch);
+- o `cacheMaxEntradas: 1000` fica;
+- o `limitePedidos` fica **200** (a mudança do Bruno não tem nada a ver com a tua, e não a podes perder).
+
+O verificador confirma que há um commit de merge, que não sobrou nenhum `<<<<<<<` no ficheiro, e que os quatro valores estão certos.
+
+<details>
+<summary>Pista</summary>
+
+Depois do `git merge main`, abre o `config.js`. Entre `<<<<<<< HEAD` e `=======` está a tua versão; entre `=======` e `>>>>>>> main` está a do `main`. O Git não sabe qual está certa: pede-te para escreveres a versão final, **apagares os marcadores**, fazeres `git add` e terminares com `git commit`. A parte mais perigosa de um conflito é aceitar uma das versões por inteiro e apagar sem querer a mudança do colega.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```bash
+git merge main              # CONFLICT (content): Merge conflict in config.js
+# editar o config.js até ficar assim (e sem marcadores):
+#   porta: 3000, cacheTtlSegundos: 30, cacheMaxEntradas: 1000, limitePedidos: 200
+git add config.js
+git commit --no-edit        # usa a mensagem por omissão: "Merge branch 'main' into feature/cache"
+```
+
+Numa equipa, também se faz isto com `git rebase main` em vez de `merge`. O conflito é o mesmo; o histórico é que fica diferente (é o P3).
+</details>
+
+### P2 · Encontrar o commit que introduziu um bug, com `git bisect` (≈15 min)
+
+O repositório tem 41 commits. A tag `v1.0` funcionava; o `main` atual não (`./teste.sh` falha). Algures pelo meio, alguém partiu a função `media`, e as mensagens dos commits não ajudam. Encontra o **primeiro** commit com o bug **sem** o procurar à mão, e escreve o hash completo dele em `pratica/16-trabalhar-numa-empresa/cenarios/bisect-resposta.txt`.
+
+O `git bisect` faz uma pesquisa binária no histórico: com 41 commits, chega à resposta em cerca de 6 testes. Com `git bisect run`, corre o teste **sozinho** em cada passo.
+
+<details>
+<summary>Pista</summary>
+
+`git bisect start`, depois diz-lhe um commit mau (`git bisect bad`, o atual) e um bom (`git bisect good v1.0`). A partir daí, ou testas tu e respondes `good`/`bad` em cada passo, ou deixas o `git bisect run ./teste.sh` fazê-lo: ele usa o código de saída do script (0 = bom, outro = mau). No fim, **não te esqueças** do `git bisect reset`, senão ficas parado num commit antigo.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```bash
+git bisect start
+git bisect bad                  # o commit atual tem o bug
+git bisect good v1.0            # este não tinha
+git bisect run ./teste.sh       # "... is the first bad commit"
+git rev-parse refs/bisect/bad > ../bisect-resposta.txt
+git bisect reset                # volta ao main
+git show <hash>                 # vê o que mudou: "i < numeros.length" passou a "i <= numeros.length"
+```
+
+No trabalho, isto encontra em minutos regressões que levariam uma tarde a procurar à mão. E mostra porque é que commits pequenos importam: o `bisect` aponta para um commit, e quanto mais pequeno ele for, mais óbvio é o bug.
+</details>
+
+### P3 · Limpar o histórico antes do PR, com rebase interativo (≈20 min)
+
+Estás no branch `feature/estatisticas`, com quatro commits desarrumados: `wip`, `mais coisas`, `corrigir typo`, `wip 2`. Entretanto, a Ana pôs um commit novo no `main`. Antes de abrir o PR, deixa o branch assim:
+
+- **por cima** do `main` atual (rebaseado);
+- com **um só** commit (os quatro juntos, *squash*);
+- com uma mensagem no formato [Conventional Commits](https://www.conventionalcommits.org/pt-br/v1.0.0/): `feat(estatisticas): <o que faz>`;
+- com o `estatisticas.js` **exatamente** igual ao final da versão desarrumada (nada se perde, só se reorganiza).
+
+<details>
+<summary>Pista</summary>
+
+`git rebase -i main` abre um editor com uma linha por commit. Deixa o primeiro como `pick` e muda os outros três para `squash` (ou só `s`). Grava e fecha. O Git abre outro editor para escreveres a mensagem do commit único: apaga as quatro mensagens antigas e escreve a nova. Se correr mal a meio, `git rebase --abort` volta tudo ao que estava.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```bash
+git rebase -i main
+# no editor:            pick   wip
+#                       squash mais coisas
+#                       squash corrigir typo
+#                       squash wip 2
+# na mensagem:          feat(estatisticas): total, feitas e percentagem de tarefas
+git log --oneline --graph --all     # um commit teu, por cima do commit da Ana
+```
+
+Uma alternativa sem editor: `git rebase main`, depois `git reset --soft main` (desfaz os commits mas mantém as alterações preparadas) e `git commit -m "feat(estatisticas): ..."`.
+
+**Regra de ouro:** rebase só em branches **teus** que ainda não partilhaste. Rebase reescreve commits (os hashes mudam). Num branch onde outros já trabalham, obriga toda a gente a lidar com um histórico que deixou de bater certo com o deles.
+</details>
+
 <!-- quiz:start -->
 
 ## Quiz rápido (autoavaliação)

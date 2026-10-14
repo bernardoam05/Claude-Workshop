@@ -146,6 +146,181 @@ Repara que a lista não é "mais tecnologia". É, sobretudo, **operação**: sab
 
 ---
 
+## Prática: escreve tu
+
+Um trade-off descrito convence pouco. Um trade-off **medido** fica. Nos dois primeiros exercícios escreves as **duas** alternativas de uma decisão, e os testes mostram a diferença com números e com um defeito concreto. No terceiro escreves a decisão como se escreve numa empresa: um ADR.
+
+**Verificar:** `npm run verificar 13` (dentro de `pratica/`). Só um exercício: `npm run verificar 13 paginacao`, `... 13 resumo` ou `... 13 adr`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Paginação: offset ou cursor? (≈40 min)
+
+**Ficheiro:** `pratica/13-decisoes-e-trade-offs/paginacao.js`
+
+Escreve as duas formas de paginar a mesma lista. A primeira, com `LIMIT`/`OFFSET`, é a que toda a gente escreve primeiro. A segunda, por **cursor** (*keyset pagination*), pede "as próximas N tarefas **depois desta**".
+
+Um dos testes do offset é estranho de propósito: **prova o defeito**. Cria uma tarefa entre a página 1 e a 2, e confirma que a página 2 repete uma tarefa. O teste equivalente do cursor confirma que isso não acontece. É este par de testes que justifica a decisão do P3.
+
+**Sintaxe que vais praticar:** `LIMIT $1 OFFSET $2`, `WHERE ($1::int IS NULL OR id < $1)`, `Buffer.from(...).toString('base64url')` e o caminho inverso, `JSON.parse` dentro de `try`, `.slice()` e `.at(-1)`.
+
+<details>
+<summary>Pista</summary>
+
+Para saber se há página seguinte **sem** uma query extra, pede `tamanho + 1` linhas: se vierem todas, há mais; devolves só `tamanho` e usas o id da última para o cursor. O cursor é "opaco": codifica `{ ultimoId }` em base64url, para o cliente não depender do que tem lá dentro.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export async function listarPorOffset(db, pagina, tamanho) {
+  const { rows } = await db.query('SELECT id, title FROM tasks ORDER BY id DESC LIMIT $1 OFFSET $2', [
+    tamanho,
+    (pagina - 1) * tamanho,
+  ]);
+  return rows;
+}
+
+// O cursor é "opaco": o cliente não deve depender do que tem lá dentro. Hoje é o último id;
+// amanhã pode ser (data, id), e nenhum cliente parte por causa disso.
+const codificar = (ultimoId) => Buffer.from(JSON.stringify({ ultimoId })).toString('base64url');
+
+function descodificar(cursor) {
+  try {
+    const { ultimoId } = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
+    if (Number.isInteger(ultimoId)) return ultimoId;
+  } catch {
+    // cai no throw de baixo
+  }
+  throw new Error('Cursor inválido');
+}
+
+export async function listarPorCursor(db, cursor, tamanho) {
+  const depoisDe = cursor === null ? null : descodificar(cursor);
+  // Pedimos UMA a mais: se vier, sabemos que há página seguinte sem fazer outra query.
+  const { rows } = await db.query(
+    `SELECT id, title FROM tasks
+     WHERE ($1::int IS NULL OR id < $1)
+     ORDER BY id DESC
+     LIMIT $2`,
+    [depoisDe, tamanho + 1],
+  );
+  const haMais = rows.length > tamanho;
+  const tarefas = rows.slice(0, tamanho);
+  return { tarefas, proximoCursor: haMais ? codificar(tarefas.at(-1).id) : null };
+}
+```
+</details>
+
+### P2 · N+1 queries contra um JOIN (≈35 min)
+
+**Ficheiro:** `pratica/13-decisoes-e-trade-offs/resumo.js`
+
+O problema de desempenho mais comum em aplicações com BD: pedir uma lista e depois, **para cada elemento**, ir buscar os seus filhos. Escreve as duas versões do mesmo resumo (projetos e os títulos das suas tarefas). Os testes confirmam que dão **o mesmo resultado**, contam as queries, e medem o tempo com 2 ms de "rede" por query (a latência típica entre uma API e uma BD na mesma cloud).
+
+Repara no número que o teste escreve no relatório. Com 50 projetos, a diferença já é de mais de uma ordem de grandeza. Com 5000, a versão N+1 deixa de ser uma opção.
+
+**Sintaxe que vais praticar:** `for...of` com `await` lá dentro (a forma "ingénua" e sequencial), `LEFT JOIN` + `GROUP BY`, `json_agg(... ORDER BY ...)`, `FILTER (WHERE ...)`, `COALESCE`.
+
+<details>
+<summary>Pista</summary>
+
+`json_agg(t.title ORDER BY t.id)` junta os títulos de cada grupo num array JSON, e o driver devolve-o já como array de JavaScript. Para um projeto sem tarefas, o `LEFT JOIN` cria uma linha com `t.title` a `NULL`: o `FILTER (WHERE t.id IS NOT NULL)` tira-a, e o resultado fica `NULL`, que o `COALESCE(..., '[]')` troca por um array vazio.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export async function resumoN1(db) {
+  const { rows: projetos } = await db.query('SELECT id, name FROM projects ORDER BY id');
+  const resultado = [];
+  for (const p of projetos) {
+    // Uma ida à BD POR projeto: com 50 projetos, 50 viagens pela rede.
+    const { rows } = await db.query('SELECT title FROM tasks WHERE project_id = $1 ORDER BY id', [p.id]);
+    resultado.push({ projeto: p.name, tarefas: rows.map((r) => r.title) });
+  }
+  return resultado;
+}
+
+export async function resumoJoin(db) {
+  // json_agg junta as linhas de cada grupo num array JSON, já na BD.
+  // FILTER tira a linha "vazia" que o LEFT JOIN cria para um projeto sem tarefas;
+  // COALESCE troca o NULL (grupo sem nada) por um array vazio.
+  const { rows } = await db.query(`
+    SELECT p.name AS projeto,
+           COALESCE(json_agg(t.title ORDER BY t.id) FILTER (WHERE t.id IS NOT NULL), '[]') AS tarefas
+    FROM projects p
+    LEFT JOIN tasks t ON t.project_id = p.id
+    GROUP BY p.id, p.name
+    ORDER BY p.id
+  `);
+  return rows;
+}
+```
+
+Os ORMs (Prisma, Hibernate, Entity Framework) escondem o SQL, e por isso escondem também este problema: `projeto.tarefas` dentro de um ciclo parece só acesso a uma propriedade. É a pergunta número um de quem revê código que usa um ORM.
+</details>
+
+### P3 · Escrever a decisão: um ADR (≈25 min)
+
+**Ficheiro:** `pratica/13-decisoes-e-trade-offs/adr/0001-<tema>.md` (copia o `0000-modelo.md`)
+
+O [módulo 16](16-trabalhar-numa-empresa.md#documentar-decisões-adrs) explica o que é um ADR (*Architecture Decision Record*). Escreve o teu primeiro, sobre a decisão do P1: offset ou cursor? Usa o que os testes te mostraram como **evidência** no Contexto, e sê honesto nas consequências negativas.
+
+O verificador só confirma a **estrutura** (título, estado, contexto, decisão, pelo menos duas alternativas, consequências positivas **e** negativas). A qualidade do raciocínio, compara-a com a solução de referência.
+
+<details>
+<summary>Solução de referência</summary>
+
+```markdown
+# ADR 0001: Paginar a lista de tarefas por cursor, e não por offset
+
+## Estado
+
+Aceite
+
+## Contexto
+
+A lista de tarefas vai deixar de caber numa só resposta. Precisamos de páginas. A lista muda
+enquanto o utilizador a percorre: o worker e outros separadores criam tarefas a qualquer momento.
+O teste do P1 mostrou que, com OFFSET, uma tarefa criada entre a página 1 e a página 2 faz a
+tarefa 7 aparecer duas vezes. Além disso, OFFSET 10000 obriga o Postgres a ler e deitar fora 10000
+linhas antes de devolver as que interessam.
+
+## Decisão
+
+Vamos paginar por cursor (keyset pagination): cada página devolve um cursor opaco com o último id
+visto, e a página seguinte pede "as tarefas com id menor do que este". A ordenação é por id
+decrescente, que é estável e tem índice (a chave primária).
+
+## Alternativas consideradas
+
+- **OFFSET/LIMIT**: o mais simples de implementar e permite saltar para a página N. Rejeitado
+  porque repete ou perde linhas quando a lista muda, e fica mais lento quanto mais fundo se vai.
+- **Devolver tudo e paginar no frontend**: zero trabalho no backend. Rejeitado porque não escala:
+  com milhares de tarefas, a primeira resposta fica enorme e lenta.
+- **Cursor com (created_at, id)**: necessário se um dia a ordem deixar de ser a do id. Adiado: hoje
+  o id já dá a ordem de criação, e um timestamp tem armadilhas de precisão (o JavaScript só guarda
+  milissegundos, o Postgres guarda microssegundos).
+
+## Consequências
+
+### Positivas
+
+- Nenhuma tarefa repetida ou perdida enquanto a lista muda.
+- Desempenho constante em qualquer página, porque a query usa o índice da chave primária.
+- O cursor é opaco: podemos mudar o que está lá dentro sem partir os clientes.
+
+### Negativas
+
+- Deixa de ser possível saltar diretamente para a "página 7": só se anda para a frente.
+- Não sabemos o total de páginas sem uma query `count(*)` à parte.
+- O código é um pouco mais complicado (codificar e validar o cursor, pedir uma linha a mais).
+```
+</details>
+
 ## Exercício final de pensamento crítico
 
 Um colega chega com esta proposta: *"Vamos pôr o worker a fazer a chamada à BD diretamente, e a API passa a publicar só um `POST` HTTP ao worker. Assim tiramos o RabbitMQ, que é mais uma peça para manter."*

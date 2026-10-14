@@ -159,6 +159,223 @@ Já tens Kafka a correr no `activity` (módulo 17). Dar ao `notifications` o **m
 - **D15. Refazer o worker (RabbitMQ, Node) em .NET:** mesma fila, mesma idempotência, mesmos testes de contrato. É o D12 do módulo 18 (Spring), agora para quem prefere C#.
 - **D16. `dotnet watch`:** corre `dotnet watch run` dentro do contentor de build e edita um endpoint — compara com o `--watch` do Node (módulo 04) e o que falta ao `mvn` (Spring) para teres hot-reload equivalente.
 
+## Prática: escreve tu
+
+A mesma API de notas que escreveste em Node ([módulo 04](04-api-em-camadas.md#prática-escreve-tu)) e em Spring ([módulo 18](18-spring-boot.md#prática-escreve-tu)), agora com Minimal APIs do .NET. No fim, tens o mesmo contrato HTTP em três stacks, e o [dicionário da secção 2](#2-dicionário-node--spring--net) passa a ser código teu. O terceiro exercício é sobre a coisa que o .NET leva mais a sério do que os outros dois: os **tempos de vida** da injeção de dependências.
+
+**Ficheiros:** `pratica/21-dotnet/` (`NotasEndpoints.cs`, `Servicos.cs`, `Diagnostico.cs`; o `Program.cs` já liga as três peças)
+
+**Verificar:** `npm run verificar 21` (dentro de `pratica/`). Só um exercício: `npm run verificar 21 NotasTests`, `... 21 ValidacaoTests` ou `... 21 DiagnosticoTests`. Sem o SDK do .NET instalado, o verificador corre-o no contentor `mcr.microsoft.com/dotnet/sdk:10.0` (cerca de 1,3 GB na primeira vez).
+
+Como no Java, o compilador do C# compila **tudo** antes de correr qualquer teste: deixa sempre o código num estado que compila.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Minimal APIs: a API de notas (≈40 min)
+
+**Ficheiros:** `NotasEndpoints.cs` (rotas, record `Nota`, `NotasService`) e `Servicos.cs` (registar o serviço)
+
+O mesmo contrato do módulo 18: `GET /api/notas`, `POST` (`201` + `Location`), `GET /api/notas/{id}` (`404` com `{"error": "Nota 99 não encontrada"}`), `PUT /api/notas/{id}/afixada` e `DELETE` (`204`). A nota tem também `criadaEm` (a hora em que foi criada), que vai ser importante no P3.
+
+Uma diferença em relação ao Spring: com a restrição `{id:long}` na rota, `/api/notas/abc` **nem sequer corresponde** a uma rota, e a resposta é `404` antes de o teu código correr. No Spring, a rota correspondia e a conversão falhava (`400`). As duas escolhas são defensáveis; o importante é saber qual a tua ferramenta faz.
+
+**Sintaxe que vais praticar:** `app.MapGroup(...)`, `MapGet/MapPost/MapPut/MapDelete`, restrições de rota (`{id:long}`), parâmetros de lambdas que vêm da rota, do corpo ou da DI, `Results.Ok/Created/NoContent/Json`, `record`, construtores primários (`class NotasService(IRelogio relogio)`), `ConcurrentDictionary`, `Interlocked.Increment`, `with`, o padrão `is { } nota`.
+
+<details>
+<summary>Pista</summary>
+
+Numa Minimal API, o ASP.NET Core decide de onde vem cada parâmetro do lambda: um tipo registado na DI vem do contentor (`NotasService service`), um nome que está na rota vem da rota (`long id`), e um tipo complexo vem do corpo JSON (`NovaNota pedido`). Não precisas de anotações. Para o `404` com corpo, `Results.Json(new { error = "..." }, statusCode: 404)`.
+</details>
+
+<details>
+<summary>Solução de referência (inclui o P2)</summary>
+
+```csharp
+using System.Collections.Concurrent;
+
+namespace Pratica;
+
+// O que a API devolve. A serialização JSON põe os nomes em camelCase: {"id", "titulo", "afixada", "criadaEm"}.
+public record Nota(long Id, string Titulo, bool Afixada, DateTimeOffset CriadaEm);
+
+// O corpo do POST. Titulo é string? porque pode faltar no JSON: o compilador obriga-nos a tratar o null.
+public record NovaNota(string? Titulo);
+
+// Construtor primário (C# 12): o IRelogio chega pelo construtor, injetado pelo contentor.
+public sealed class NotasService(IRelogio relogio)
+{
+    private readonly ConcurrentDictionary<long, Nota> _notas = new();
+    private long _ultimoId;
+
+    public IEnumerable<Nota> Listar() => _notas.Values.OrderBy(n => n.Id);
+
+    public Nota? Obter(long id) => _notas.GetValueOrDefault(id);
+
+    public Nota Criar(string titulo)
+    {
+        // Interlocked: incremento atómico. Vários pedidos ao mesmo tempo nunca recebem o mesmo id.
+        var nota = new Nota(Interlocked.Increment(ref _ultimoId), titulo, false, relogio.Agora());
+        _notas[nota.Id] = nota;
+        return nota;
+    }
+
+    public Nota? Afixar(long id)
+    {
+        if (Obter(id) is not { } nota) return null;
+        var afixada = nota with { Afixada = true }; // `with`: uma cópia do record com um campo mudado
+        _notas[id] = afixada;
+        return afixada;
+    }
+
+    public bool Apagar(long id) => _notas.TryRemove(id, out _);
+}
+
+public static class NotasEndpoints
+{
+    // Mensagem de erro no formato das outras duas APIs do workshop.
+    static IResult Erro(int status, string mensagem) => Results.Json(new { error = mensagem }, statusCode: status);
+
+    static IResult NaoEncontrada(long id) => Erro(StatusCodes.Status404NotFound, $"Nota {id} não encontrada");
+
+    public static void Mapear(WebApplication app)
+    {
+        // Um grupo: todas as rotas abaixo começam por /api/notas.
+        var notas = app.MapGroup("/api/notas");
+
+        // Os parâmetros dos lambdas vêm de sítios diferentes, e o ASP.NET Core deduz de onde:
+        // NotasService do contentor de DI, long id da rota, NovaNota do corpo JSON.
+        notas.MapGet("/", (NotasService service) => service.Listar());
+
+        notas.MapGet("/{id:long}", (long id, NotasService service) =>
+            service.Obter(id) is { } nota ? Results.Ok(nota) : NaoEncontrada(id));
+
+        notas.MapPost("/", (NovaNota pedido, NotasService service) =>
+        {
+            var titulo = pedido.Titulo?.Trim();
+            if (string.IsNullOrEmpty(titulo)) return Erro(StatusCodes.Status400BadRequest, "O título é obrigatório");
+            if (titulo.Length > 120) return Erro(StatusCodes.Status400BadRequest, "Máximo de 120 caracteres");
+
+            var nota = service.Criar(titulo);
+            return Results.Created($"/api/notas/{nota.Id}", nota);
+        });
+
+        notas.MapPut("/{id:long}/afixada", (long id, NotasService service) =>
+            service.Afixar(id) is { } nota ? Results.Ok(nota) : NaoEncontrada(id));
+
+        notas.MapDelete("/{id:long}", (long id, NotasService service) =>
+            service.Apagar(id) ? Results.NoContent() : NaoEncontrada(id));
+    }
+}
+```
+</details>
+
+### P2 · Validação, com as mesmas mensagens das outras duas APIs (≈15 min)
+
+**Ficheiro:** `NotasEndpoints.cs` (o `MapPost`)
+
+Título em falta, `null` ou só espaços: `400` com `{"error": "O título é obrigatório"}`. Mais de 120 caracteres: `{"error": "Máximo de 120 caracteres"}`. E o título guarda-se sem espaços nas pontas.
+
+Aqui não há anotações nem `@Valid`: a validação é código normal, no endpoint. É uma escolha, e não a única: o .NET também tem validação por atributos e bibliotecas como o FluentValidation. Para três regras, um `if` por regra é o mais fácil de ler.
+
+**Sintaxe que vais praticar:** `string?` e o operador `?.` (`pedido.Titulo?.Trim()`), `string.IsNullOrEmpty`, `return` antecipado num lambda com vários tipos de resultado.
+
+### P3 · Injeção de dependências: trocar peças e tempos de vida (≈35 min)
+
+**Ficheiros:** `Servicos.cs` e `Diagnostico.cs` (o `IRelogio` já está declarado)
+
+Duas partes:
+
+1. **Trocar uma dependência num teste.** O `NotasService` passa a receber um `IRelogio` pelo construtor, em vez de chamar `DateTimeOffset.UtcNow`. O teste substitui-o por um relógio parado (`ConfigureTestServices`) e confirma que a nota guarda essa hora. É o mesmo `clock` injetado do módulo 04, agora com um contentor de DI a fazer a ligação.
+2. **Tempos de vida.** Um middleware põe o cabeçalho `X-Request-Id` em cada resposta, e a rota `GET /api/diagnostico` devolve `{ pedidoId, totalPedidos }`. O teste exige que:
+   - cada pedido tenha um id **diferente** (por isso o serviço que o guarda **não** pode ser *Singleton*);
+   - o middleware e a rota vejam **o mesmo** id dentro do mesmo pedido (por isso **não** pode ser *Transient*);
+   - o `totalPedidos` conte **todos** os pedidos da aplicação (por isso esse **é** *Singleton*).
+
+   A única combinação que passa é a certa: *Scoped* para o id do pedido, *Singleton* para o contador.
+
+**Sintaxe que vais praticar:** `AddSingleton/AddScoped`, interfaces (`IRelogio`), `app.Use(async (context, next) => ...)`, `context.RequestServices.GetRequiredService<T>()`, `context.Response.Headers[...]`, propriedades só de leitura (`{ get; } = Guid.NewGuid().ToString()`), `Interlocked`/`Volatile`.
+
+<details>
+<summary>Pista</summary>
+
+Dentro de um middleware, um serviço *Scoped* pede-se ao contentor **do pedido**: `context.RequestServices`. Se o pedires ao `app.Services` (o contentor da aplicação), recebes outra instância, ou um erro. E pensa no que aconteceria com um contador num serviço *Scoped*: começava do zero em cada pedido.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```csharp
+// Servicos.cs
+namespace Pratica;
+
+public static class Servicos
+{
+    public static void Registar(IServiceCollection services)
+    {
+        // Singleton: UMA instância para a aplicação inteira. Serve para o que tem estado partilhado
+        // (as notas, o contador) ou não tem estado nenhum (o relógio).
+        services.AddSingleton<IRelogio, RelogioDoSistema>();
+        services.AddSingleton<NotasService>();
+        services.AddSingleton<ContadorDePedidos>();
+
+        // Scoped: uma instância POR PEDIDO HTTP, partilhada por todos os que a pedirem durante esse pedido.
+        services.AddScoped<ContextoDoPedido>();
+    }
+}
+
+public sealed class RelogioDoSistema : IRelogio
+{
+    public DateTimeOffset Agora() => DateTimeOffset.UtcNow;
+}
+```
+
+```csharp
+// Diagnostico.cs
+namespace Pratica;
+
+public interface IRelogio
+{
+    DateTimeOffset Agora();
+}
+
+// Scoped: criado no início de cada pedido. O Guid é gerado uma vez, no construtor.
+public sealed class ContextoDoPedido
+{
+    public string PedidoId { get; } = Guid.NewGuid().ToString();
+}
+
+// Singleton: um só para a aplicação toda, por isso o incremento tem de ser seguro entre threads.
+public sealed class ContadorDePedidos
+{
+    private int _total;
+    public int Incrementar() => Interlocked.Increment(ref _total);
+    public int Total => Volatile.Read(ref _total);
+}
+
+public static class Diagnostico
+{
+    public static void Configurar(WebApplication app)
+    {
+        // Middleware inline: corre em todos os pedidos, antes das rotas.
+        // Os serviços scoped pedem-se ao contentor DO PEDIDO (context.RequestServices).
+        app.Use(async (context, next) =>
+        {
+            var pedido = context.RequestServices.GetRequiredService<ContextoDoPedido>();
+            context.RequestServices.GetRequiredService<ContadorDePedidos>().Incrementar();
+            context.Response.Headers["X-Request-Id"] = pedido.PedidoId;
+            await next(context);
+        });
+
+        // A rota recebe o MESMO ContextoDoPedido que o middleware usou (scoped = um por pedido).
+        app.MapGet("/api/diagnostico", (ContextoDoPedido pedido, ContadorDePedidos contador) =>
+            new { pedidoId = pedido.PedidoId, totalPedidos = contador.Total });
+    }
+}
+```
+
+O erro clássico de tempos de vida, que o .NET deteta no arranque em modo de desenvolvimento: um *Singleton* que recebe um *Scoped* pelo construtor. O singleton vive para sempre, por isso ficaria agarrado à instância do primeiro pedido (e, se fosse um `DbContext` do EF Core, a uma ligação à BD que já foi fechada). É por isso que o `ContadorDePedidos` não recebe o `ContextoDoPedido`: é o middleware que usa os dois.
+</details>
+
 <!-- quiz:start -->
 
 ## Quiz rápido (autoavaliação)

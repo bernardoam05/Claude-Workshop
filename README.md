@@ -14,7 +14,7 @@ git clone git@github.com:<o-teu-utilizador>/Claude-Workshop.git
 cd Claude-Workshop
 ```
 
-Depois, abre **[`docs/00-indice.md`](docs/00-indice.md)** — é o mapa de todo o workshop: a arquitetura, o roteiro dos 20 módulos, como arrancar o sistema, e como testares a ti próprio (há um quiz de linha de comandos com correção automática).
+Depois, abre **[`docs/00-indice.md`](docs/00-indice.md)** — é o mapa de todo o workshop: a arquitetura, o roteiro dos 23 módulos, como arrancar o sistema, e como testares a ti próprio (há um quiz de linha de comandos com correção automática).
 
 ## O que vais construir e aprender
 
@@ -34,6 +34,8 @@ Depois, abre **[`docs/00-indice.md`](docs/00-indice.md)** — é o mapa de todo 
 | Containers | Docker, Docker Compose, Kubernetes | [02](docs/02-docker.md) |
 | CI/CD | GitHub Actions | [20](docs/20-ci-cd-github-actions.md) |
 | Testes | Unitários, integração, E2E (Playwright) | [11](docs/11-testes-e-observabilidade.md) |
+
+**Em todos os módulos escreves código, não só lês:** cada um tem exercícios em [`pratica/`](pratica/), com testes automáticos que te dizem se está certo (`cd pratica && npm install && npm run verificar 01`). Ver [como funciona a prática](docs/00-indice.md#a-prática-ler-ensina-a-reconhecer-escrever-ensina-a-produzir).
 
 Mais: [decisões e trade-offs](docs/13-decisoes-e-trade-offs.md) explicados a sério, um [mapa honesto de competências de mercado](docs/14-competencias-mercado.md), e um módulo sobre [como se trabalha numa empresa](docs/16-trabalhar-numa-empresa.md) (Git, PRs, entrevistas, ferramentas da indústria).
 

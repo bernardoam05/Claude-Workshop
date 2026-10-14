@@ -26,6 +26,12 @@ npm-debug.log*
 *.swp
 .DS_Store
 
-# Artefactos ocasionais de experiências (ver docs/11-exercicios.md, exercício A5).
+# Capturas de ecrã geradas pela prática de estilos (npm run verificar 09).
+pratica/09-estilos-css/capturas/
+
+# Repositórios Git de treino, criados por `npm run git-cenario` (módulo 16). Cada um tem o seu próprio .git.
+pratica/16-trabalhar-numa-empresa/cenarios/
+
+# Artefactos ocasionais de experiências (ver docs/12-exercicios.md, exercício A5).
 *.tmp
 .quiz-results.json

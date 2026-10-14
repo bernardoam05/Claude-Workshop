@@ -15,6 +15,25 @@ Regras para todos:
 
 Cada exercício tem **pistas** escondidas. Só as abras se estiveres bloqueado há mais de 15 minutos.
 
+
+## Antes de mexer no projeto: o treino isolado
+
+Vários exercícios deste módulo têm um "treino" em `pratica/`: a mesma ideia, isolada, com testes que te dizem se está certa. Se um exercício te parecer grande demais, faz primeiro o treino correspondente. Depois, ligá-lo ao projeto a sério é sobretudo trabalho de canalização (e é essa a parte que este módulo treina).
+
+| Exercício aqui | Treino isolado em `pratica/` |
+|---|---|
+| A2 · `GET /api/tasks/:id` | [04 P3](04-api-em-camadas.md#p3--camada-http-40-min): rotas com `:id`, validação do id e `404` |
+| A3 · campo `priority` | [03 P1](03-postgresql.md#p1--escrever-uma-migração-30-min) (migração com `CHECK`) e [04 P1](04-api-em-camadas.md#p1--validação-com-zod-40-min) (`z.enum`) |
+| A5 · Dockerfile sem multi-stage | [02 P3](02-docker.md#p3--multi-stage-build-20-min): o mesmo, ao contrário |
+| B9 · limitar as tentativas | [06 P2](06-mensagens-rabbitmq.md#p2--um-consumidor-com-tentativas-limitadas-35-min): a opção do cabeçalho `x-retries` |
+| C11 · testes de integração | [11 P3](11-testes-e-observabilidade.md#p3--testes-de-integração-com-um-postgres-a-sério-30-min-7-mutantes) |
+| C12 · métricas com Prometheus | [19 P1](19-observabilidade-prometheus-grafana.md#p1--instrumentar-com-o-prom-client-35-min) |
+| C14 · outbox | [06 P3](06-mensagens-rabbitmq.md#p3--outbox-a-resposta-ao-dual-write-40-min) |
+| C16 · `X-Request-Id` | [01 P3](01-fundamentos.md#p3--a-mesma-api-com-express-e-um-middleware-teu-30-min) (e, em .NET, [21 P3](21-dotnet.md#p3--injeção-de-dependências-trocar-peças-e-tempos-de-vida-35-min)) |
+| C17 · administradores | [15 P4](15-autenticacao-manual-vs-keycloak.md#p4--autenticação-e-autorização-como-middlewares-25-min): `exigirPapel` e `podeEditar` |
+| C18 · rate limiting no Nginx | [10 P3](10-nginx-proxy-e-origem.md#p3--segurança-e-desempenho-25-min) (e a versão em JavaScript, [05 P2](05-redis-e-cache.md#p2--rate-limiting-com-incr-e-expire-35-min)) |
+| D1 · pipeline de CI | [20](20-ci-cd-github-actions.md#prática-escreve-tu): três workflows escritos do zero |
+
 ---
 
 ## Nível A: Mudar

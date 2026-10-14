@@ -1,0 +1,2 @@
+-- P2d · Emails dos utilizadores que não têm nenhum projeto.
+-- Coluna: email. Ordem: email.

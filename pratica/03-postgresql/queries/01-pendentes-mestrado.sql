@@ -1,0 +1,2 @@
+-- P2a · Títulos das tarefas POR FAZER do projeto 'Mestrado'.
+-- Coluna: title. Ordem: due_date (as sem data no fim), depois title.

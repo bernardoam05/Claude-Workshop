@@ -143,6 +143,190 @@ O `<T>` entre `< >` diz "este tipo funciona com QUALQUER tipo `T`, mas uma vez e
 
 ---
 
+## Prática: escreve tu
+
+Esta chuleta serve para **ler** C#. Os exercícios seguintes servem para o **escrever**, um por cada grupo de secções acima. O código e os testes estão em `pratica/23-sintaxe-csharp/`: cada ficheiro tem os métodos já declarados (para tudo compilar) e o corpo por fazer.
+
+**Verificar:** `npm run verificar 23` (dentro de `pratica/`). Só um exercício: `npm run verificar 23 Registos`, `... 23 Consultas`, `... 23 Padroes` ou `... 23 Assincrono`. Sem o SDK do .NET instalado, corre num contentor Docker.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Records, nullable e strings (≈20 min)
+
+**Ficheiro:** `Registos.cs`. Formatar uma morada com e sem código postal (`is null`), mudá-la com `with` sem alterar a original, escrever JSON à mão com uma **raw string interpolada** (`$$"""..."""`), e lidar com um `string?` que pode ser `null`.
+
+<details>
+<summary>Pista</summary>
+
+Numa raw string com **dois** `$` (`$$"""..."""`), as chavetas simples `{ }` são texto normal e só `{{ ... }}` é interpolação. É feito exatamente para JSON, que está cheio de chavetas.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```csharp
+namespace Sintaxe;
+
+public record Morada(string Rua, string Cidade, string? CodigoPostal);
+
+public static class Registos
+{
+    // `is null` é a forma idiomática (não pode ser enganada por um operador == redefinido).
+    public static string Formatar(Morada morada) =>
+        morada.CodigoPostal is null
+            ? $"{morada.Rua}, {morada.Cidade}"
+            : $"{morada.Rua}, {morada.Cidade} ({morada.CodigoPostal})";
+
+    // `with` cria uma cópia com os campos indicados mudados; o original fica como estava.
+    public static Morada MudarDeCidade(Morada morada, string novaCidade) =>
+        morada with { Cidade = novaCidade, CodigoPostal = null };
+
+    // $$"""...""": raw string interpolada com DOIS $. As chavetas simples { } são texto normal
+    // (dá jeito em JSON), e só {{ ... }} é interpolação.
+    public static string ParaJson(string nome, int idade) =>
+        $$"""{ "nome": "{{nome}}", "idade": {{idade}} }""";
+
+    public static string PrimeiroNome(string? nomeCompleto)
+    {
+        if (string.IsNullOrWhiteSpace(nomeCompleto)) return "ANÓNIMO";
+        // Depois do IsNullOrWhiteSpace, o compilador sabe que nomeCompleto não é null (sem avisos).
+        return nomeCompleto.Trim().Split(' ')[0].ToUpperInvariant();
+    }
+}
+```
+</details>
+
+### P2 · LINQ (≈25 min)
+
+**Ficheiro:** `Consultas.cs`. Cinco consultas, cada uma com **uma** expressão: filtrar e ordenar, agrupar e somar (`GroupBy` + `ToDictionary`), o grupo com o maior total (`MaxBy`), "todas" e "alguma" (`All`/`Any`), e paginar (`Skip`/`Take`).
+
+<details>
+<summary>Pista</summary>
+
+Cuidado com o `ProjetoConcluido` para um projeto que não existe: `All` numa lista **vazia** dá `true` ("todas as zero tarefas estão feitas"). É lógica matemática correta, mas não é o que a regra pede.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```csharp
+namespace Sintaxe;
+
+public record Tarefa(int Id, string Titulo, bool Feita, string Projeto, int Minutos);
+
+public static class Consultas
+{
+    public static List<string> TitulosPorFazer(IEnumerable<Tarefa> tarefas) =>
+        tarefas.Where(t => !t.Feita).Select(t => t.Titulo).Order().ToList();
+
+    public static Dictionary<string, int> MinutosPorProjeto(IEnumerable<Tarefa> tarefas) =>
+        tarefas.GroupBy(t => t.Projeto).ToDictionary(g => g.Key, g => g.Sum(t => t.Minutos));
+
+    // MaxBy devolve o elemento com o maior valor (ou null numa sequência vazia); ?. propaga o null.
+    public static string? ProjetoMaisAtrasado(IEnumerable<Tarefa> tarefas) =>
+        tarefas.Where(t => !t.Feita)
+            .GroupBy(t => t.Projeto)
+            .MaxBy(g => g.Sum(t => t.Minutos))
+            ?.Key;
+
+    // All() numa sequência vazia é true ("todas as zero tarefas estão feitas"): daí o Any() antes.
+    public static bool ProjetoConcluido(IEnumerable<Tarefa> tarefas, string projeto)
+    {
+        var doProjeto = tarefas.Where(t => t.Projeto == projeto).ToList();
+        return doProjeto.Any() && doProjeto.All(t => t.Feita);
+    }
+
+    public static List<Tarefa> Pagina(IEnumerable<Tarefa> tarefas, int pagina, int tamanho) =>
+        tarefas.OrderBy(t => t.Id).Skip((pagina - 1) * tamanho).Take(tamanho).ToList();
+}
+```
+
+Compara com o P1 do [módulo 18](18-spring-boot.md#prática-escreve-tu): o LINQ e as Streams do Java fazem o mesmo, com nomes diferentes (`Where`/`filter`, `Select`/`map`, `GroupBy`/`groupingBy`).
+</details>
+
+### P3 · Pattern matching (≈20 min)
+
+**Ficheiro:** `Padroes.cs`. Um só `switch` expression que classifica qualquer valor: `null`, inteiros (com uma condição `when` e uma constante), strings (com um padrão de propriedade `{ Length: 0 }`) e arrays com **list patterns** (`[]`, `[var unico]`, `[var primeiro, .., var ultimo]`).
+
+<details>
+<summary>Pista</summary>
+
+A ordem dos casos importa: o primeiro que bater ganha, por isso os mais específicos vêm primeiro. E como o valor é um `object`, um list pattern sozinho não compila (um `object` não é uma lista): junta-o ao tipo com `and`, como em `int[] and [var unico]`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```csharp
+namespace Sintaxe;
+
+public static class Padroes
+{
+    // Os casos são testados POR ORDEM: o primeiro que bater ganha. Por isso os mais específicos
+    // (int < 0, int 0) vêm antes do mais geral (int).
+    public static string Classificar(object? valor) => valor switch
+    {
+        null => "nada",
+        int n when n < 0 => "negativo",      // guarda com `when`...
+        0 => "zero",                          // ...ou um padrão constante
+        int => "positivo",                    // padrão de tipo
+        string { Length: 0 } => "texto vazio", // padrão de propriedade
+        string s => $"texto com {s.Length} caracteres",
+        // List patterns (C# 11). `and` junta dois padrões: primeiro "é um int[]", depois a forma da lista.
+        int[] and [] => "lista vazia",
+        int[] and [var unico] => $"só o {unico}",
+        int[] and [var primeiro, .., var ultimo] => $"de {primeiro} a {ultimo}", // `..` = qualquer coisa no meio
+        _ => "desconhecido",                  // o "default" de um switch expression
+    };
+}
+```
+</details>
+
+### P4 · `async`, `Task` e genéricos (≈30 min)
+
+**Ficheiro:** `Assincrono.cs`. Carregar vários itens **em paralelo** (`Task.WhenAll`), esperar por uma tarefa com um limite de tempo (`Task.WhenAny`), e um iterador assíncrono (`IAsyncEnumerable` com `yield return`) que respeita um `CancellationToken`. Os métodos são **genéricos**: funcionam para qualquer tipo de resultado.
+
+<details>
+<summary>Pista</summary>
+
+`ids.Select(carregar)` cria todas as `Task` de uma vez (e cada uma começa logo a correr); `Task.WhenAll` espera por todas e devolve os resultados **pela ordem das tasks**, não pela ordem em que acabaram. É o `Promise.all` do JavaScript. No iterador, `yield return` entrega um valor e pausa até quem consome (`await foreach`) pedir o seguinte.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```csharp
+using System.Runtime.CompilerServices;
+
+namespace Sintaxe;
+
+public static class Assincrono
+{
+    // Select cria TODAS as Tasks logo (começam já a correr); WhenAll espera por todas,
+    // e devolve os resultados pela ordem das Tasks, não pela ordem em que acabaram.
+    public static Task<TResultado[]> CarregarTodos<TResultado>(IEnumerable<int> ids, Func<int, Task<TResultado>> carregar) =>
+        Task.WhenAll(ids.Select(carregar));
+
+    public static async Task<T> ComLimiteDeTempo<T>(Task<T> tarefa, TimeSpan limite, T porOmissao)
+    {
+        // WhenAny devolve a primeira a acabar: ou a tarefa, ou o "despertador".
+        var primeira = await Task.WhenAny(tarefa, Task.Delay(limite));
+        return primeira == tarefa ? await tarefa : porOmissao;
+    }
+
+    // Um iterador assíncrono: `yield return` entrega um valor de cada vez a quem faz `await foreach`.
+    public static async IAsyncEnumerable<int> Contar(int ate, TimeSpan pausa, [EnumeratorCancellation] CancellationToken token = default)
+    {
+        for (var i = 1; i <= ate && !token.IsCancellationRequested; i++)
+        {
+            yield return i;
+            await Task.Delay(pausa); // (sem passar o token: cancelado a meio, o Delay lançaria uma exceção)
+        }
+    }
+}
+```
+</details>
+
 ## Como usar isto na prática
 
 Não leias isto de uma vez. Quando o módulo 21 te mandar abrir um ficheiro `.cs` e uma linha não fizer sentido: volta aqui, procura o símbolo (`?`, `record`, `using`, `<T>`), lê a explicação, e volta ao ficheiro.

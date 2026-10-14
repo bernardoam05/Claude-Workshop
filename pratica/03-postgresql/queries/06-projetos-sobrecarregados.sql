@@ -1,0 +1,2 @@
+-- P2f · Projetos com 3 ou mais tarefas por fazer.
+-- Colunas: project, pending (número). Ordem: pending, maior primeiro.

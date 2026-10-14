@@ -124,6 +124,195 @@ Usamos `kafkajs` porque é JavaScript puro e simples de ler. Mas **não é atual
 
 ---
 
+## Prática: escreve tu
+
+As três ideias centrais deste módulo (a chave decide a partição, o grupo divide as partições, o offset marca até onde se leu) são algoritmos pequenos. Escreve-os, e deixam de ser "magia do Kafka". Nenhum exercício precisa do Kafka a correr; o primeiro compara o teu código com o `kafkajs`, o cliente que a API usa.
+
+**Verificar:** `npm run verificar 17` (dentro de `pratica/`). Só um exercício: `npm run verificar 17 particionador`, `... 17 atribuicao` ou `... 17 processador`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · O particionador: que partição recebe esta chave? (≈40 min)
+
+**Ficheiro:** `pratica/17-kafka/particionador.js`
+
+A secção 3 diz que "o mesmo `userId` vai sempre para a mesma partição". Quem decide é um hash, o **MurmurHash2**, igual em todos os clientes Kafka (Java, Node, Go...). Se dois clientes usassem hashes diferentes, a mesma chave podia ir parar a partições diferentes e a ordem perdia-se. Os testes usam os valores de teste do **próprio Kafka** (em Java) e comparam 300 chaves com o `kafkajs`.
+
+O algoritmo, passo a passo (todas as contas em inteiros de **32 bits**, como o `int` do Java):
+
+1. Converte a chave para bytes UTF-8 (`Buffer.from(chave, 'utf8')`). `n` é o número de **bytes**, não de caracteres.
+2. `h = 0x9747b28c ^ n`.
+3. Para cada bloco de 4 bytes `b0 b1 b2 b3`: `k = b0 | b1<<8 | b2<<16 | b3<<24`; `k = k * M`; `k = k ^ (k >>> 24)`; `k = k * M`; `h = h * M`; `h = h ^ k` (com `M = 0x5bd1e995`).
+4. Os 1 a 3 bytes que sobram: se sobram 3, `h ^= b2 << 16`; se sobram 2 ou mais, `h ^= b1 << 8`; se sobra 1 ou mais, `h ^= b0` e depois `h = h * M`.
+5. No fim: `h ^= h >>> 13`; `h = h * M`; `h ^= h >>> 15`.
+6. A partição é `(h & 0x7fffffff) % numeroDeParticoes`.
+
+A armadilha está nos "32 bits". Em JavaScript, `k * M` dá um número enorme (até 2⁶²) e perde precisão, e o resultado sai errado. A multiplicação tem de "dar a volta" como em Java: é isso que o `Math.imul(k, M)` faz.
+
+**Sintaxe que vais praticar:** operadores bit a bit (`^`, `|`, `&`, `<<`, `>>>`), `Math.imul`, `Buffer` como array de bytes, `switch` com casos que "caem" para o seguinte (sem `break`), `| 0` para obter um inteiro de 32 bits com sinal.
+
+<details>
+<summary>Pista</summary>
+
+Se os teus valores estiverem "quase certos" (o sinal ou os últimos dígitos errados), procura um `*` que devia ser `Math.imul`. Se só as chaves com acentos falharem, estás a contar caracteres (`chave.length`) em vez de bytes (`bytes.length`).
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+const SEMENTE = 0x9747b28c;
+const M = 0x5bd1e995;
+const R = 24;
+
+// MurmurHash2 em aritmética de 32 bits, como em Java (int). Em JavaScript os números são reais de
+// 64 bits; Math.imul multiplica como um int de 32 bits (deita fora o que transborda), e os
+// operadores bit a bit (^, >>>, |0) trabalham sempre em 32 bits. É isso que imita o Java.
+export function murmur2(chave) {
+  const bytes = Buffer.from(chave, 'utf8');
+  const n = bytes.length;
+  let h = SEMENTE ^ n;
+
+  // Blocos de 4 bytes, lidos como um inteiro little-endian.
+  const blocos = Math.floor(n / 4);
+  for (let i = 0; i < blocos; i++) {
+    const j = i * 4;
+    let k = bytes[j] | (bytes[j + 1] << 8) | (bytes[j + 2] << 16) | (bytes[j + 3] << 24);
+    k = Math.imul(k, M);
+    k ^= k >>> R;
+    k = Math.imul(k, M);
+    h = Math.imul(h, M);
+    h ^= k;
+  }
+
+  // Os 1 a 3 bytes que sobram. O switch "cai" de um case para o seguinte de propósito (sem break).
+  const resto = n & ~3;
+  switch (n % 4) {
+    case 3:
+      h ^= bytes[resto + 2] << 16;
+    // falls through
+    case 2:
+      h ^= bytes[resto + 1] << 8;
+    // falls through
+    case 1:
+      h ^= bytes[resto];
+      h = Math.imul(h, M);
+  }
+
+  h ^= h >>> 13;
+  h = Math.imul(h, M);
+  h ^= h >>> 15;
+  return h | 0; // | 0 converte para inteiro de 32 bits com sinal, como o int do Java
+}
+
+export function particao(chave, numeroDeParticoes) {
+  return (murmur2(chave) & 0x7fffffff) % numeroDeParticoes;
+}
+```
+</details>
+
+### P2 · Dividir partições por um consumer group (≈25 min)
+
+**Ficheiro:** `pratica/17-kafka/atribuicao.js`
+
+A secção 4 explica que, num consumer group, cada partição é lida por **um só** consumidor. Escreve as duas estratégias clássicas de divisão: **range** (blocos contíguos) e **round-robin** (uma a uma, à vez). Um dos testes reproduz a situação do projeto com um consumidor a mais: 3 partições e 4 consumidores. O quarto fica **parado**. Mais consumidores do que partições não dá mais velocidade.
+
+**Sintaxe que vais praticar:** `toSorted()` (ordenar sem alterar o original), `Object.fromEntries`, `Math.floor` e `%`, `forEach` com índice.
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+// toSorted (e não sort): devolve uma cópia ordenada, sem mexer na lista original.
+const vazio = (consumidores) => Object.fromEntries(consumidores.map((c) => [c, []]));
+
+export function atribuirRange(numeroDeParticoes, consumidores) {
+  const ordenados = consumidores.toSorted();
+  const resultado = vazio(ordenados);
+  const base = Math.floor(numeroDeParticoes / ordenados.length);
+  const extra = numeroDeParticoes % ordenados.length; // os primeiros `extra` recebem mais uma
+
+  let proxima = 0;
+  ordenados.forEach((consumidor, i) => {
+    const quantas = base + (i < extra ? 1 : 0);
+    for (let k = 0; k < quantas; k++) resultado[consumidor].push(proxima++);
+  });
+  return resultado;
+}
+
+export function atribuirRoundRobin(numeroDeParticoes, consumidores) {
+  const ordenados = consumidores.toSorted();
+  const resultado = vazio(ordenados);
+  for (let p = 0; p < numeroDeParticoes; p++) {
+    resultado[ordenados[p % ordenados.length]].push(p); // % dá a volta: 0, 1, 2, 0, 1, 2...
+  }
+  return resultado;
+}
+```
+</details>
+
+### P3 · Offsets, tentativas e Dead Letter Topic (≈35 min)
+
+**Ficheiro:** `pratica/17-kafka/processadorDeParticao.js`
+
+O coração de um consumidor Kafka: processar as mensagens de uma partição **por ordem**, tentar outra vez quando algo falha, mandar para o DLT o que não tem remédio (secção 6), e dizer **até onde** se pode fazer commit (secção 5).
+
+Dois detalhes que os testes verificam e que costumam sair mal:
+
+- no Kafka, o commit é do **próximo** offset a ler (o último processado + 1), não do último processado;
+- se nem o DLT aceitar a mensagem, **não se pode saltar** para a seguinte: perdia-se a mensagem. Para-se ali, e o commit fica antes dela, para ser relida depois.
+
+**Sintaxe que vais praticar:** `for...of` com `await` (sequencial, de propósito), um `for` de tentativas com `break`, `try`/`catch` encaixados, `break` para sair do ciclo de fora.
+
+<details>
+<summary>Pista</summary>
+
+Porque é que não se pode usar `await Promise.all(mensagens.map(handle))`? Porque corria todas ao mesmo tempo, e a ordem da partição (que é a razão de existir da chave) perdia-se. O último teste mede isso mesmo.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export async function processarParticao(mensagens, { handle, enviarParaDlt, maxTentativas = 3 }) {
+  const processadas = [];
+  const paraDlt = [];
+  let offsetParaCommit = null;
+
+  // for...of com await: uma mensagem de cada vez, pela ordem. Um .map com async lançava-as todas
+  // ao mesmo tempo e a ordem da partição perdia-se.
+  for (const mensagem of mensagens) {
+    let ultimoErro = null;
+    for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+      try {
+        await handle(mensagem);
+        ultimoErro = null;
+        break;
+      } catch (err) {
+        ultimoErro = err;
+      }
+    }
+
+    if (ultimoErro === null) {
+      processadas.push(mensagem.offset);
+    } else {
+      try {
+        await enviarParaDlt(mensagem, ultimoErro);
+        paraDlt.push(mensagem.offset);
+      } catch {
+        break; // não a podemos saltar sem a guardar em lado nenhum: paramos, e o commit fica antes dela
+      }
+    }
+    offsetParaCommit = mensagem.offset + 1; // commit = "a próxima que quero ler"
+  }
+
+  return { offsetParaCommit, processadas, paraDlt };
+}
+```
+
+Compara com o consumidor Java em `src/activity`: lá, as tentativas e o DLT são configurados num `DefaultErrorHandler` do Spring Kafka, e não escritos à mão. A lógica é esta.
+</details>
+
 ## Perguntas de pensamento crítico
 
 1. Porque é que a chave é `userId` e não `task.id`? O que ganhavas e perdias com `task.id`?

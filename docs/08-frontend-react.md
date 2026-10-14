@@ -138,6 +138,256 @@ Experiência: corre `npm run dev` em `src/web` (com a API a correr no compose na
 
 ---
 
+## Prática: escreve tu
+
+Os testes deste módulo usam o **Vitest** e o **Testing Library**, a combinação mais comum hoje para testar React. Correm os teus componentes num browser simulado (`jsdom`) e interagem com eles como um utilizador: escrevem em campos, carregam em botões, leem o que está no ecrã. **Não** olham para o estado interno. Se o ecrã estiver certo, o teste passa, seja qual for a forma como organizaste o código.
+
+**Verificar:** `npm run verificar 08` (dentro de `pratica/`). Só um exercício: `npm run verificar 08 TaskFilter`, `... 08 EditableTitle` ou `... 08 useTasks`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Pesquisa e filtro: inputs controlados e estado derivado (≈30 min)
+
+**Ficheiro:** `pratica/08-frontend-react/TaskFilter.jsx`
+
+Um componente que recebe `tasks` e mostra um campo "Procurar", um `<select>` "Estado", a contagem "N de M tarefas" e a lista filtrada (ou uma mensagem, se não sobrar nenhuma). O enunciado completo está no comentário do ficheiro.
+
+A pergunta central do exercício é: **o que é estado?** O texto do campo e a opção escolhida, sim. A lista filtrada, **não**: calcula-se a partir das props e do estado, a cada render. O último teste prova porquê: muda as `tasks` por fora e verifica que o filtro se aplica às novas. Se tiveres copiado as props para um `useState`, a lista fica congelada na versão antiga.
+
+**Sintaxe que vais praticar:** `useState`, inputs controlados (`value` + `onChange`), `<select>` controlado, `{condição ? <A /> : <B />}`, `.map` com `key`, `<label>` à volta do campo (é isso que dá o "rótulo" que o teste procura).
+
+<details>
+<summary>Pista</summary>
+
+Um objeto que associa cada valor do `<select>` a uma função de filtro (`{ todas: () => true, 'por-fazer': (t) => !t.done, ... }`) evita um `if`/`else` com três ramos. Depois, a lista visível é `tasks.filter(...).filter(...)`, escrita diretamente no corpo do componente.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```jsx
+import { useState } from 'react';
+
+const STATUS_FILTERS = {
+  todas: () => true,
+  'por-fazer': (task) => !task.done,
+  feitas: (task) => task.done,
+};
+
+export default function TaskFilter({ tasks }) {
+  // Só o que o utilizador escreveu/escolheu é estado. A lista filtrada NÃO é estado:
+  // calcula-se a cada render a partir das props e do estado (estado derivado).
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('todas');
+
+  const needle = query.trim().toLowerCase();
+  const visible = tasks
+    .filter(STATUS_FILTERS[status])
+    .filter((task) => task.title.toLowerCase().includes(needle));
+
+  return (
+    <section>
+      <label>
+        Procurar <input value={query} onChange={(e) => setQuery(e.target.value)} />
+      </label>
+      <label>
+        Estado{' '}
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="todas">Todas</option>
+          <option value="por-fazer">Por fazer</option>
+          <option value="feitas">Feitas</option>
+        </select>
+      </label>
+
+      <p>
+        {visible.length} de {tasks.length} tarefas
+      </p>
+
+      {visible.length === 0 ? (
+        <p>Nenhuma tarefa corresponde ao filtro</p>
+      ) : (
+        <ul>
+          {visible.map((task) => (
+            <li key={task.id}>{task.title}</li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+```
+</details>
+
+### P2 · Editar no sítio: eventos, refs e efeitos (≈35 min)
+
+**Ficheiro:** `pratica/08-frontend-react/EditableTitle.jsx`
+
+Um título com um botão "Editar". Ao clicar, aparece um campo **já com o foco**; Enter ou "Guardar" guarda, Escape cancela. Parece pequeno, mas junta quatro ideias diferentes:
+
+- dois "modos" de apresentação a partir de um booleano;
+- um **rascunho** separado do título verdadeiro (cancelar não pode estragar nada);
+- dar foco a um elemento, que é mexer no DOM real, e por isso precisa de um `ref` e de um efeito;
+- `preventDefault()` num `<form>`, para o browser não recarregar a página.
+
+**Sintaxe que vais praticar:** `useRef`, `ref={...}`, `useEffect` com dependências, `onSubmit`, `onKeyDown` com `e.key`, `event.preventDefault()`, `return` antecipado de JSX.
+
+<details>
+<summary>Pista</summary>
+
+Porque é que não podes chamar `inputRef.current.focus()` dentro do `onClick` do "Editar"? Porque nesse momento o `<input>` ainda não existe: o `setEditing(true)` só pede um novo render. Um `useEffect` com `[editing]` corre **depois** desse render, quando o `<input>` já está no DOM.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```jsx
+import { useEffect, useRef, useState } from 'react';
+
+export default function EditableTitle({ title, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+  const inputRef = useRef(null);
+
+  // O foco é uma operação no DOM real, não algo que se descreve em JSX: é um efeito.
+  // Corre depois do render em que `editing` passou a true, quando o <input> já existe.
+  useEffect(() => {
+    if (editing) inputRef.current.focus();
+  }, [editing]);
+
+  const startEditing = () => {
+    setDraft(title); // cada edição começa do título atual, não do rascunho abandonado
+    setEditing(true);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault(); // sem isto, o browser submetia o formulário e recarregava a página
+    const value = draft.trim();
+    if (value && value !== title) onSave(value);
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <div>
+        <span>{title}</span>{' '}
+        <button type="button" onClick={startEditing}>
+          Editar
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Título{' '}
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setEditing(false);
+          }}
+        />
+      </label>
+      <button type="submit">Guardar</button>
+    </form>
+  );
+}
+```
+</details>
+
+### P3 · Um hook próprio, com atualização otimista (≈45 min)
+
+**Ficheiro:** `pratica/08-frontend-react/useTasks.js`
+
+O `App.jsx` do projeto tem a lógica de carregar, criar e alterar tarefas misturada com o ecrã. Extrai-a para um **hook**: `useTasks(api)` devolve as tarefas, o estado de carregamento, o erro e as ações. O componente que o usar fica só com JSX.
+
+A parte difícil é o `toggleTask` **otimista**: o ecrã muda logo, antes de a API responder, e se a API falhar a mudança é desfeita. É assim que as apps parecem rápidas mesmo com rede lenta. O teste segura a resposta da API "no ar" para confirmar que o ecrã já mudou antes dela chegar.
+
+**Sintaxe que vais praticar:** hooks próprios (uma função `useAlgo` que usa outros hooks), `useEffect` com função de limpeza, `useCallback`, `setState` na forma funcional (`setTasks((prev) => ...)`), `.then().catch().finally()`.
+
+<details>
+<summary>Pista</summary>
+
+- No efeito de carregamento, uma variável `let ignore = false` posta a `true` na limpeza evita escrever estado de um pedido antigo (se o componente desmontar antes de a resposta chegar).
+- Usa sempre `setTasks((prev) => ...)` e não `setTasks(tasks.map(...))`: com ações em paralelo, `tasks` pode ser uma versão antiga da lista.
+- Para o otimista: a função que muda o `done` é a mesma para aplicar e para desfazer, só muda o valor. Uma função que devolve outra função poupa repetição: `const flip = (done) => (prev) => prev.map(...)`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { useCallback, useEffect, useState } from 'react';
+
+export function useTasks(api) {
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Se o componente desmontar (ou a api mudar) antes de a resposta chegar, ignoramo-la:
+    // escrever estado de um pedido "antigo" pode mostrar dados que já não são os certos.
+    let ignore = false;
+    setLoading(true);
+    api
+      .list()
+      .then((list) => {
+        if (!ignore) setTasks(list);
+      })
+      .catch((err) => {
+        if (!ignore) setError(err.message);
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [api]);
+
+  const addTask = useCallback(
+    async (title) => {
+      const task = await api.create(title);
+      // Forma funcional (prev => ...): usa sempre a lista mais recente, mesmo com ações em paralelo.
+      setTasks((prev) => [...prev, task]);
+      setError(null);
+    },
+    [api],
+  );
+
+  const toggleTask = useCallback(
+    async (task) => {
+      const flip = (done) => (prev) => prev.map((t) => (t.id === task.id ? { ...t, done } : t));
+      setTasks(flip(!task.done)); // 1) o ecrã muda já
+      try {
+        await api.setDone(task.id, !task.done); // 2) a API confirma depois
+        setError(null);
+      } catch (err) {
+        setTasks(flip(task.done)); // 3) se falhou, desfaz
+        setError(err.message);
+      }
+    },
+    [api],
+  );
+
+  const removeTask = useCallback(
+    async (id) => {
+      await api.remove(id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      setError(null);
+    },
+    [api],
+  );
+
+  return { tasks, loading, error, addTask, toggleTask, removeTask };
+}
+```
+
+Repara no `[api]` das dependências. Se um componente fizer `useTasks({ list: ..., create: ... })` com um objeto escrito ali, cada render cria um objeto **novo**, o efeito volta a correr, carrega, muda o estado, provoca outro render... um ciclo infinito de pedidos. É por isso que o teste cria a `api` fora do `renderHook`, e que o `api.js` do projeto é um objeto definido uma vez, fora dos componentes.
+</details>
+
 ## Experiências
 
 1. **Estado vs DOM:** no `TaskForm`, remove o `value={title}` (mantém o `onChange`). Escreve algo e clica "Adicionar". O campo limpa? Porquê?

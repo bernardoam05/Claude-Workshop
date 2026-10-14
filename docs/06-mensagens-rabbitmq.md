@@ -194,6 +194,212 @@ curl -i -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -d 
 
 ---
 
+## Prática: escreve tu
+
+Nenhum destes exercícios precisa do RabbitMQ a correr. Isso é de propósito: a lógica que interessa (para onde vai uma mensagem, quando fazer `ack`, como não perder eventos) é código normal, e testa-se com versões falsas do canal e do publisher. É assim que o `src/worker/test/` testa o handler.
+
+**Verificar:** `npm run verificar 06` (dentro de `pratica/`). Só um exercício: `npm run verificar 06 topicRouting`, `... 06 consumer` ou `... 06 outbox`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · O algoritmo de um topic exchange (≈35 min)
+
+**Ficheiro:** `pratica/06-mensagens-rabbitmq/topicRouting.js`
+
+Escreve `matches(bindingKey, routingKey)`, a regra que o RabbitMQ aplica a cada mensagem num exchange `topic` (secção 3): `*` substitui exatamente uma palavra, `#` substitui zero ou mais. Depois `route(bindings, routingKey)`, que diz que filas recebem a mensagem.
+
+São 21 casos de teste, e cada um é uma pergunta de exame sobre topic exchanges. Antes de correres, tenta prever os mais estranhos: `"task.#"` apanha `"task"`? `"#.urgent"` apanha `"urgent"`?
+
+**Sintaxe que vais praticar:** `split('.')`, destructuring com resto (`const [first, ...rest] = pattern`), `slice`, recursão, `filter` + `map`, `new Set` para tirar repetidos.
+
+<details>
+<summary>Pista</summary>
+
+Pensa em `matchWords(padrão, palavras)` como uma função recursiva que só olha para a **primeira** palavra do padrão:
+
+- padrão vazio: só bate se também não houver palavras;
+- palavra literal ou `*`: tem de haver uma palavra, e ela tem de bater; depois, o resto com o resto;
+- `#`: experimenta engolir 0 palavras, depois 1, depois 2... e pergunta à recursão se o resto bate com o que sobra.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function matches(bindingKey, routingKey) {
+  return matchWords(bindingKey.split('.'), routingKey.split('.'));
+}
+
+// Recursiva: compara a primeira palavra do padrão e resolve o resto com uma chamada a si mesma.
+function matchWords(pattern, words) {
+  if (pattern.length === 0) return words.length === 0; // padrão acabou: só bate se as palavras também
+
+  const [first, ...rest] = pattern;
+
+  if (first === '#') {
+    // # pode engolir 0, 1, 2... palavras. Experimentamos todas as hipóteses até uma dar certo.
+    for (let skip = 0; skip <= words.length; skip++) {
+      if (matchWords(rest, words.slice(skip))) return true;
+    }
+    return false;
+  }
+
+  if (words.length === 0) return false; // * e palavras literais precisam de exatamente uma palavra
+  return (first === '*' || first === words[0]) && matchWords(rest, words.slice(1));
+}
+
+export function route(bindings, routingKey) {
+  const queues = bindings
+    .filter(({ bindingKey }) => matches(bindingKey, routingKey))
+    .map(({ queue }) => queue);
+  return [...new Set(queues)]; // um Set mantém a ordem de inserção e descarta repetidos
+}
+```
+
+O RabbitMQ não faz isto mensagem a mensagem: compila os bindings numa estrutura (uma *trie*) para não repetir trabalho. A regra, porém, é exatamente esta.
+</details>
+
+### P2 · Um consumidor com tentativas limitadas (≈35 min)
+
+**Ficheiro:** `pratica/06-mensagens-rabbitmq/consumer.js`
+
+O worker do projeto faz `nack(msg, false, true)` em qualquer erro transitório: a mensagem volta à fila **sem limite**. Se a BD estiver em baixo uma hora, a mesma mensagem dá voltas a toda a velocidade durante uma hora. Escreve um consumidor melhor:
+
+- JSON inválido ou `PermanentError` → DLQ logo;
+- erro transitório → republica a mensagem com um cabeçalho `x-retries` a contar as tentativas e faz `ack` da original;
+- ao chegar a `maxRetries` → DLQ.
+
+O teste verifica também a **ordem** das operações: primeiro republicar, depois `ack`. Antes de abrir a pista, pensa: se o processo morrer entre as duas, o que acontece em cada ordem?
+
+**Sintaxe que vais praticar:** fechar sobre parâmetros (`createConsumer` devolve uma função), `instanceof`, `??` para cabeçalhos que podem não existir, spread de objetos para copiar e acrescentar um cabeçalho, `Buffer.toString('utf8')`.
+
+<details>
+<summary>Pista</summary>
+
+Republicar e depois `ack`: se morrer pelo meio, a mensagem fica **duplicada** (e o handler é idempotente, aguenta). `ack` e depois republicar: se morrer pelo meio, a mensagem fica **perdida**. Num sistema "pelo menos uma vez", entre duplicar e perder escolhe-se sempre duplicar.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { PermanentError } from './errors.js';
+
+export function createConsumer({ channel, queue, handle, maxRetries = 3 }) {
+  const toDlq = (msg) => {
+    channel.nack(msg, false, false); // requeue=false + dead-letter exchange configurado → DLQ
+    return 'dlq';
+  };
+
+  return async function onMessage(msg) {
+    let value;
+    try {
+      value = JSON.parse(msg.content.toString('utf8'));
+    } catch {
+      return toDlq(msg); // bytes que não são JSON nunca vão passar a ser: não vale a pena repetir
+    }
+
+    try {
+      await handle(value);
+      channel.ack(msg);
+      return 'ack';
+    } catch (err) {
+      if (err instanceof PermanentError) return toDlq(msg);
+
+      const headers = msg.properties.headers ?? {};
+      const retries = headers['x-retries'] ?? 0;
+      if (retries >= maxRetries) return toDlq(msg); // desistimos: fica na DLQ para um humano ver
+
+      // Primeiro a cópia, depois o ack. Se o processo morrer entre os dois, a mensagem fica
+      // DUPLICADA (o handler é idempotente, aguenta). Pela ordem inversa ficava PERDIDA.
+      channel.sendToQueue(queue, msg.content, {
+        persistent: true,
+        headers: { ...headers, 'x-retries': retries + 1 },
+      });
+      channel.ack(msg);
+      return 'retry';
+    }
+  };
+}
+```
+
+Isto ainda tenta outra vez **imediatamente**. Em produção, junta-se um atraso que cresce a cada tentativa (*exponential backoff*): com o RabbitMQ, faz-se com uma fila de espera com TTL e dead-letter de volta para a fila principal, ou com o plugin `delayed-message-exchange`.
+</details>
+
+### P3 · Outbox: a resposta ao dual-write (≈40 min)
+
+**Ficheiro:** `pratica/06-mensagens-rabbitmq/outbox.js` (as tabelas já estão em `schema.sql`; os testes usam o mesmo Postgres embutido do módulo 03)
+
+A secção 11 descreve o problema: gravar na BD e publicar no RabbitMQ são duas operações sem transação comum. Escreve as duas metades do padrão *transactional outbox*:
+
+- `createTask` grava a tarefa **e** o evento numa tabela `outbox`, na **mesma** transação SQL. O teste apaga a tabela `outbox` a meio para provar que, se o evento falhar, a tarefa também desaparece.
+- `relayOnce` lê os eventos por publicar, publica-os **por ordem** e marca cada um. Se o broker falhar a meio, para (não salta), e a próxima volta continua de onde ficou.
+
+Este exercício é o treino isolado do [C14](12-exercicios.md#c14-outbox). Depois de o fazeres aqui, ligá-lo ao projeto a sério é sobretudo trabalho de canalização.
+
+**Sintaxe que vais praticar:** transação com `BEGIN`/`COMMIT`/`ROLLBACK` (como no módulo 03), `for...of` com `break`, `JSON.stringify` para uma coluna `JSONB`, parâmetros por omissão num objeto (`{ batchSize = 10 } = {}`).
+
+<details>
+<summary>Pista</summary>
+
+Em `relayOnce`, o `try`/`catch` envolve **só** o `publish`. O `break` dentro do `catch` sai do `for`. O `UPDATE` que marca o evento vem depois do `publish`, nunca antes: marcar primeiro e falhar a publicar seria perder o evento.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export async function createTask(db, title) {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: [task] } = await client.query(
+      'INSERT INTO tasks (title) VALUES ($1) RETURNING id, title',
+      [title],
+    );
+    // O evento é escrito na MESMA transação: ou ficam os dois, ou nenhum.
+    await client.query('INSERT INTO outbox (routing_key, payload) VALUES ($1, $2)', [
+      'task.created',
+      JSON.stringify({ type: 'task.created', task }),
+    ]);
+    await client.query('COMMIT');
+    return task;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+export async function relayOnce(db, publisher, { batchSize = 10 } = {}) {
+  const { rows } = await db.query(
+    `SELECT id, routing_key, payload FROM outbox
+     WHERE published_at IS NULL
+     ORDER BY id
+     LIMIT $1`,
+    [batchSize],
+  );
+
+  let published = 0;
+  for (const event of rows) {
+    try {
+      await publisher.publish(event.routing_key, event.payload);
+    } catch {
+      break; // o broker falhou: paramos para não trocar a ordem. A próxima volta continua daqui.
+    }
+    // Se o processo morrer AQUI (publicou mas não marcou), o evento sai outra vez na próxima volta.
+    // A outbox garante "pelo menos uma vez", não "exatamente uma vez": o consumidor tem de ser idempotente.
+    await db.query('UPDATE outbox SET published_at = now() WHERE id = $1', [event.id]);
+    published++;
+  }
+  return { published };
+}
+```
+
+Com vários relays a correr ao mesmo tempo, dois podiam ler o mesmo evento. A versão de produção lê com `SELECT ... FOR UPDATE SKIP LOCKED` dentro de uma transação, o que faz cada relay saltar as linhas que outro já está a tratar.
+</details>
+
 ## Experiências
 
 1. **Ver as mensagens:** no painel, cria uma tarefa e conclui-a. Vê a taxa de mensagens em Queues → `worker.task-events`.

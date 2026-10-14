@@ -29,13 +29,15 @@ escrita:  1) escreve na BD
 Lê `listTasks`:
 
 ```js
-const cached = await cache.getJSON(TASKS_CACHE_KEY);
+const cached = await cache.getJSON(tasksCacheKey(userId));
 if (cached) return { tasks: cached, source: 'cache' };
 
-const tasks = await repository.findAll();
-await cache.setJSON(TASKS_CACHE_KEY, tasks, cacheTtlSeconds);
+const tasks = await repository.findAll(userId);
+await cache.setJSON(tasksCacheKey(userId), tasks, cacheTtlSeconds);
 return { tasks, source: 'database' };
 ```
+
+Repara que a chave tem o `userId` lá dentro (`tasks:user:7`). Cada utilizador tem a sua entrada na cache: uma chave partilhada por todos mostraria as tarefas de uma pessoa a outra.
 
 **Porque "apagar" e não "atualizar" a cache na escrita?** Atualizar exige recalcular o valor correto a partir de dados que podem ter mudado com outras escritas concorrentes. Apagar é mais simples e deixa a próxima leitura refazer o valor a partir da fonte de verdade. Perdes uma ida à BD; ganhas correção.
 
@@ -51,11 +53,11 @@ Porque é que precisamos disto se já invalidamos na escrita? Porque **a invalid
 
 Com TTL, o pior caso é **dados desatualizados durante `CACHE_TTL_SECONDS`**, não para sempre. Escolher o TTL é um trade-off: TTL curto = dados frescos mas mais carga na BD; TTL longo = menos carga mas mais tempo de dados errados.
 
-Neste projeto: `tasks:all` tem 60s e `stats` tem 5s. Porque é que as estatísticas têm TTL mais curto? (Resposta no fim.)
+Neste projeto: `tasks:user:<id>` tem 60s e `stats:user:<id>` tem 5s. Porque é que as estatísticas têm TTL mais curto? (Resposta no fim.)
 
 ## 4. Chaves: um sítio só
 
-As chaves estão em `taskService.js` como constantes (`TASKS_CACHE_KEY`, `STATS_CACHE_KEY`). Porquê? Se a chave for escrita à mão em dois sítios e um deles tiver um erro de digitação (`tasks:al`), a invalidação falha **em silêncio**: o `del` não apaga nada e não há erro. Constantes transformam esse erro num erro de importação, que é apanhado logo.
+As chaves são construídas num só sítio, em `taskService.js`, por duas funções (`tasksCacheKey(userId)` e `statsCacheKey(userId)`). Porquê? Se a chave for escrita à mão em dois sítios e um deles tiver um erro de digitação (`tasks:usr:7`), a invalidação falha **em silêncio**: o `del` não apaga nada e não há erro. Com uma função partilhada, um erro de digitação no nome dela é um erro de importação, que é apanhado logo.
 
 ## 5. O cabeçalho `X-Cache`
 
@@ -71,19 +73,172 @@ curl -sI localhost:8080/api/tasks | grep -i x-cache   # HIT
 ```bash
 docker compose -f config/docker-compose.yml exec redis redis-cli
 > KEYS *                 # cuidado em produção: bloqueia o servidor (usa SCAN)
-> GET tasks:all
-> TTL tasks:all          # segundos até expirar (-2 = não existe, -1 = sem TTL)
-> DEL tasks:all
+> GET tasks:user:1       # o 1 é o id do teu utilizador (vê-o com KEYS tasks:*)
+> TTL tasks:user:1       # segundos até expirar (-2 = não existe, -1 = sem TTL)
+> DEL tasks:user:1
 ```
 
 Repara que `KEYS *` está **proibido** em produção: percorre todas as chaves e bloqueia o Redis (que é single-threaded para comandos). `SCAN` faz o mesmo em pedaços.
 
 ---
 
+## Prática: escreve tu
+
+Os testes usam um Redis **falso**, em memória (`pratica/05-redis-e-cache/fakeRedis.js`), com os mesmos comandos e a mesma forma de chamar do `ioredis`. Comporta-se como o verdadeiro nas coisas que importam: só guarda strings, `get` de uma chave inexistente dá `null`, as chaves expiram. Tem dois extras para testes: um relógio controlável (para expirar chaves sem esperar) e um modo `failing` (para simular o Redis em baixo).
+
+**Verificar:** `npm run verificar 05` (dentro de `pratica/`). Só um exercício: `npm run verificar 05 cacheAside`, `... 05 rateLimiter` ou `... 05 singleFlight`.
+
+Se nunca usaste a prática, lê primeiro a introdução no [módulo 01](01-fundamentos.md#prática-escreve-tu).
+
+### P1 · Cache-aside, à prova de falhas (≈25 min)
+
+**Ficheiro:** `pratica/05-redis-e-cache/cacheAside.js`
+
+Escreve `cached(redis, key, ttlSeconds, load)`: a lógica do `listTasks` (secção 2), mas genérica, para qualquer chave e qualquer `load`. Os testes exigem três coisas que o código do projeto não precisa de tratar, e que uma função genérica precisa:
+
+- **Valores "falsy" são HIT.** Se converteres o JSON primeiro e depois fizeres `if (valor)`, como o projeto faz, um `0` ou um `false` guardados em cache parecem "não há nada". O projeto safa-se porque guarda sempre arrays.
+- **O Redis em baixo não parte a aplicação.** Se o `get` ou o `set` falharem, a resposta vem da BD. A cache é uma otimização; não pode ser um ponto de falha.
+- **Um erro da BD não é engolido.** Esse tem de chegar a quem chamou, e nada fica em cache.
+
+**Sintaxe que vais praticar:** `async`/`await`, `try`/`catch` sem variável, `JSON.stringify`/`JSON.parse`, `!== null`, devolver objetos `{ value, source }`.
+
+<details>
+<summary>Pista</summary>
+
+Precisas de **dois** `try`/`catch` separados, um à volta do `get` e outro à volta do `set`, e **nenhum** à volta do `load()`. Se puseres tudo dentro de um só `try`, o erro da BD é apanhado junto com o do Redis.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export async function cached(redis, key, ttlSeconds, load) {
+  let raw = null;
+  try {
+    raw = await redis.get(key);
+  } catch {
+    // Redis em baixo: seguimos para a BD. (Num serviço real, registávamos um aviso e uma métrica.)
+  }
+
+  // null quer dizer "não existe". Comparar com null, e não com `if (raw)`, mantém o 0 e o false como HIT.
+  if (raw !== null) return { value: JSON.parse(raw), source: 'cache' };
+
+  const value = await load(); // um erro aqui é da BD: deixamo-lo subir
+  try {
+    await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+  } catch {
+    // Não conseguir guardar em cache não é razão para falhar o pedido: já temos o valor.
+  }
+  return { value, source: 'database' };
+}
+```
+</details>
+
+### P2 · Rate limiting com `INCR` e `EXPIRE` (≈35 min)
+
+**Ficheiro:** `pratica/05-redis-e-cache/rateLimiter.js`
+
+O Redis não serve só para cache. Um dos usos mais comuns é **limitar pedidos**: "no máximo N pedidos por IP a cada X segundos". Escreve `createRateLimiter` com uma **janela fixa**: um contador por IP (`INCR`), que expira no fim da janela (`EXPIRE`). Depois, o middleware Express que responde `429 Too Many Requests` com o cabeçalho `Retry-After`.
+
+Dois detalhes que os testes verificam e que separam uma versão que "parece funcionar" de uma correta:
+
+- O TTL só se põe no **primeiro** pedido da janela. Se cada pedido fizer `EXPIRE` outra vez, a janela nunca acaba para quem não para de pedir.
+- Se o processo morrer **entre** o `INCR` e o `EXPIRE`, a chave fica sem TTL e esse IP fica bloqueado **para sempre**. A tua função tem de detetar e reparar isso.
+
+**Sintaxe que vais praticar:** template literals para a chave, `await` em sequência, `Math.max`, middleware `async (req, res, next)`, `res.set(...)`, `res.status(429)`.
+
+<details>
+<summary>Pista</summary>
+
+Uma forma de resolver os dois detalhes de uma vez: depois do `INCR`, pergunta o `TTL`. O `TTL` dá `-1` quando a chave existe mas não tem expiração, que é exatamente o que acontece no primeiro pedido (o `INCR` acabou de a criar) **e** no caso do processo que morreu. Nos dois casos, a resposta é a mesma: `EXPIRE`.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+export function createRateLimiter(redis, { limit, windowSeconds }) {
+  return {
+    async hit(ip) {
+      const key = `ratelimit:${ip}`;
+      // INCR é atómico: dois pedidos ao mesmo tempo nunca leem o mesmo número.
+      const count = await redis.incr(key);
+
+      // -1 = a chave existe mas não tem TTL. Acontece no 1.º pedido da janela (o INCR acabou de a
+      // criar) e também se um processo morreu entre o INCR e o EXPIRE. Nos dois casos, pomos o TTL.
+      let ttl = await redis.ttl(key);
+      if (ttl === -1) {
+        await redis.expire(key, windowSeconds);
+        ttl = windowSeconds;
+      }
+
+      const allowed = count <= limit;
+      return { allowed, remaining: Math.max(0, limit - count), retryAfter: allowed ? 0 : ttl };
+    },
+  };
+}
+
+export function rateLimitMiddleware(limiter) {
+  return async (req, res, next) => {
+    const { allowed, remaining, retryAfter } = await limiter.hit(req.ip);
+    res.set('X-RateLimit-Remaining', String(remaining));
+    if (!allowed) {
+      res.set('Retry-After', String(retryAfter));
+      return res.status(429).json({ error: 'Demasiados pedidos. Tenta outra vez mais tarde.' });
+    }
+    next();
+  };
+}
+```
+
+Isto ainda tem um buraco pequeno: entre o `INCR` e o `TTL` há duas idas ao Redis, não atómicas. Em produção, resolve-se com um script Lua (`EVAL`), que o Redis corre de uma só vez, ou com uma biblioteca como `rate-limiter-flexible`.
+</details>
+
+### P3 · Proteger a BD de uma manada (≈30 min)
+
+**Ficheiro:** `pratica/05-redis-e-cache/singleFlight.js`
+
+Imagina que a chave `stats` expira e chegam 50 pedidos no mesmo instante. Todos veem `MISS` e todos vão à BD. Isto chama-se **cache stampede**, e já deitou abaixo sistemas grandes. A solução clássica é *single flight*: o primeiro pedido vai à BD, os outros 49 **esperam pela mesma Promise**.
+
+Escreve `createCachedLoader`, reutilizando o teu `cached` do P1. O teste dispara 50 pedidos com `Promise.all` e conta as idas à BD: tem de ser **uma**.
+
+**Sintaxe que vais praticar:** `new Map()` (`has`/`get`/`set`/`delete`), guardar uma **Promise** (e não o seu resultado) numa variável, `.finally(...)`, closures (a função devolvida lembra-se do `Map`).
+
+<details>
+<summary>Pista</summary>
+
+O truque é guardar no `Map` a Promise **antes** de ela terminar. Quem chega a seguir encontra-a e faz `return` dela: não chama `load()`. Quando ela termina, com sucesso ou com erro, tira-se do `Map` (é isso que o `.finally` faz), para o próximo `MISS` tentar outra vez.
+</details>
+
+<details>
+<summary>Solução de referência</summary>
+
+```js
+import { cached } from './cacheAside.js';
+
+export function createCachedLoader(redis, { ttlSeconds }) {
+  // chave → Promise do pedido que já está a decorrer. Vive em memória, neste processo.
+  const inFlight = new Map();
+
+  return function get(key, load) {
+    // Já há alguém a tratar desta chave? Esperamos pela MESMA Promise em vez de ir à BD outra vez.
+    if (inFlight.has(key)) return inFlight.get(key);
+
+    // .finally corre com sucesso ou com erro: a chave sai do mapa e o próximo MISS tenta de novo.
+    const promise = cached(redis, key, ttlSeconds, load).finally(() => inFlight.delete(key));
+    inFlight.set(key, promise);
+    return promise;
+  };
+}
+```
+
+Repara no limite desta solução: o `Map` vive **num processo**. Com 3 réplicas da API, ainda podem ir 3 pedidos à BD em vez de 1. Para uma proteção entre processos, usa-se um *lock* no próprio Redis (`SET chave valor NX EX 5`).
+</details>
+
 ## Experiências
 
-1. **Medir o efeito:** faz 1 `GET` (MISS) e depois cria uma tarefa. Confirma no `redis-cli` que `tasks:all` desapareceu. Faz `GET` outra vez: deve ser MISS, porque a invalidação funcionou.
-2. **Ver a expiração:** `GET /api/tasks`, depois `TTL tasks:all` no redis-cli. Espera e vê o TTL a descer até `-2`.
+1. **Medir o efeito:** faz 1 `GET` (MISS) e depois cria uma tarefa. Confirma no `redis-cli` que `tasks:user:<o teu id>` desapareceu. Faz `GET` outra vez: deve ser MISS, porque a invalidação funcionou.
+2. **Ver a expiração:** `GET /api/tasks`, depois `TTL tasks:user:<o teu id>` no redis-cli. Espera e vê o TTL a descer até `-2`.
 3. **Provar a necessidade de invalidar:** no `taskService.js`, comenta a linha `invalidate()` dentro de `createTask`. Cria uma tarefa e lista. A tarefa aparece? Quanto tempo demora a aparecer? Desfaz a alteração depois.
 
 ## Perguntas de pensamento crítico
