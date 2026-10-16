@@ -83,6 +83,14 @@ describe('P1 · schema.sql', () => {
     await falhaCom(db.query(`INSERT INTO tasks (project_id, title) VALUES (999, 'T')`), FOREIGN_KEY);
   });
 
+  // REFERENCES só verifica os valores que existem: um NULL passa a chave estrangeira sem ser visto.
+  // Sem NOT NULL, ficavam projetos sem dono (invisíveis a todos, e que o CASCADE nunca apaga).
+  it('dono e projeto são obrigatórios (REFERENCES sozinho aceita NULL)', async () => {
+    const db = await novaBd();
+    await falhaCom(db.query(`INSERT INTO projects (owner_id, name) VALUES (NULL, 'P')`), NOT_NULL);
+    await falhaCom(db.query(`INSERT INTO tasks (project_id, title) VALUES (NULL, 'T')`), NOT_NULL);
+  });
+
   it('apagar um utilizador apaga os seus projetos e as tarefas deles (ON DELETE CASCADE)', async () => {
     const db = await novaBd();
     await db.query(`INSERT INTO projects (owner_id, name) VALUES (1, 'P')`);
