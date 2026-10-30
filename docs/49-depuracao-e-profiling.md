@@ -80,6 +80,15 @@ E para trabalho que pode esperar, a melhor opção continua a ser tirá-lo do pe
 - **Perfis contínuos** (*continuous profiling*: Pyroscope, Datadog, o Parca), que amostram a CPU em produção com custo baixo, para comparar antes e depois de um deploy.
 - E os traces do módulo 47, que dizem **que pedido** é lento; o perfil diz **porquê**.
 
+## Em resumo
+
+- O Node corre o teu código numa **só thread**: enquanto ele corre, nada mais corre, e um bloqueio atrasa todos os pedidos. O atraso do event loop mede-se e vigia-se.
+- O **depurador** (`--inspect`) mostra variáveis e a pilha sem mudar o código; um **perfil de CPU** e o *flame graph* dizem em que função vai o tempo.
+- Uma **fuga de memória** é um objeto que já não serve mas continua referenciado (caches sem limite, listeners que nunca se retiram); encontra-se comparando *heap snapshots*.
+- Os **streams** processam dados aos bocados; os pedaços não são linhas, e a ***backpressure*** (que o `pipeline` trata) impede que se acumule memória.
+- Para trabalho de CPU, usam-se as versões assíncronas das APIs do Node, partir o trabalho, ou **worker threads** numa piscina; o que pode esperar vai para uma fila.
+- Mede antes de otimizar: a intuição sobre o que é lento erra muitas vezes.
+
 ---
 
 ## Prática: escreve tu

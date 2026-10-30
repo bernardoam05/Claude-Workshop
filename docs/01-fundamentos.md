@@ -4,6 +4,8 @@
 
 **Ficheiros para ler primeiro:** `src/api/src/app.js`, `src/api/src/routes/tasks.js`, `src/web/src/api.js`.
 
+**Pré-requisitos:** nenhum: é o ponto de partida. Ajuda saber ler JavaScript básico (variáveis, funções, objetos).
+
 > Se a sintaxe de JavaScript ainda não for confortável (arrow functions, `async`/`await`, destructuring...), o [módulo 22](22-sintaxe-javascript.md) é uma referência rápida com linhas reais deste projeto. Consulta-o sempre que uma linha não fizer sentido.
 
 ---
@@ -26,7 +28,7 @@ As primeiras 5 linhas não fazem nada ainda — só trazem código de outros fic
 ```js
 export function createApp({ service, authService, healthCheck, oidcPublicConfig = null, metrics = null }) {
 ```
-Aqui começa a única coisa que este ficheiro faz: declarar uma função chamada `createApp`. `export` quer dizer que outros ficheiros a podem importar (é o `index.js` quem a vai chamar, module 04). Os `{ }` no parâmetro são **destructuring** (módulo 22): em vez de receber um argumento qualquer e teres de escrever `args.service`, `args.authService`, etc., já chegam separados, com estes nomes. `= null` em dois deles é um valor por omissão: se quem chamar `createApp` não der `metrics`, a variável `metrics` vale `null` em vez de rebentar.
+Aqui começa a única coisa que este ficheiro faz: declarar uma função chamada `createApp`. `export` quer dizer que outros ficheiros a podem importar (é o `index.js` quem a vai chamar, módulo 04). Os `{ }` no parâmetro são **destructuring** (módulo 22): em vez de receber um argumento qualquer e teres de escrever `args.service`, `args.authService`, etc., já chegam separados, com estes nomes. `= null` em dois deles é um valor por omissão: se quem chamar `createApp` não der `metrics`, a variável `metrics` vale `null` em vez de rebentar.
 
 ```js
   const app = express();
@@ -284,7 +286,9 @@ Códigos que vais ver neste projeto:
 | 201 | Criado | `POST /api/tasks` |
 | 204 | Sucesso sem corpo | `DELETE` |
 | 400 | Pedido inválido (culpa do cliente) | validação com zod |
+| 401 | Não autenticado (falta o token, ou é inválido) | `middleware/auth.js`, login com a password errada |
 | 404 | Não existe | id desconhecido, rota desconhecida |
+| 409 | Conflito com o estado atual | registar um email que já existe |
 | 500 | Erro do servidor (culpa nossa) | bugs, BD em baixo |
 | 503 | Serviço indisponível | `/api/health` quando uma dependência falha |
 
@@ -332,7 +336,7 @@ Node executa JavaScript numa **única thread**. Para não bloquear, todas as ope
 const { rows } = await pool.query('SELECT ...');
 ```
 
-Consequência prática: **nunca** faças trabalho CPU-intensivo (ex.: um loop gigante) dentro de um pedido HTTP. Bloqueia **todos** os utilizadores. É um dos motivos para existir um **worker** separado (módulo 07).
+Consequência prática: **nunca** faças trabalho CPU-intensivo (ex.: um loop gigante) dentro de um pedido HTTP. Bloqueia **todos** os utilizadores. É um dos motivos para existir um **worker** separado (módulo 07). O módulo 49 mostra como medir e resolver isto a sério.
 
 ## 7. Express: o pipeline de middlewares
 
@@ -348,6 +352,16 @@ Lê `src/api/src/app.js`. A ordem **importa**:
 - `notFound` e `errorHandler` estão **no fim**. Um erro salta por cima dos middlewares normais até encontrar um com **4 parâmetros** `(err, req, res, next)`.
 
 Express 5 trata erros lançados em funções `async` automaticamente. Repara que as rotas em `routes/tasks.js` lançam `HttpError` sem `try/catch`. Em Express 4 isto **não** funcionava, e é a razão pela qual vais ver código antigo com `try/catch` em todo o lado.
+
+## Em resumo
+
+- Uma aplicação web é um **cliente** (o browser) que pede e um **servidor** (a API) que decide e responde, através de **HTTP**: método, caminho, cabeçalhos e corpo no pedido; código de estado, cabeçalhos e corpo na resposta.
+- Os **códigos de estado** dizem o que aconteceu sem ler o corpo: 2xx correu bem, 4xx o cliente errou (400, 401, 404, 409), 5xx o servidor falhou.
+- **REST** organiza a API em recursos (`/api/tasks`) e verbos HTTP (`GET`, `POST`, `PATCH`, `DELETE`). `GET`, `PUT` e `DELETE` são idempotentes; `POST` não.
+- Tudo o que vem de fora é suspeito: valida-se na **fronteira** (com zod) antes de chegar à lógica.
+- A configuração vem de **variáveis de ambiente**, não do código, para a mesma imagem correr em qualquer ambiente e os segredos não irem para o Git.
+- O Node corre o teu código numa **só thread**: o I/O é assíncrono, mas trabalho pesado de CPU dentro de um pedido bloqueia todos os utilizadores.
+- No Express, um pedido atravessa uma **cadeia de middlewares** por ordem; o `errorHandler` (com 4 parâmetros) fica no fim e apanha os erros lançados.
 
 ---
 
@@ -566,9 +580,19 @@ export function createApp() {
 
 ## Experiências
 
-1. Faz um pedido à mão e lê a resposta completa:
+0. **Antes de tudo, um token.** As rotas de tarefas exigem autenticação: sem token, a API responde `401`. Cria um utilizador de teste e guarda o token numa variável do terminal (vale até fechares o terminal, e os módulos seguintes usam-na):
    ```bash
-   curl -i http://localhost:8080/api/tasks
+   curl -s -X POST localhost:8080/api/auth/register -H 'Content-Type: application/json' \
+     -d '{"email":"teste@exemplo.pt","password":"password-de-teste"}' > /dev/null   # se já existir, dá 409: não faz mal
+   TOKEN=$(curl -s -X POST localhost:8080/api/auth/login -H 'Content-Type: application/json' \
+     -d '{"email":"teste@exemplo.pt","password":"password-de-teste"}' | node -pe 'JSON.parse(require("fs").readFileSync(0)).token')
+   echo "$TOKEN"   # um texto comprido com dois pontos: é um JWT (módulo 15)
+   ```
+   (Se arrancaste com `WEB_PORT=8081`, troca o `8080` pela tua porta, aqui e nos comandos seguintes.)
+1. Faz um pedido à mão e lê a resposta completa, primeiro sem e depois com o token:
+   ```bash
+   curl -i http://localhost:8080/api/tasks                                   # 401
+   curl -i http://localhost:8080/api/tasks -H "Authorization: Bearer $TOKEN"   # 200
    ```
 2. Pede uma rota que não existe e repara no corpo do erro: `curl -i http://localhost:8080/api/nada`.
 3. Envia JSON inválido: `curl -i -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -d '{isto'`. Quem devolve esta resposta? Procura a resposta no código: é o `body-parser` (dentro do `express.json()`) a lançar um erro com `status 400`, que o `errorHandler` transforma em JSON.

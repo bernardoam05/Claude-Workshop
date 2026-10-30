@@ -80,6 +80,16 @@ Uma **violação de dados pessoais** (uma fuga, um acesso indevido, perda de dad
 
 Enviar dados pessoais para fora do Espaço Económico Europeu (um serviço de email nos EUA, um LLM noutro continente, módulo 55) exige uma garantia adequada: uma decisão de adequação da Comissão Europeia, ou cláusulas contratuais-tipo. Antes de mandar dados de utilizadores para um serviço novo, pergunta: que dados vão, para onde, com que contrato, e por quanto tempo ficam lá.
 
+## Em resumo
+
+- O RGPD aplica-se a qualquer dado de uma pessoa **identificável** (incluindo IPs e ids), e as decisões que contam são tomadas por quem desenha o sistema.
+- Os princípios traduzem-se em código: finalidade, **minimização**, exatidão, **prazos de conservação**, segurança e capacidade de provar que se cumpre.
+- Cada tratamento tem uma **base legal** (contrato, obrigação legal, interesse legítimo ou consentimento); o consentimento não é a resposta para tudo.
+- O **consentimento** é livre, específico, informado, fácil de retirar, e guarda-se como um registo de eventos para se poder provar.
+- Os titulares têm direitos (acesso, retificação, **apagamento**, portabilidade), a que se responde num mês; o apagamento respeita as obrigações legais e chega às cópias.
+- **Pseudonimização** com um HMAC e uma chave guardada à parte; um hash simples não chega. Dados anónimos a sério são raros.
+- Os **logs** são onde os dados pessoais mais escapam; uma violação comunica-se em **72 horas**.
+
 ---
 
 ## Prática: escreve tu

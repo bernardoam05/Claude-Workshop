@@ -288,6 +288,16 @@ def test_cria_uma_nota(django_user_model):
 
 Cada teste corre dentro de uma transação que é desfeita no fim, por isso começa sempre com a BD vazia. O fixture `django_assert_num_queries` conta as queries de um bloco: a forma de apanhares um N+1 num teste, antes de chegar a produção.
 
+## Em resumo
+
+- O **Django** traz quase tudo incluído (ORM, migrações, administração, autenticação); o **DRF** acrescenta as APIs REST.
+- Um projeto divide-se em *apps*, cada uma com modelos, vistas e URLs; as definições vivem no `settings.py`.
+- Os **modelos** são classes Python que o ORM traduz para tabelas; as consultas encadeiam-se e só correm quando são precisas (cuidado com o N+1: `select_related` e `prefetch_related`).
+- As **migrações são geradas** a partir dos modelos (`makemigrations`) e revistas antes de as aplicar.
+- O **painel de administração** dá um *back-office* com pouco código.
+- No DRF, os *serializers* validam e convertem dados, os *viewsets* juntam as operações CRUD e os *routers* criam as rotas.
+- Em produção, a app corre num servidor ASGI (uvicorn) ou WSGI (gunicorn), não no servidor de desenvolvimento.
+
 ---
 
 ## Prática: escreve tu

@@ -4,6 +4,8 @@
 
 **Código:** `src/notifications/`. Lê por esta ordem: `Notifications.csproj` → `Program.cs` → `Config.cs` → `Data/` → `Events/` → `Messaging/RabbitMqConsumer.cs` → `Auth/KeycloakRoleClaims.cs`.
 
+**Pré-requisitos:** módulos 06 e 07 (o RabbitMQ e o consumidor em Node, que este serviço repete em C#), 15 (Keycloak) e 18 (comparar com o Spring ajuda, mas não é obrigatório). O [módulo 23](23-sintaxe-csharp.md) tem a sintaxe de C#.
+
 > Se a sintaxe de C# ainda não for familiar (`record`, construtores primários, LINQ, `?`...), o [módulo 23](23-sintaxe-csharp.md) é uma referência rápida com linhas reais deste serviço.
 
 ---
@@ -158,6 +160,16 @@ Já tens Kafka a correr no `activity` (módulo 17). Dar ao `notifications` o **m
 - **D14. Outra rota:** `GET /api/notifications/by-user/{userId}`, só para admins, com uma query LINQ (`Where` + `OrderByDescending`).
 - **D15. Refazer o worker (RabbitMQ, Node) em .NET:** mesma fila, mesma idempotência, mesmos testes de contrato. É o D12 do módulo 18 (Spring), agora para quem prefere C#.
 - **D16. `dotnet watch`:** corre `dotnet watch run` dentro do contentor de build e edita um endpoint — compara com o `--watch` do Node (módulo 04) e o que falta ao `mvn` (Spring) para teres hot-reload equivalente.
+
+## Em resumo
+
+- O serviço `notifications` é um **segundo consumidor** do mesmo exchange do RabbitMQ (só `task.completed`, com a sua própria fila), escrito em C#: os conceitos são os mesmos, muda a sintaxe.
+- **Minimal APIs** definem rotas sem classes; os **Controllers** preferem-se em projetos grandes com convenções rígidas.
+- A injeção de dependências é nativa, com tempos de vida (**Singleton**, **Scoped**, **Transient**); um serviço de longa duração cria um *scope* para usar um `DbContext`.
+- O **EF Core** é o ORM; para SQL em bruto, `ExecuteSqlInterpolatedAsync` transforma as interpolações em parâmetros (sem injeção).
+- O **RabbitMQ.Client v7** é todo assíncrono, com a mesma disciplina de ack, nack e DLQ dos outros consumidores.
+- Os papéis do Keycloak vêm numa *claim* aninhada (`realm_access.roles`) que cada framework tem de mapear à mão: o mesmo problema nas três linguagens.
+- Testes em três andares (unitários, integração e fumo), e uma imagem Docker em vários estágios, como nos outros serviços.
 
 ## Prática: escreve tu
 

@@ -167,6 +167,16 @@ E os números de latência que vale a pena ter na cabeça (ordens de grandeza):
 
 Uma API que faz 10 pedidos **em série** a um serviço noutro continente demora pelo menos 1,5 segundos, por mais rápido que seja o código.
 
+## Em resumo
+
+- Um pedido atravessa **camadas**: o HTTP vai por cima do TLS, que vai por cima do TCP, que vai por cima do IP. Cada camada resolve um problema diferente.
+- Um **endereço IP** identifica uma máquina numa rede; as redes privadas saem para a internet através de **NAT**, e o Docker cria as suas próprias redes.
+- O **TCP** dá um fluxo de bytes fiável e ordenado (sem fronteiras de mensagens), ao custo de um *handshake*; o **UDP** é mais leve, mas sem garantias.
+- O **DNS** traduz nomes em endereços, com cache e TTL em cada nível: muitos incidentes "de rede" são de DNS.
+- O **HTTP** é texto (no HTTP/1.1) sobre uma ligação; o HTTP/2 e o HTTP/3 mudam o transporte, não o significado.
+- O **TLS** cifra a ligação e prova a identidade do servidor com um **certificado** assinado por uma autoridade em que o cliente confia.
+- `dig`, `curl -v`, `openssl s_client`, `ss` e `tcpdump` são as ferramentas para ver cada camada.
+
 ---
 
 ## Prática: escreve tu

@@ -148,6 +148,16 @@ Os números dos campos (`= 1`, `= 2`) são a identidade de cada campo no formato
 
 Muitas empresas usam os três: gRPC entre os serviços internos, uma camada GraphQL ou REST para os clientes, e REST para a API pública.
 
+## Em resumo
+
+- O REST pode obrigar a muitos pedidos (*under-fetching*) ou a dados a mais (*over-fetching*) quando há clientes com necessidades diferentes.
+- No **GraphQL**, o cliente pede exatamente os campos que quer, a partir de um **esquema** tipado; os **resolvers** dizem onde ir buscar cada campo.
+- Resolvers ingénuos dão o problema **N+1**; o **DataLoader** junta os pedidos num só.
+- O GraphQL complica a cache HTTP, a limitação de pedidos (uma consulta pode ser enorme) e a autorização por campo.
+- O **gRPC** usa **Protobuf** e HTTP/2: contratos fortes, binário, *streaming*; ideal entre serviços, não diretamente no browser.
+- Um contrato evolui sem partir os clientes acrescentando campos e nunca reutilizando números ou nomes.
+- REST para APIs públicas e simples, GraphQL para muitos clientes diferentes, gRPC entre serviços.
+
 ---
 
 ## Prática: escreve tu

@@ -2,7 +2,9 @@
 
 **Objetivo:** perceber **o que** testar, **com que nível de isolamento**, e como saber, em produção, se o sistema está saudável.
 
-**Ficheiros para ler primeiro:** `src/api/test/taskService.test.js`, `src/api/test/routes.test.js`, `src/worker/test/handler.test.js`, `scripts/smoke-test.sh`, e os endpoints `/api/health` e `/api/stats`.
+**Ficheiros para ler primeiro:** `src/api/test/taskService.test.js`, `src/api/test/routes.test.js`, `src/worker/test/handler.test.ts`, `scripts/smoke-test.sh`, e os endpoints `/api/health` e `/api/stats`.
+
+**Pré-requisitos:** módulos 04 (a API em camadas, que é o que se testa) e 07 (o worker).
 
 ---
 
@@ -15,9 +17,9 @@ Os testes deste projeto correm com `npm test` **sem Docker, sem BD, sem rede**. 
 ## 2. A pirâmide
 
 ```
-           ▲   poucos: E2E (browser + sistema todo)   → scripts/smoke-test.sh
+           ▲   poucos: E2E (browser + sistema todo)   → tests/e2e/ (Playwright) e scripts/smoke-test.sh
           ▲▲   alguns: integração (BD real)            → test/integration/ (npm run test:integration)
-        ▲▲▲▲   muitos: unitários (lógica, com fakes)    → services/, handler.js
+        ▲▲▲▲   muitos: unitários (lógica, com fakes)    → services/, handler.ts
 ```
 
 Quanto mais alto, mais realista, mais lento e mais frágil. Quanto mais baixo, mais rápido e mais focado. Uma base larga de testes unitários com poucos E2E é o equilíbrio típico.
@@ -58,7 +60,7 @@ Um teste que parte em refatoração **sem** mudança de comportamento é um test
 
 Dizer isto em voz alta é parte da engenharia:
 
-- **Condições de corrida** (duas chamadas concorrentes ao `updateTask`). Os testes são sequenciais. Para os apanhar: testes de carga ou de concorrência com BD real.
+- **Condições de corrida** (duas chamadas concorrentes ao `updateTask`). Os testes são sequenciais. Para os apanhar: testes de carga ou de concorrência com BD real (módulos 38 e 48).
 - **Erros de SQL**: o fake não sabe que `$1` está mal escrito. Só um teste de integração com Postgres real o apanha.
 - **Configuração errada do Docker** (ex.: porta trocada no compose). Só o `smoke-test.sh` o apanha.
 
@@ -79,8 +81,8 @@ Testes dizem se o código está certo **antes** de sair. Observabilidade diz o q
 | Pilar | O que é | No projeto |
 |---|---|---|
 | **Logs** | eventos textuais | `console.log` / `console.error` (ver `docker compose logs`) |
-| **Métricas** | números agregados ao longo do tempo | não temos (exercício C12: Prometheus) |
-| **Traces** | o caminho de um pedido entre serviços | não temos (ver exercício C16 para a correlação, que é o primeiro passo) |
+| **Métricas** | números agregados ao longo do tempo | `/metrics` na API e no Spring, recolhidas pelo Prometheus e mostradas no Grafana (módulo 19) |
+| **Traces** | o caminho de um pedido entre serviços | ainda não na stack (o exercício C16 faz a correlação, o primeiro passo; o módulo 47 ensina o OpenTelemetry) |
 
 ## 9. Health checks: duas perguntas diferentes
 
@@ -101,11 +103,21 @@ Os nossos logs são texto livre: `[worker] task.completed → processado`. Para 
 {"level":"info","service":"worker","event":"task.completed","result":"processado","eventId":"8f1c...","ts":"2026-10-04T10:00:00Z"}
 ```
 
-Com `eventId` em todos os logs de um fluxo, consegues seguir **uma** tarefa desde o pedido HTTP até ao worker. Isto chama-se **correlação**, e é um exercício avançado: propaga um `X-Request-Id` da API para o evento.
+Com `eventId` em todos os logs de um fluxo, consegues seguir **uma** tarefa desde o pedido HTTP até ao worker. Isto chama-se **correlação**, e é um exercício avançado: propaga um `X-Request-Id` da API para o evento. (O módulo 47 trata os logs estruturados e os traces a sério.)
 
 ## 11. O smoke test
 
 `scripts/smoke-test.sh` é um **E2E mínimo**: percorre o fluxo real pelo Nginx e confirma que o worker processou. Repara que espera de forma **ativa** (ciclo com `sleep`), porque o worker é assíncrono: não há uma resposta síncrona para verificar. Isto é testar consistência eventual.
+
+## Em resumo
+
+- Um teste é uma **especificação executável**; o seu valor é poder mudar o código com confiança. Testes lentos ou frágeis deixam de ser corridos.
+- A **pirâmide**: muitos testes unitários (rápidos, com dependências falsas), alguns de integração (BD real), poucos de ponta a ponta (o sistema todo).
+- *Stubs*, *fakes*, *mocks* e *spies* são formas diferentes de substituir dependências; um *fake* tem de se **comportar como o real** (por exemplo, devolver cópias), senão o teste mente.
+- Testa-se **comportamento observável**, não a implementação: um teste que parte numa refatoração sem mudança de comportamento está mal escrito.
+- Cada nível apanha o que os outros não apanham (corridas, SQL errado, configuração): nenhum chega sozinho.
+- **Observabilidade** é saber o que se passa em produção: logs, métricas e traces. *Liveness* (o processo está vivo?) e *readiness* (está pronto?) são perguntas diferentes.
+- Logs estruturados com um id de correlação permitem seguir um pedido de ponta a ponta.
 
 ---
 

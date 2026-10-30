@@ -4,6 +4,8 @@
 
 **Ficheiros para ler:** `src/api/src/services/authService.js`, `src/api/src/services/oidcVerifier.js`, `src/web/src/oidc.js`, `config/keycloak/realm-workshop.json`, serviço `keycloak` em `config/docker-compose.yml`.
 
+**Pré-requisitos:** módulos 01 (HTTP e cabeçalhos), 04 (o middleware de autenticação) e 08 (o frontend).
+
 **Experimenta primeiro:** abre a app, clica **Entrar com Keycloak**, entra com `alice` / `alice-password`. Repara no URL durante o login: estás em `localhost:8180`, não na app.
 
 ---
@@ -114,6 +116,8 @@ Nas empresas, vais ver:
 - **ABAC / políticas:** regras com atributos ("só o dono ou alguém do mesmo departamento"). Ferramentas: OPA (Open Policy Agent), Cedar, Casbin.
 - **401 vs 403:** 401 = não sei quem és (token em falta ou inválido). 403 = sei quem és, mas não podes.
 
+O módulo 28 trata a autorização a fundo (RBAC, ABAC e ReBAC, e como pôr as regras dentro das consultas SQL).
+
 ## 8. Alternativas ao Keycloak
 
 | Produto | Tipo | Onde aparece |
@@ -125,6 +129,16 @@ Nas empresas, vais ver:
 | **Authentik, Zitadel, Ory** | open source | alternativas mais recentes ao Keycloak |
 
 O protocolo é o mesmo (OIDC), por isso o que aprendeste aqui transfere-se. Só muda onde se configura.
+
+## Em resumo
+
+- Há duas formas de autenticar: **à mão** (a tua BD guarda o hash da password e a tua API emite o token) ou com um **Identity Provider** como o Keycloak, que é o que as empresas usam.
+- **OAuth 2.0** é autorização ("esta app pode agir em teu nome"); o **OIDC** acrescenta a identidade. O *access token* vai para a API; o *ID token* fica na app.
+- Numa SPA usa-se o fluxo **Authorization Code com PKCE**: a password só é escrita na página do IdP, o `state` trava o CSRF e o PKCE substitui o segredo que uma SPA não consegue guardar.
+- A API verifica a **assinatura** (com as chaves públicas do JWKS), o **emissor**, a **audiência**, o **algoritmo** e a **expiração**; cada verificação em falta é um ataque possível.
+- Dentro do Docker, o Keycloak tem um URL para o browser e outro para a API: o `iss` é o público, as chaves vêm pelo interno.
+- Os utilizadores do IdP ligam-se às tarefas por *just-in-time provisioning*; contas com o mesmo email **não** se juntam automaticamente.
+- Autenticação diz quem és; autorização diz o que podes. 401 é "não sei quem és", 403 é "sei, mas não podes". Os módulos 27 e 28 continuam este tema.
 
 ---
 

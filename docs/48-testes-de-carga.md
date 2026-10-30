@@ -112,6 +112,15 @@ O método é sempre o mesmo: mede, encontra o gargalo, corrige **uma** coisa, me
 | **Locust** | Python | os utilizadores são classes Python |
 | **autocannon**, **wrk**, **hey** | linha de comandos | para um endpoint, rapidamente; não para cenários |
 
+## Em resumo
+
+- Os testes unitários não dizem quantos pedidos o sistema aguenta, nem o que acontece quando chega ao limite: isso só se mede com carga.
+- Os números que importam são a **taxa de pedidos**, os **percentis** de latência (p95, p99) e a **taxa de erros**, e a **lei de Little** liga-os (pedidos em curso = débito × latência).
+- Os tipos de teste respondem a perguntas diferentes: **carga** (o normal), **stress** (o limite), **picos**, e **resistência** (horas, para fugas).
+- O **k6** escreve os testes em JavaScript, com cenários, **limiares** que fazem o teste falhar, e executores de ritmo constante (o modelo aberto, como os utilizadores reais).
+- Um teste realista tem dados, pausas e uma mistura de pedidos parecidos com os de produção, e corre num ambiente parecido.
+- Os gargalos estão quase sempre nos mesmos sítios: a BD (consultas e *pool*), as dependências lentas, o event loop bloqueado, a falta de cache.
+
 ---
 
 ## Prática: escreve tu

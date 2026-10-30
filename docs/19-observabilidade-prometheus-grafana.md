@@ -4,6 +4,8 @@
 
 **Ficheiros:** `src/api/src/observability/metrics.js`, `src/activity/src/main/resources/application.yml` (secção `management`), `config/prometheus/prometheus.yml`, `config/prometheus/alerts.yml`, `config/grafana/`.
 
+**Pré-requisitos:** módulos 04 (a API) e 11 (os três pilares da observabilidade). As filas (06) e o Kafka (17) aparecem nos painéis.
+
 **Interfaces:**
 - Prometheus: `http://localhost:9090` (Status → Targets; Graph; Alerts)
 - Grafana: `http://localhost:3001` (abre logo o dashboard "Workshop · Visão geral"; para editar, admin / admin)
@@ -119,7 +121,7 @@ Para alterar: edita no Grafana (admin / admin), exporta o JSON (Share → Export
 Boas práticas que estas regras seguem:
 - Alertar sobre **sintomas** (erros, latência, trabalho acumulado), não sobre causas (CPU a 80%). CPU alta sem impacto não deve acordar ninguém às 3h.
 - `for: 1m`: a condição tem de durar, para não alertar por um pico de um segundo.
-- Cada alerta deve ter um **runbook**: o que verificar e o que fazer (módulo 12, P6).
+- Cada alerta deve ter um **runbook**: o que verificar e o que fazer (módulo 12, pergunta P6; o módulo 51 trata runbooks, plantões e alertas pela taxa de queima do SLO).
 
 Em produção, o **Alertmanager** recebe os alertas, agrupa-os, silencia-os durante manutenções, e envia para Slack, email ou PagerDuty. Não o incluímos aqui.
 
@@ -131,7 +133,17 @@ Em produção, o **Alertmanager** recebe os alertas, agrupa-os, silencia-os dura
 | **Logs** | 🟡 `docker compose logs` (texto livre na API; o Spring já tem formato estruturado) | Loki, ELK/OpenSearch, Datadog |
 | **Traces** | ❌ | **OpenTelemetry** + Jaeger/Tempo |
 
-**Traces** são o passo seguinte: com OpenTelemetry, um pedido `POST /api/tasks` gera um *trace* que mostra o tempo gasto na API, no Postgres, no RabbitMQ, no Kafka e no serviço Spring, numa única linha temporal. É o exercício D13.
+**Traces** são o passo seguinte: com OpenTelemetry, um pedido `POST /api/tasks` gera um *trace* que mostra o tempo gasto na API, no Postgres, no RabbitMQ, no Kafka e no serviço Spring, numa única linha temporal. É o exercício D13, e o módulo 47 ensina o OpenTelemetry na prática.
+
+## Em resumo
+
+- Cada serviço **expõe** métricas em texto e o Prometheus **vai buscá-las** (*pull*); o Grafana só consulta e desenha. O `/metrics` fica dentro da rede, longe do Nginx.
+- Há quatro tipos de métrica (counter, gauge, histogram, summary); de um counter, olha-se sempre para a **taxa** (`rate`), nunca para o valor bruto.
+- A **cardinalidade** mata o Prometheus: as etiquetas só levam valores com limite (a rota, nunca o id nem o email).
+- As **médias escondem a cauda**: mede-se a latência com percentis (p95, p99).
+- O que medir: **RED** para serviços (taxa, erros, duração), **USE** para recursos (utilização, saturação, erros).
+- Alerta-se sobre **sintomas** que os utilizadores sentem, com duração mínima (`for`) e um runbook para cada alerta.
+- Métricas dizem **que** algo está mal; os traces (módulo 47) dizem **onde**; os logs dizem **porquê**.
 
 ## Prática: escreve tu
 

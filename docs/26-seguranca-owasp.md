@@ -132,7 +132,7 @@ Set-Cookie: sessao=abc; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=3600
 | `SameSite=Lax` | não é enviada em pedidos `POST` (nem em `fetch`) vindos de outros sites: trava o CSRF |
 | `Max-Age` | expira sozinha |
 
-Este projeto não usa cookies: o frontend guarda o JWT e envia-o no cabeçalho `Authorization: Bearer`. O browser não envia esse cabeçalho sozinho, por isso **não há CSRF**. Em troca, o token fica acessível ao JavaScript: um XSS consegue lê-lo. Nenhuma opção é perfeita. Hoje, a recomendação mais comum para aplicações web é a cookie `HttpOnly` + `SameSite`, ou o padrão BFF (*backend for frontend*) do módulo 15, em que o token nunca chega ao browser.
+Este projeto não usa cookies: o frontend guarda o JWT e envia-o no cabeçalho `Authorization: Bearer`. O browser não envia esse cabeçalho sozinho, por isso **não há CSRF**. Em troca, o token fica acessível ao JavaScript: um XSS consegue lê-lo. Nenhuma opção é perfeita. Hoje, a recomendação mais comum para aplicações web é a cookie `HttpOnly` + `SameSite`, ou o padrão BFF (*backend for frontend*) do módulo 15, em que o token nunca chega ao browser. O módulo 27, a seguir, implementa essa alternativa (cookies `HttpOnly`, sessões no servidor, rotação de tokens e as defesas contra CSRF).
 
 ## 7. SSRF e path traversal: quando o utilizador escolhe o destino
 
@@ -200,6 +200,16 @@ Um ataque que ninguém vê dura meses. Regista os eventos de segurança: logins 
 | **Segredos** | procura chaves e passwords no código e no histórico do Git | gitleaks, GitHub secret scanning |
 
 E, antes de escrever código, a **modelação de ameaças**: olhar para o diagrama da arquitetura (módulo 00) e perguntar, para cada seta, "e se alguém mentir aqui?". Muitas empresas usam a lista STRIDE como guia: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service e Elevation of privilege.
+
+## Em resumo
+
+- **Todo o input é hostil**: o corpo, o URL, os cabeçalhos, os ficheiros e até os dados que vêm da tua própria BD.
+- **Injeção de SQL**: parâmetros sempre, e listas brancas para nomes de colunas; os ORMs não protegem o SQL "cru".
+- **XSS**: escapar a saída para o contexto certo; o React escapa por omissão, e o `dangerouslySetInnerHTML` e os URLs `javascript:` são as portas que sobram. A CSP é a segunda barreira.
+- **Controlo de acesso partido** (o n.º 1): verificar o dono em todas as rotas, responder 404 em vez de 403, e nunca aceitar campos que o cliente não devia poder mudar (*mass assignment*).
+- **SSRF** e **path traversal** acontecem quando o utilizador escolhe o destino: valida-se o destino final, não o texto que ele escreveu.
+- Passwords com bcrypt ou argon2, limites de tentativas, comparações em tempo constante, mensagens que não revelam que contas existem, e TLS em todo o lado.
+- Cabeçalhos de segurança, dependências vigiadas (`npm audit`), e registar os eventos de segurança para os detetar.
 
 ---
 

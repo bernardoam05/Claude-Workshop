@@ -174,6 +174,15 @@ O que continua a não se testar bem automaticamente: se o jogo é **divertido**.
 - **Motores:** o **Godot** (livre, com uma linguagem parecida com Python, o GDScript), o **Unity** (em C#, o que liga ao módulo 23) e o **Unreal** (C++). Todos têm, por dentro, o ciclo, o passo fixo e os estados deste módulo.
 - **Ligar ao resto do workshop:** o jogo pode enviar a pontuação no fim para uma API (a do módulo 31, com um modelo `Pontuacao`), e mostrar o top 10. É um bom projeto para juntar tudo: Python, uma API, uma BD, e um cliente que não é um browser.
 
+## Em resumo
+
+- Um jogo é um **ciclo**: ler o input, atualizar o estado, desenhar, muitas vezes por segundo.
+- O tempo controla-se com um **passo fixo** (a lógica avança em incrementos iguais, independentemente dos FPS), para o jogo se comportar igual em qualquer máquina.
+- As **regras** vivem separadas do **ecrã**: são funções puras, testáveis sem janela, e o pygame só desenha e lê o teclado.
+- Os ecrãs do jogo (menu, a jogar, pausa, fim) são uma **máquina de estados**.
+- O input lê-se por **eventos**, com uma fila para não perder teclas carregadas no mesmo intervalo (o bug das duas teclas).
+- A aleatoriedade usa uma **semente**, para um jogo poder ser repetido e testado.
+
 ---
 
 ## Prática: escreve tu

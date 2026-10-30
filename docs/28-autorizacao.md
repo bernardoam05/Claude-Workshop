@@ -70,6 +70,16 @@ Verificar `podeVer(utilizador, tarefa)` num `GET /tarefas/42` é a parte fácil.
 - **Responde `404` em vez de `403`** a quem nem sequer pode saber que o recurso existe (não confirmes que a tarefa 42 existe a quem não a pode ver).
 - **Regista as decisões negadas**: um pico de `403` é muitas vezes alguém a experimentar ids.
 
+## Em resumo
+
+- Autenticação diz **quem és**; autorização diz **o que podes fazer**, e as falhas de controlo de acesso são as n.º 1 do OWASP.
+- **RBAC**: permissões dadas a papéis, com herança e curingas; ótimo para permissões gerais, mau para "só as tuas" (explosão de papéis).
+- **ABAC**: políticas sobre atributos do sujeito, do recurso e do contexto, com **negado por omissão**, **negar ganha** e **falhar fechado**.
+- **ReBAC** (o modelo do Zanzibar): permissões a partir de relações e tuplos, com grupos e hierarquias; é o que o SpiceDB e o OpenFGA fazem.
+- Políticas como código (OPA, Cedar) tiram as regras de dentro de cada serviço.
+- As regras de "quem vê o quê" vão **dentro da consulta SQL**, e têm de bater exatamente com as verificações individuais.
+- Verifica-se sempre no servidor, perto dos dados; a interface esconder um botão não é segurança.
+
 ---
 
 ## Prática: escreve tu

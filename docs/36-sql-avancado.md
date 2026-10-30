@@ -93,6 +93,16 @@ Cada índice tem um custo: espaço, e cada `INSERT`/`UPDATE` tem de o atualizar.
 
 O plano depende dos dados: numa tabela pequena, um `Seq Scan` é a escolha certa (ler tudo é mais barato do que ir ao índice). Por isso os índices testam-se com volumes realistas, como nos testes da prática.
 
+## Em resumo
+
+- Fazer o trabalho **onde estão os dados**: o SQL calcula tops, totais e árvores sem transferir tabelas inteiras para a aplicação.
+- As **CTEs** (`WITH`) dão nomes a partes de uma consulta e tornam-na legível de cima para baixo.
+- As **funções de janela** calculam sobre linhas vizinhas sem as juntar: `row_number()` para o top N por grupo, `sum() OVER (ORDER BY ...)` para totais acumulados, `lag()` para a linha anterior.
+- As **CTEs recursivas** percorrem árvores (`pai_id`) numa só consulta, em vez de uma por nível.
+- Nos relatórios: `generate_series` para não haver buracos, `count(*) FILTER (WHERE ...)`, `ROLLUP` para subtotais, e percentis em vez de médias.
+- Os índices desenham-se **a partir das consultas**: compostos (igualdade primeiro, ordenação depois), parciais e sobre expressões. Cada índice tem um custo nas escritas.
+- O `EXPLAIN` mostra o plano: um `Seq Scan` ou um `Sort` onde não devia, ou estimativas muito longe da realidade, são os sinais a procurar.
+
 ---
 
 ## Prática: escreve tu

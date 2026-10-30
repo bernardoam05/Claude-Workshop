@@ -4,6 +4,8 @@
 
 **Ficheiros para ler (por esta ordem):** `src/web/src/main.jsx` → `src/web/src/App.jsx` → `src/web/src/components/*.jsx` → `src/web/src/api.js` → `src/web/vite.config.js`.
 
+**Pré-requisitos:** módulo 01 (HTTP e o `api.js`). Do JavaScript, usa-se muito a desestruturação, as *arrow functions* e o *spread* (módulo 22).
+
 ---
 
 ## 1. O modelo mental do React
@@ -122,12 +124,12 @@ As estatísticas são pedidas de 3 em 3 segundos (*polling*). Alternativas:
 | **SSE** (Server-Sent Events) | servidor empurra eventos por HTTP | atualizações do servidor para o cliente, unidirecional |
 | **WebSocket** | canal bidirecional persistente | chat, jogos, colaboração em tempo real |
 
-Para contadores que mudam de vez em quando, polling chega. Escolher WebSocket "porque é mais moderno" é um erro comum: traz estado de ligação, reconexão e balanceamento para resolver um problema que não tens.
+Para contadores que mudam de vez em quando, polling chega. Escolher WebSocket "porque é mais moderno" é um erro comum: traz estado de ligação, reconexão e balanceamento para resolver um problema que não tens. (O módulo 45 implementa SSE e WebSockets a sério, com os problemas de produção.)
 
 ## 9. Vite: o que faz por ti
 
 - **Dev server** com *hot module replacement*: guardas um ficheiro e só esse módulo é recarregado.
-- **Build** de produção: junta, minifica e gera *hashes* nos nomes (`index-Diva-lLB.js`). O hash muda quando o conteúdo muda, por isso o browser não usa uma versão antiga da cache.
+- **Build** de produção: junta, minifica e gera *hashes* nos nomes (`index-Diva-lLB.js`). O hash muda quando o conteúdo muda, por isso o browser não usa uma versão antiga da cache. (O módulo 43 explica a política de cache que isto permite.)
 - **Proxy** de desenvolvimento (`vite.config.js`): reencaminha `/api` para `localhost:3000`. Vê o módulo 10 para perceber porquê.
 
 Experiência: corre `npm run dev` em `src/web` (com a API a correr no compose na porta 3000 — ou corre `docker compose ... up -d` e expõe temporariamente a API). Altera o título num componente e repara que a página atualiza sem recarregar.
@@ -135,6 +137,16 @@ Experiência: corre `npm run dev` em `src/web` (com a API a correr no compose na
 ## 10. StrictMode
 
 `main.jsx` envolve a app em `<StrictMode>`. Em desenvolvimento, o React **monta, desmonta e volta a montar** cada componente, para expor efeitos sem limpeza. Vais ver os pedidos iniciais duplicados nos logs do browser. **É esperado.** Se o teu efeito estiver bem escrito, correr duas vezes não causa problemas.
+
+## Em resumo
+
+- No React, **a interface é uma função do estado**: muda-se o estado e o React atualiza o DOM, em vez de o mexermos à mão.
+- Um componente é uma função que recebe **props** e devolve JSX. **Os dados descem por props, os eventos sobem por callbacks**, e o estado fica o mais abaixo possível que ainda sirva quem precisa dele.
+- `useState` guarda estado local; chamar o *setter* agenda uma nova renderização. Um input **controlado** tem `value` e `onChange`.
+- `useEffect` serve para **sincronizar com o exterior** (rede, temporizadores), com um array de dependências e uma função de limpeza; não serve para calcular valores a partir de outro estado.
+- Os componentes não fazem `fetch`: chamam o `api.js`, que concentra a rede, a autenticação e os erros.
+- O `key` de cada item de uma lista tem de ser estável (o id, nunca o índice).
+- Para atualizações do servidor, o polling chega muitas vezes; SSE e WebSockets resolvem outros problemas e trazem custos. Os módulos 56 (desempenho e acessibilidade) e 57 (Next.js e SSR) continuam o frontend.
 
 ---
 

@@ -6,6 +6,8 @@
 
 **Interfaces:** Kafka UI em `http://localhost:8089` (tópicos, partições, mensagens, consumer groups).
 
+**Pré-requisitos:** módulos 06 e 07 (filas, *at-least-once* e idempotência). O consumidor está em Java: se nunca viste Spring, o módulo 18 explica-o, mas não é preciso para este.
+
 ---
 
 ## 1. O que mudou na arquitetura
@@ -116,11 +118,21 @@ Usamos `kafkajs` porque é JavaScript puro e simples de ler. Mas **não é atual
 
 ## 11. Kafka no ecossistema
 
-- **Schema Registry + Avro/Protobuf:** contratos de mensagens versionados e validados. Muito usado em empresas grandes, porque JSON livre (como aqui) parte quando alguém muda um campo.
+- **Schema Registry + Avro/Protobuf:** contratos de mensagens versionados e validados (o módulo 46 mostra o Protobuf no gRPC, e o 44 as regras de evolução de um contrato). Muito usado em empresas grandes, porque JSON livre (como aqui) parte quando alguém muda um campo.
 - **Kafka Connect:** conectores prontos (BD → Kafka, Kafka → Elasticsearch, S3...).
 - **Kafka Streams / Flink:** processamento de streams (agregações, janelas de tempo, joins entre tópicos).
 - **Serviços geridos:** Confluent Cloud, AWS MSK, Azure Event Hubs (compatível com o protocolo Kafka).
 - **Redpanda:** alternativa compatível com o Kafka, num só binário.
+
+## Em resumo
+
+- O Kafka é um **log**, não uma fila: as mensagens ficam depois de lidas (até ao fim da retenção), e cada consumidor guarda o seu **offset**. Um consumidor novo pode reler o histórico.
+- Um tópico divide-se em **partições**; a **chave** decide a partição, e a ordem só é garantida **dentro** de uma partição (por isso a chave é o `userId`).
+- Um **consumer group** divide as partições pelas suas instâncias: o número de partições é o paralelismo máximo. Grupos diferentes leem tudo, cada um com os seus offsets.
+- O commit do offset depois de processar dá, outra vez, "pelo menos uma vez": o consumidor tem de ser **idempotente**. O *consumer lag* é a métrica de saúde.
+- Uma mensagem que falha sempre **bloqueia a partição**: depois de algumas tentativas, vai para um **Dead Letter Topic** e o consumidor avança.
+- `acks: all` e o produtor idempotente reduzem perdas e duplicados, mas não dão *exactly-once* com uma BD pelo meio.
+- Publicar em três sítios agrava o dual-write; o Kafka é tratado como *best-effort* com um limite de tempo, e o outbox (ou o CDC) é a solução sem perdas.
 
 ---
 

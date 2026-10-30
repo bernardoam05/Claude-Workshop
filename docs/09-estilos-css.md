@@ -4,6 +4,8 @@
 
 **Ficheiros para ler (por esta ordem):** `src/web/src/styles.css` → `src/web/vite.config.js` → `src/web/src/components/TaskForm.jsx` → `src/web/src/components/AuthForm.jsx`.
 
+**Pré-requisitos:** módulo 08 (componentes React e o atributo `className`).
+
 ---
 
 ## 1. Porque isto costuma ficar para depois
@@ -116,6 +118,16 @@ Pensamento crítico, não propaganda:
 - **Protótipos muito pequenos ou de vida curta**: a curva de aprendizagem (saber os nomes das classes) não compensa para 3 divs.
 - **Equipas de design que trabalham em Figma e exportam CSS**: por vezes é mais direto manter nomes de classe semânticos (`.card-header`) que mapeiam 1:1 para o design, e deixar o CSS-in-JS ou Modules tratar disso.
 - **JSX muito denso**: uma linha com 10 classes utilitárias é mais difícil de ler de relance do que `className="card"`. A mitigação comum é extrair o padrão repetido para um componente (como já fazemos com `TaskList`, `TaskForm`), não para uma classe CSS nova.
+
+## Em resumo
+
+- Estilizar bem é um **conjunto pequeno de decisões repetidas** (espaçamentos de uma escala, poucas cores com significado, hierarquia de texto), não talento artístico.
+- As abordagens principais são CSS puro ou Sass, CSS Modules, CSS-in-JS e *utility-first* (Tailwind); são compromissos entre consistência, dependências e legibilidade.
+- O Tailwind **lê o código-fonte** e gera só o CSS das classes que usas; o `@theme` define os *design tokens* do projeto (cores com nomes como `accent` e `danger`).
+- As classes utilitárias usam uma **escala fixa** (`px-4`, `rounded-lg`): o mesmo valor em todo o projeto, sem números soltos.
+- Com variáveis CSS e `prefers-color-scheme`, o **modo escuro** muda só os valores das variáveis, sem tocar nos componentes.
+- O Tailwind não serve para tudo: em protótipos minúsculos, ou com JSX demasiado denso, extrai-se um componente ou usa-se outra abordagem.
+- Cor e contraste também são acessibilidade: o módulo 56 mede-os com o axe.
 
 ---
 

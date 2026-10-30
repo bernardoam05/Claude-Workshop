@@ -4,6 +4,8 @@
 
 **Ficheiros para ler primeiro:** `src/web/nginx.conf`, `src/web/vite.config.js`, `src/web/src/api.js`.
 
+**Pré-requisitos:** módulos 02 (a rede do Compose) e 08 (o frontend e o `api.js`).
+
 ---
 
 ## 1. Origem (origin)
@@ -116,6 +118,16 @@ curl -i http://localhost:3000/api/health    # falha — não está publicada
 ## 8. Cabeçalhos: o que o proxy acrescenta
 
 `X-Forwarded-For` leva o IP do cliente original até à API. Sem isto, a API só vê o IP do Nginx e todos os pedidos parecem vir do mesmo sítio (o que estraga rate limiting e logs). **Mas:** a API só deve confiar neste cabeçalho se **só** o Nginx puder enviar pedidos. Caso contrário, qualquer cliente forja o IP. Confiar em cabeçalhos é uma decisão de segurança, não um detalhe.
+
+## Em resumo
+
+- Uma **origem** é protocolo + domínio + porta; a *Same-Origin Policy* impede o JavaScript de uma origem de ler respostas de outra.
+- **CORS** é a exceção que o servidor concede; aqui evita-se, pondo o frontend e a API **na mesma origem** atrás do Nginx.
+- Um **reverse proxy** é a porta única do sistema: encaminha `/` para os ficheiros estáticos e `/api/` para a API, e é onde se fazem o TLS, o balanceamento, a compressão e os limites de pedidos.
+- `try_files $uri /index.html` é o que faz uma **SPA** funcionar quando se abre um URL interno diretamente.
+- Uma barra no fim do `proxy_pass` muda o caminho enviado; e um proxy que fala com serviços que mudam de IP tem de **resolver o nome dinamicamente** (o bug dos 502).
+- Em desenvolvimento, o proxy do Vite faz o mesmo papel que o Nginx: o código do frontend é igual nos dois mundos.
+- `X-Forwarded-For` leva o IP do cliente até à API, mas só se confia nele quando vem do proxy. O módulo 25 explica o DNS e o TLS por baixo disto.
 
 ---
 

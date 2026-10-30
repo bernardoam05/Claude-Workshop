@@ -2,6 +2,8 @@
 
 **Objetivo:** dar-te o mapa do que vais encontrar no primeiro emprego: as ferramentas mais usadas em cada área, como se trabalha em equipa, e o que este workshop **não** consegue ensinar.
 
+**Pré-requisitos:** nenhum em particular: lê-o quando quiseres. Faz mais sentido depois dos módulos 01 a 11.
+
 ---
 
 ## 1. Resposta honesta: este workshop chega?
@@ -28,15 +30,15 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 | **Java + Spring Boot** ⭐ 📌 | A mais pedida em Portugal (banca, seguros, telecom, consultoras). Se tiveres de escolher uma segunda stack, é esta |
 | **C# + .NET** ⭐ | Muito forte em empresas Microsoft e consultoras (módulo 21) |
 | **Node.js (Express, NestJS)** ⭐ | Express aqui; **NestJS** é o mais usado em projetos Node grandes (estrutura parecida com Spring) |
-| **Python (FastAPI, Django)** 📌 | Dados, ML, automação, e APIs |
+| **Python (FastAPI, Django)** ⭐ 📌 | Dados, ML, automação, e APIs (Django no módulo 31) |
 | **Go** 👀 | Infraestrutura, serviços de alto desempenho |
-| **TypeScript** ⭐ | Worker aqui. É o padrão em Node e em frontend profissional |
+| **TypeScript** ⭐ | Worker aqui, e o módulo 29. É o padrão em Node e em frontend profissional |
 
 ### Frontend
 | Ferramenta | Notas |
 |---|---|
 | **React** ⭐ | O mais usado no mundo |
-| **Next.js** 📌 | React com renderização no servidor e routing; muito pedido |
+| **Next.js** 📌 | React com renderização no servidor e routing; muito pedido (módulo 57) |
 | **Angular** 📌 | Muito comum em empresas grandes em Portugal |
 | **Vue** 👀 | Popular, mas menos pedido cá |
 | **TanStack Query, React Router, Zustand/Redux** 📌 | Data fetching, routing e estado global em React |
@@ -49,11 +51,11 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 | **PostgreSQL** ⭐ | A escolha por defeito em projetos novos |
 | **SQL Server, Oracle** 📌 | Muito comuns em empresas grandes e no setor público. O SQL que aprendeste serve |
 | **MySQL / MariaDB** 👀 | Muito usados em web |
-| **MongoDB** 👀 | Documentos, schema flexível |
+| **MongoDB** 👀 | Documentos, schema flexível (módulo 41) |
 | **ORMs: Hibernate/JPA (Java), Entity Framework (.NET), Prisma/TypeORM (Node), SQLAlchemy (Python)** 📌 | Quase todas as empresas usam um. Saber SQL à mão (como aqui) faz-te perceber o que o ORM gera e porque é lento |
 | **Flyway** ⭐, **Liquibase** 📌 | Migrações (o que o nosso `migrate.js` faz, mas com locks e rollback) |
 | **Redis** ⭐ | Cache, sessões, rate limiting |
-| **Elasticsearch / OpenSearch** 👀 | Pesquisa de texto e logs |
+| **Elasticsearch / OpenSearch** 👀 | Pesquisa de texto e logs (módulo 42) |
 
 ### Mensagens e eventos
 | Ferramenta | Notas |
@@ -76,17 +78,17 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 |---|---|
 | **OpenAPI / Swagger** ⭐ | `src/api/openapi.yaml`, servido em `localhost:8088` |
 | **Postman, Insomnia, Bruno** 📌 | Clientes HTTP para testar APIs à mão. Quase todas as equipas partilham coleções |
-| **GraphQL, gRPC** 👀 | Alternativas a REST (módulo 13) |
+| **GraphQL, gRPC** ⭐ (prática) 👀 | Alternativas a REST (módulos 13 e 46) |
 
 ### Containers, orquestração e cloud
 | Ferramenta | Notas |
 |---|---|
 | **Docker, Docker Compose** ⭐ | Universal |
-| **Kubernetes** ⭐ (manifesto) 📌 | `config/k8s/`. Em empresas médias e grandes. Tens de saber os conceitos: pod, deployment, service, ingress, probes |
+| **Kubernetes** ⭐ (manifestos, módulo 32) 📌 | `config/k8s/`. Em empresas médias e grandes. Tens de saber os conceitos: pod, deployment, service, ingress, probes |
 | **Helm** 📌 | "Pacotes" de Kubernetes com templates. Quase sempre usado junto com K8s |
 | **Argo CD, Flux** 👀 | GitOps: o cluster sincroniza-se sozinho com o Git |
 | **AWS, Azure, GCP** 📌 | Escolhe uma e aprende o básico: computação (EC2 / App Service), BD gerida (RDS / Azure SQL), armazenamento (S3 / Blob), IAM. Azure é muito comum em Portugal |
-| **Terraform** 📌 | Infraestrutura como código. O mais usado, independentemente da cloud |
+| **Terraform** ⭐ 📌 | Infraestrutura como código. O mais usado, independentemente da cloud (módulo 33) |
 
 ### CI/CD e qualidade
 | Ferramenta | Notas |
@@ -97,13 +99,13 @@ Legenda: ⭐ usado neste workshop · 📌 vale a pena conhecer bem · 👀 basta
 | **Playwright, Cypress** ⭐ (Playwright) | Testes E2E |
 | **JUnit, xUnit, pytest, Jest/Vitest** 📌 | Frameworks de testes de cada linguagem |
 | **Testcontainers** 📌 | Arranca Postgres/Kafka reais em Docker dentro dos testes de integração. Padrão em Java e cada vez mais noutras linguagens |
-| **k6, JMeter, Gatling** 👀 | Testes de carga |
+| **k6** ⭐, **JMeter, Gatling** 👀 | Testes de carga (módulo 48) |
 
 ### Observabilidade (o que te salva às 3h da manhã)
 | Ferramenta | Notas |
 |---|---|
 | **Prometheus + Grafana** ⭐ | Métricas e dashboards. O par mais comum (módulo 19) |
-| **OpenTelemetry** 📌 | O padrão para instrumentar traces, métricas e logs |
+| **OpenTelemetry** ⭐ (prática) 📌 | O padrão para instrumentar traces, métricas e logs (módulo 47) |
 | **ELK (Elasticsearch, Logstash, Kibana), Loki** 📌 | Pesquisa de logs |
 | **Datadog, New Relic, Dynatrace** 👀 | Plataformas pagas que fazem tudo |
 | **Sentry** 📌 | Erros do frontend e do backend com stack trace e contexto |
@@ -173,7 +175,7 @@ Em algum momento algo vai falhar em produção. O processo típico:
 2. Comunicar no canal do incidente.
 3. **Postmortem sem culpados** (*blameless*): o que aconteceu, porque é que o sistema deixou acontecer, o que muda para não se repetir.
 
-Os módulos 06, 07 e 11 (DLQ, reconexão, health checks, o bug do Nginx com o IP da API) são exatamente o tipo de problema que aparece em incidentes reais.
+Os módulos 06, 07 e 11 (DLQ, reconexão, health checks, o bug do Nginx com o IP da API) são exatamente o tipo de problema que aparece em incidentes reais. O módulo 51 trata a resposta a incidentes, os SLOs e os postmortems a fundo.
 
 ### Documentar decisões: ADRs
 Um **Architecture Decision Record** é um ficheiro curto: contexto, decisão, alternativas, consequências. O módulo 13 está escrito nesse espírito. Quando chegares a uma equipa, procura a pasta `docs/adr` ou equivalente: é a forma mais rápida de perceber **porque** é que o sistema é assim.
@@ -205,21 +207,21 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 - Cache: como invalidas? O que é um *cache stampede*?
 - Autenticação vs autorização; 401 vs 403; o que é um JWT e porque não se guardam segredos lá dentro; o que é OIDC e PKCE.
 - Pirâmide de testes; mock vs fake.
-- **System design** (a partir de pleno, mas aparece em júnior): "desenha um encurtador de URLs" ou "desenha um sistema de notificações". Usa a estrutura deste workshop: API, BD, cache, fila, worker, e explica os trade-offs (módulo 13).
+- **Algoritmos e estruturas de dados** (*live coding*): complexidade, hash maps, janelas deslizantes, grafos (módulo 30, e os exercícios do módulo 14).
+- **System design** (a partir de pleno, mas aparece em júnior): "desenha um encurtador de URLs" ou "desenha um sistema de notificações". Usa a estrutura deste workshop: API, BD, cache, fila, worker, e explica os trade-offs (módulos 13 e 37).
 
 ---
 
 ## 6. O que este workshop NÃO cobre (sê honesto contigo)
 
+Os módulos 24 a 61 cobrem muito do que antes ficava de fora (cloud num LocalStack, Terraform, OpenTelemetry, sessões com cookies, acessibilidade e desempenho, Next.js...). O que continua em falta:
+
 | Área | Porquê importa | Como começar |
 |---|---|---|
-| **.NET** ✅ já implementado | Muitas vagas em empresas Microsoft | Lê o módulo 21 (`src/notifications`); o exercício é refazer o WORKER (RabbitMQ) em .NET, não a API Node |
 | **ORM em Node** | Muitas equipas Node usam Prisma | Converte o `taskRepository` para Prisma e compara o SQL gerado com o JPA do módulo 18 |
-| **Cloud real** | Onde as apps correm | Conta gratuita na AWS ou Azure: põe a API num serviço de contentores com uma BD gerida |
-| **Terraform** | IaC é padrão | Cria com Terraform os recursos do ponto anterior |
-| **Traces e logs centralizados** | Diagnosticar produção | Exercícios D13 (OpenTelemetry) e D16 (Loki) |
-| **Refresh tokens / BFF** | Sessões seguras numa SPA | Módulo 15, pergunta 2 |
-| **Acessibilidade e performance web** | Qualidade do frontend | Lighthouse nas DevTools do Chrome |
+| **Cloud a sério** | Onde as apps correm | O módulo 35 pratica os serviços da AWS num LocalStack; o passo seguinte é uma conta gratuita, a API num serviço de contentores e uma BD gerida (exercício D6) |
+| **Helm e GitOps** | Como se instala software em Kubernetes nas empresas | Depois do módulo 32: empacota os manifestos num *chart* do Helm e experimenta o Argo CD num cluster `kind` |
+| **Levar ao projeto o que se praticou à parte** | Um portfólio mostra o sistema inteiro a funcionar | Sessões com cookies (módulo 27) no frontend, traces da stack inteira (D13, D16), SSE nas estatísticas (D8) |
 | **Soft skills** | Decidem promoções | Só se aprendem a trabalhar com pessoas. Pratica explicar o workshop a um colega |
 
 ## 7. Plano sugerido (8 semanas, depois de acabares o workshop)
@@ -229,12 +231,22 @@ Com este workshop consegues responder a quase todas estas perguntas. Treina-as e
 | 1 | Já fizeste fork ([Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)). Branches + PRs para cada exercício, e vê o CI a correr a sério |
 | 2–3 | Exercícios D9–D12 do módulo 18: Testcontainers e refazer a API Node em **Spring Boot** |
 | 4 | Prisma no projeto Node + Prettier + Husky (hooks de pre-commit) |
-| 5 | Deploy numa cloud (AWS ou Azure) com uma BD gerida |
-| 6 | Terraform para o que fizeste na semana 5 |
+| 5 | Deploy numa cloud (AWS ou Azure) com uma BD gerida, com o Terraform do módulo 33 |
+| 6 | Sessões com cookies `HttpOnly` no projeto (módulo 27), no lugar do `localStorage` |
 | 7 | OpenTelemetry e Loki (D13, D16): traces e logs ao lado das métricas que já tens |
 | 8 | Kubernetes local (kind) com Helm; aplicar o `config/k8s/api.yaml` e completar para os outros serviços |
 
 No fim disto, tens um projeto de portfólio que mostra praticamente tudo o que uma vaga júnior/pleno pede, e que consegues explicar linha a linha numa entrevista. **Isso vale mais do que qualquer certificado.**
+
+## Em resumo
+
+- Nenhuma empresa espera que um júnior conheça todas as ferramentas: espera que perceba os **conceitos** e aprenda depressa a ferramenta deles.
+- O mapa de ferramentas serve para saber **o que existe** em cada área, e o que vale a pena aprender bem a seguir.
+- O ciclo de uma tarefa: ticket, branch, código e testes, PR, CI, revisão, merge, deploy e verificação em produção.
+- No Git: branches curtos, commits pequenos com sentido, rebase só em branches teus, e `blame`/`bisect` para perceber a história.
+- Num incidente, **mitigar primeiro** e perceber depois; o postmortem é sem culpas. As decisões documentam-se em ADRs.
+- Nos primeiros 30 dias: pôr o projeto a correr, ler o caminho de um pedido, levar uma tarefa pequena até produção, e **perguntar bem** (o que tentaste, o que esperavas, o que aconteceu).
+- O que mais distingue um júnior não é técnico: pedir ajuda cedo, escrever PRs fáceis de rever, e dizer "não sei, vou ver".
 
 ## Prática: escreve tu
 

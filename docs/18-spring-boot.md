@@ -4,6 +4,8 @@
 
 **Código:** `src/activity/`. Lê por esta ordem: `pom.xml` → `application.yml` → `ActivityApplication.java` → `events/` → `activity/` → `config/` → testes em `src/test/`.
 
+**Pré-requisitos:** módulos 04 (camadas e injeção de dependências, a mesma ideia), 15 (Keycloak e papéis) e 17 (o tópico que este serviço consome).
+
 ---
 
 ## 1. O que este serviço faz
@@ -80,7 +82,7 @@ Saber SQL à mão (como no projeto Node) é o que te permite perceber o que o Hi
 
 ## 6. Flyway
 
-`src/main/resources/db/migration/V1__create_activity_events.sql`. Regras iguais às do nosso `migrate.js`: nunca editar uma migração aplicada, criar V2, V3… O Flyway acrescenta checksums (deteta se alguém editou uma antiga), locks entre instâncias (o que faltava ao `migrate.js`, exercício C13), e a tabela `flyway_schema_history`.
+`src/activity/src/main/resources/db/migration/V1__create_activity_events.sql`. Regras iguais às do nosso `migrate.js`: nunca editar uma migração aplicada, criar V2, V3… O Flyway acrescenta checksums (deteta se alguém editou uma antiga), locks entre instâncias (o que faltava ao `migrate.js`, exercício C13), e a tabela `flyway_schema_history`.
 
 Repara: o serviço usa o **schema** `activity`, separado das tabelas da API Node. Em microserviços, cada serviço é dono dos seus dados, e nenhum outro lhe escreve diretamente nas tabelas. Aqui partilham o servidor Postgres por simplicidade; numa empresa teriam bases (e credenciais) diferentes.
 
@@ -126,6 +128,15 @@ Um teste apanhou um problema real enquanto escrevíamos o serviço: a API Node e
 - **D10. Nova rota:** `GET /api/activity/users/{userId}`, só para admins, com uma query derivada do nome (`findByUserIdOrderByReceivedAtDesc`). Escreve primeiro o teste `@WebMvcTest`.
 - **D11. Validação:** um `POST` com `@Valid` e um record com `@NotBlank`/`@Size`, e um `@RestControllerAdvice` que devolve erros no formato `{ "error": "..." }`, igual à API Node.
 - **D12. Refazer a API Node em Spring:** mesmas rotas, mesma BD, mesmos testes de contrato (o `openapi.yaml` diz-te o que tem de bater certo). É o exercício que mais te prepara para uma vaga Java.
+
+## Em resumo
+
+- Um serviço Spring Boot organiza-se nas mesmas camadas que a API Node; a diferença é que o **framework liga as peças** (injeção de dependências por construtor) em vez de o fazeres à mão.
+- A **auto-configuração** cria beans a partir das dependências e do `application.yml`; quando algo "não funciona por magia", o relatório de condições (`--debug`) diz porquê.
+- **JPA** é a especificação, **Hibernate** a implementação e o **Spring Data** gera os repositórios a partir dos nomes dos métodos. As armadilhas clássicas: N+1, `ddl-auto=update` em produção, `open-in-view`, e expor entidades em vez de DTOs.
+- O **Flyway** faz as migrações (como o `migrate.js`, com checksums); cada serviço é dono do seu esquema.
+- O **Spring Security** valida os tokens do Keycloak e mapeia os papéis para autorização por rota.
+- Os testes vão do unitário com mocks (sem Spring) ao `MockMvc`; o passo seguinte da indústria são os **Testcontainers**.
 
 ## Prática: escreve tu
 

@@ -230,6 +230,7 @@ Para cada módulo:
 5. **Quebra** de propósito uma coisa (há sugestões em cada módulo).
 6. **Responde** às perguntas de pensamento crítico **sem olhar** para as soluções.
 7. Só depois abre as soluções (estão em `<details>`).
+8. **Revê** com a secção "Em resumo", que fica no fim da teoria de cada módulo: no dia seguinte e outra vez uma semana depois, tenta lembrar-te de cada ponto **antes** de o ler. Rever espaçado e tentar recordar antes de reler fixa muito mais do que voltar a ler o módulo inteiro.
 
 > **Regra de ouro:** se não consegues explicar, linha a linha, o que um ficheiro faz e o que aconteceria se essa linha não existisse, ainda não o percebeste.
 

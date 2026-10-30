@@ -121,6 +121,16 @@ Com várias réplicas da API, o contador tem de estar num sítio partilhado (o R
 
 **Notificações** (email, push, SMS). Um serviço recebe pedidos de notificação, põe-nos numa fila por canal, e workers enviam-nos, com tentativas e uma fila de mensagens mortas (DLQ) para os que falham sempre. Preferências do utilizador, limites por utilizador (não enviar 50 pushes numa hora), e idempotência (não enviar o mesmo email duas vezes depois de uma nova tentativa). É, em ponto grande, o `src/notifications` do módulo 21.
 
+## Em resumo
+
+- Uma entrevista de *system design* avalia como **raciocinas**: requisitos, números, um desenho simples, os pontos de rutura e os compromissos.
+- **Contas nas costas de um envelope** (pedidos por segundo, armazenamento, largura de banda) dizem se um desenho é razoável antes de o desenhar.
+- Escala-se a aplicação **horizontalmente** (instâncias sem estado atrás de um balanceador) e os dados com **réplicas de leitura** e **particionamento** (*sharding*), cada um com os seus custos.
+- Há **caches** em todas as camadas, do browser à BD, e todas têm o problema da invalidação.
+- As **filas** desacoplam e absorvem picos; o **teorema CAP** diz que, numa partição de rede, se escolhe entre consistência e disponibilidade.
+- A **limitação de pedidos** (*rate limiting*) protege o sistema de abusos e de picos.
+- Os desenhos clássicos (encurtador de URLs, *feed* de notícias, notificações) repetem as mesmas peças: API sem estado, BD, cache, fila, workers.
+
 ---
 
 ## Prática: escreve tu

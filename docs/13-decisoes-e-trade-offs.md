@@ -4,6 +4,8 @@
 
 Formato de cada entrada: **decisão** → alternativas → custo aceite → quando mudar.
 
+**Pré-requisitos:** módulos 01 a 11 (este módulo revê as decisões tomadas neles).
+
 ---
 
 ## 1. Arquitetura
@@ -18,7 +20,7 @@ Formato de cada entrada: **decisão** → alternativas → custo aceite → quan
 - **REST:** HTTP nativo, cacheável, fácil de testar com `curl`, convenções conhecidas.
 - **GraphQL:** bom quando clientes diferentes precisam de formas diferentes dos mesmos dados. Aqui há um só cliente.
 - **gRPC:** eficiente para comunicação **entre serviços internos**, com contratos fortes. Não é o browser que o fala nativamente.
-- **Mudar quando:** muitos clientes com necessidades diferentes (GraphQL), ou muita comunicação interna entre serviços (gRPC).
+- **Mudar quando:** muitos clientes com necessidades diferentes (GraphQL), ou muita comunicação interna entre serviços (gRPC). Os módulos 44 (desenho de APIs REST) e 46 (GraphQL e gRPC) aprofundam a escolha.
 
 ### 1.3 Porque um monólito modular e não microserviços?
 Este projeto tem **três** processos, mas só **um** domínio. Microserviços têm custo operacional (rede, deploy, observabilidade, consistência entre serviços). Só compensam quando equipas diferentes precisam de deploys independentes. Estamos mais perto de um monólito com um worker do que de microserviços.
@@ -75,7 +77,7 @@ Já vimos no módulo 03: o evento pode chegar depois do apagamento. A integridad
 
 - **Porquê RabbitMQ aqui:** modelo de **tarefas** (um evento, um efeito), routing por padrão (`task.*`), DLQ nativa, curva de aprendizagem suave.
 - **Kafka** se precisares de **reprocessar histórico** ou de *event sourcing*, ou de volumes de milhões por segundo.
-- **Mudar quando:** precisares de reproduzir eventos antigos para um consumidor novo, ou tiveres volume que o RabbitMQ não aguente.
+- **Mudar quando:** precisares de reproduzir eventos antigos para um consumidor novo, ou tiveres volume que o RabbitMQ não aguente. (O módulo 17 acrescenta o Kafka ao projeto, ao lado do RabbitMQ, precisamente para um consumidor que precisa do histórico.)
 
 ### 4.2 Estatísticas: `COUNT` na BD ou contador Redis com `INCR`?
 Esta é **a** decisão mais instrutiva do projeto. A versão inicial era `INCR` no Redis.
@@ -129,20 +131,31 @@ Este sistema é um **laboratório**. Para ir para produção, falta, pelo menos:
 - [x] **Autenticação e autorização**: JWT com hash bcrypt e tarefas por utilizador (implementado).
 - [ ] **Sessões mais seguras**: token em cookie `httpOnly` em vez de `localStorage`, refresh tokens e revogação.
 - [ ] **HTTPS**: o Nginx serve em HTTP simples.
-- [ ] **Limite de pedidos** (rate limiting) no Nginx ou na API.
+- [ ] **Limite de pedidos** (rate limiting) no Nginx ou na API (exercício C18).
 - [ ] **Outbox** para o dual-write.
 - [ ] **Migrações com lock** e rollback.
 - [ ] **Segredos fora do compose**: vêm de um cofre (Vault, AWS Secrets Manager, variáveis do orquestrador).
-- [ ] **Logs estruturados, métricas e traces** (módulo 11).
+- [x] **Métricas e alertas como código**: Prometheus e Grafana, com alertas para erros, latência e mensagens na DLQ (módulo 19).
+- [ ] **Logs estruturados e traces** (módulos 11 e 47).
 - [ ] **Backups** da BD e **teste de restauro** (um backup nunca testado não é um backup).
 - [x] **CI**: testes, build, integração e teste de fumo a cada push (`.github/workflows/ci.yml`).
 - [ ] **Publicar imagens versionadas** num registo, a partir do CI.
-- [ ] **Limites de recursos** nos contentores (`mem_limit`, `cpus`).
+- [x] **Limites de memória** nos contentores (`mem_limit` no compose); os limites de CPU continuam por definir.
 - [x] **Testes de integração** com BD real (implementado).
 - [ ] **Correção do `migrate.js`** para múltiplas instâncias.
-- [ ] **Alertas** sobre o tamanho da DLQ e sobre a latência de consumo.
+- [ ] **Alertas** sobre a latência de consumo do RabbitMQ (o da DLQ e o atraso do Kafka já existem).
 
-Repara que a lista não é "mais tecnologia". É, sobretudo, **operação**: saber o que acontece quando algo falha, e ser capaz de o ver.
+Repara que a lista não é "mais tecnologia". É, sobretudo, **operação**: saber o que acontece quando algo falha, e ser capaz de o ver. Os módulos a partir do 24 ensinam quase tudo o que falta: HTTPS e certificados (25), sessões com cookies (27), segredos e IAM (35), migrações sem parar o serviço (52), resiliência (50) e operação com SLOs (51).
+
+## Em resumo
+
+- Uma boa decisão técnica diz **as alternativas, o custo que se aceita e quando se deve mudar**; decorar a escolha não chega.
+- Separar o worker, usar REST, um monólito modular, Postgres, Redis e RabbitMQ são escolhas certas **para este contexto**, e cada uma tem uma condição em que deixaria de o ser.
+- `SERIAL` e `UUID` resolvem problemas diferentes (tamanho e ordem vs. gerar ids sem coordenação); o projeto usa os dois, cada um onde faz sentido.
+- **Não mantenhas dois sistemas sincronizados à mão** se puderes ter uma fonte da verdade e uma projeção calculada (o `COUNT` em vez do `INCR`).
+- O dual-write e o `migrate.js` sem *lock* são **limitações conhecidas e aceites**, com um caminho claro para quando deixarem de ser aceitáveis.
+- Polling em vez de WebSocket, SPA em vez de SSR, Compose em vez de Kubernetes: a tecnologia mais simples que resolve o problema real.
+- O que separa este laboratório de produção é sobretudo **operação**: segurança, segredos, backups testados, limites, alertas.
 
 ---
 

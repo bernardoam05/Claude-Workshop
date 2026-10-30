@@ -4,6 +4,8 @@
 
 **Ficheiros para ler (por esta ordem):** `src/worker/src/handler.ts` → `src/worker/src/index.ts` → `src/worker/test/handler.test.ts`.
 
+**Pré-requisitos:** módulos 03 (`ON CONFLICT`) e 06 (filas, ack/nack, DLQ e idempotência). O [módulo 22](22-sintaxe-javascript.md) tem a sintaxe de TypeScript que aparece aqui.
+
 > **Nota:** o worker está em TypeScript desde a versão atual. A lógica é a mesma que descrevemos; o que mudou é que os tipos (`TaskEvent`, `Queryable`) descrevem o contrato, e o compilador verifica o que escrevemos. Mas os tipos **não** validam o JSON que chega da fila: é por isso que existe `isTaskEvent`.
 
 ---
@@ -18,37 +20,52 @@ Porque um processo separado e não código dentro da API? Três razões:
 2. **Isolamento de falhas**: um bug no processamento de eventos não derruba os pedidos HTTP.
 3. **Não bloquear o event loop** da API com trabalho pesado (módulo 01).
 
-## 2. Separação: `handler.js` vs `index.js`
+## 2. Separação: `handler.ts` vs `index.ts`
 
 | Ficheiro | Responsabilidade | Testável sem RabbitMQ? |
 |---|---|---|
-| `handler.js` | **O quê**: o que fazer com um evento (regras, BD) | Sim |
-| `index.js` | **Como**: ligar, declarar topologia, decidir ack/nack | Não |
+| `handler.ts` | **O quê**: o que fazer com um evento (regras, BD) | Sim |
+| `index.ts` | **Como**: ligar, declarar topologia, decidir ack/nack | Não |
 
 Esta separação é a mesma ideia da API: a lógica é uma função pura de dependências, e o "encanamento" fica à volta. Por isso o `handler` recebe `db` por parâmetro e os testes usam uma BD falsa.
 
-## 3. `parseEvent`: transformar bytes em dados
+## 3. `parseJson`: transformar bytes em dados
 
-```js
-export function parseEvent(buffer) {
-  try { return JSON.parse(buffer.toString('utf8')); }
-  catch { throw new MalformedEventError('JSON inválido'); }
+```ts
+export function parseJson(buffer: Buffer): unknown {
+  try {
+    return JSON.parse(buffer.toString('utf8'));
+  } catch {
+    throw new MalformedEventError('JSON inválido');
+  }
 }
 ```
 
-Repara que **convertemos** o `SyntaxError` do `JSON.parse` num `MalformedEventError`. Porquê? Porque o consumidor precisa de decidir *o que fazer* com o erro, e decide com base no **tipo** do erro, não na mensagem de texto. Se deixássemos um `SyntaxError` escapar, o `index.js` não o distinguiria de um erro transitório da BD, e uma mensagem com JSON partido ficaria em loop de requeue para sempre.
+Repara em duas coisas. Primeiro, **convertemos** o `SyntaxError` do `JSON.parse` num `MalformedEventError`. Porquê? Porque o consumidor precisa de decidir *o que fazer* com o erro, e decide com base no **tipo** do erro, não na mensagem de texto. Se deixássemos um `SyntaxError` passar, teríamos de o confundir com qualquer outro erro do código.
 
-## 4. `handle`: a validação antes do efeito
+Segundo, o tipo devolvido é `unknown`, e não `TaskEvent`: o JSON que chega da fila pode ter qualquer forma, e o TypeScript obriga-nos a verificá-la antes de a usar.
 
-```js
-if (typeof event?.eventId !== 'string' || typeof event?.type !== 'string' || !event?.task) {
-  throw new MalformedEventError(...);
+## 4. `isTaskEvent`: validar antes do efeito
+
+```ts
+export function isTaskEvent(value: unknown): value is TaskEvent {
+  if (typeof value !== 'object' || value === null) return false;
+  const e = value as Record<string, unknown>;
+  const task = e.task as Record<string, unknown> | undefined;
+  return (
+    typeof e.eventId === 'string' &&
+    (e.type === 'task.created' || e.type === 'task.completed') &&
+    typeof task === 'object' && task !== null &&
+    typeof task.id === 'number'
+  );
 }
 ```
 
-Regra: **valida antes de tocar em qualquer recurso**. Repara no `?.` (optional chaining): se `event` for `null`, `event?.eventId` é `undefined` em vez de rebentar. Assim um `null` também cai no erro esperado.
+Regra: **valida antes de tocar em qualquer recurso**. O `handle` começa por `if (!isTaskEvent(value)) throw new MalformedEventError(...)`.
 
-Reparar também que o `typeof` é mais rigoroso do que `!event.eventId`. Com `!`, `0` ou `""` passam como "ausentes"; com `typeof`, um número onde esperamos string é rejeitado.
+Esta função é um ***type guard***: o tipo de retorno `value is TaskEvent` diz ao compilador que, quando ela devolve `true`, o valor tem a forma de um `TaskEvent`. Depois do `if`, o compilador já deixa usar `event.task.id` sem erros. É a ponte entre o mundo dos tipos (que só existe ao compilar) e os dados reais (que chegam em *runtime*): os tipos **não** validam o JSON que chega da fila; o `isTaskEvent` é que valida.
+
+Repara também que o `typeof` é mais rigoroso do que `!e.eventId`. Com `!`, `0` ou `""` passariam como "ausentes"; com `typeof`, um número onde esperamos texto é rejeitado.
 
 ## 5. O `INSERT ... ON CONFLICT`: o coração da idempotência
 
@@ -65,10 +82,10 @@ Se for a primeira vez, devolve uma linha → `processado`. Se for reentrega, nã
 
 ## 6. Decidir ack/nack: a tabela de decisão
 
-```js
+```ts
 try {
-  const event = parseEvent(msg.content);
-  const result = await handle(event);
+  const value = parseJson(msg.content);
+  const result = await handle(value);
   channel.ack(msg);                          // ✅ sucesso
 } catch (err) {
   if (err instanceof MalformedEventError) {
@@ -108,6 +125,16 @@ Imagina que queres um consumidor que envia uma notificação quando uma tarefa �
 4. A mesma disciplina de ack/nack.
 
 **Atenção à armadilha:** se duas instâncias do mesmo consumidor consomem a **mesma** fila, cada mensagem vai para **uma** delas (competing consumers, que é o que queremos para escalar). Se ligares dois consumidores **diferentes** à **mesma** fila, cada um recebe **metade** e nenhum recebe tudo. Escolhe filas diferentes para consumidores que precisam de **todos** os eventos.
+
+## Em resumo
+
+- Um **worker** é um processo sem HTTP que consome trabalho de uma fila; escala, falha e evolui separado da API.
+- O `handler.ts` diz **o quê** (regras e BD, testável sem RabbitMQ); o `index.ts` diz **como** (ligação, topologia, ack/nack).
+- O que chega da fila é `unknown`: o `parseJson` transforma bytes em dados e o *type guard* `isTaskEvent` confirma a forma **antes** de qualquer efeito. Os tipos do TypeScript não validam nada em *runtime*.
+- A idempotência vem da BD: `INSERT ... ON CONFLICT DO NOTHING RETURNING` decide de forma atómica se o evento é novo, mesmo com várias réplicas.
+- Erros **permanentes** (`MalformedEventError`) vão para a DLQ; erros **transitórios** voltam à fila. Um bug com requeue entra em ciclo: limita-se o número de tentativas.
+- Cada consumidor diferente tem a **sua** fila; várias instâncias do mesmo consumidor partilham uma (*competing consumers*).
+- O módulo 29 aprofunda o TypeScript (genéricos, uniões discriminadas, validar dados de fora).
 
 ---
 

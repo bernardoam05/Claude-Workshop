@@ -96,6 +96,16 @@ Por ordem de preferência:
 2. **Tempos de vida curtos** com `stale-while-revalidate`: a informação fica no máximo uns segundos desatualizada, e ninguém espera pela origem.
 3. **Purgar** explicitamente, quando os dados mudam: por URL (fácil, mas uma tarefa aparece em várias páginas: a dela, a lista do projeto, a pesquisa) ou, melhor, por **etiquetas** (*surrogate keys* ou *cache tags*): cada resposta leva etiquetas (`tarefa:42 projeto:7`), e "a tarefa 42 mudou" purga todas as respostas com essa etiqueta, em todos os PoPs, em segundos. A Fastly, a Cloudflare e o Varnish suportam-no.
 
+## Em resumo
+
+- Há cache no **browser** (privada), numa **CDN** ou proxy (partilhada) e no servidor; quem decide o que se guarda é a origem, com cabeçalhos.
+- `max-age` diz quanto tempo uma resposta está fresca; `s-maxage` vale só para caches partilhadas; `private` proíbe a CDN; `no-cache` guarda mas **revalida sempre**; `no-store` não guarda nada.
+- A política certa depende do recurso: ficheiros com hash no nome ficam um ano (`immutable`), o HTML é `no-cache`, os dados do utilizador são `private`.
+- Com um **ETag**, a cache pergunta "mudou?" (`If-None-Match`) e a origem responde `304` sem corpo; o ETag também evita atualizações perdidas (`If-Match`).
+- O **`Vary`** acrescenta cabeçalhos do pedido à chave da cache; usado sem cuidado, destrói a taxa de acertos.
+- Uma CDN também termina o TLS e absorve ataques; o perigo é cachear dados pessoais como públicos.
+- Para invalidar, o melhor é não precisar (nomes com hash); depois, tempos curtos com `stale-while-revalidate`; por fim, purgas por URL ou por etiqueta.
+
 ---
 
 ## Prática: escreve tu

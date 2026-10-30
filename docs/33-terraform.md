@@ -288,6 +288,15 @@ As credenciais **nunca** ficam no código. Na tua máquina vêm do `aws configur
   ```
 - **Ambientes pequenos e estados pequenos:** um estado gigante com tudo da empresa torna cada `plan` lento e cada erro perigoso. Separa por sistema e por ambiente.
 
+## Em resumo
+
+- O Terraform descreve infraestrutura em código **declarativo**: dizes o que queres, e ele calcula o que criar, mudar ou destruir.
+- Uma configuração tem **providers** (a ligação a uma cloud ou serviço), **resources**, **variables**, **outputs** e **data sources**.
+- O ciclo é `init`, `fmt`/`validate`, `plan` (ler sempre) e `apply`; o `destroy` desfaz tudo.
+- O **estado** é o mapa entre o código e o que existe de verdade: numa equipa vive num backend remoto com *lock*, e nunca vai para o Git (pode ter segredos).
+- O Terraform constrói um **grafo de dependências** a partir das referências entre recursos; `count` e `for_each` criam vários, e os **módulos** reaproveitam blocos.
+- Ambientes separados (dev, staging, produção) têm estados separados; o OpenTofu é a alternativa de código aberto, compatível.
+
 ---
 
 ## Prática: escreve tu

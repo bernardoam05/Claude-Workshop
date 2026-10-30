@@ -77,6 +77,15 @@ Por muito bem feito que esteja, algo vai falhar: um webhook perdido durante uma 
 
 Os fornecedores têm um **modo de teste** com cartões de teste: `4242 4242 4242 4242` aprova, outros números simulam recusas, 3-D Secure ou fraude. A CLI da Stripe (`stripe listen --forward-to localhost:3000/webhooks`) encaminha os webhooks do modo de teste para a tua máquina, e `stripe trigger payment_intent.succeeded` dispara eventos. Nos testes automáticos, isola o fornecedor atrás de um adaptador (a arquitetura hexagonal do módulo 40) e testa a tua lógica com eventos falsos assinados por ti, como na prática deste módulo.
 
+## Em resumo
+
+- Dinheiro guarda-se e calcula-se em **cêntimos inteiros** (ou `numeric`), nunca em vírgula flutuante; arredonda-se num só sítio e reparte-se sem perder cêntimos.
+- Os dados do cartão nunca passam pelo teu servidor; um pagamento **autoriza** e depois **captura**, e o resultado chega de forma **assíncrona**, por webhook.
+- Contra o "não sei" de uma chamada de rede, a **chave de idempotência**: repetir o pedido devolve o resultado da primeira vez em vez de cobrar outra vez.
+- Um webhook verifica-se pela **assinatura HMAC** do corpo bruto, com um *timestamp* contra repetições, e comparação em tempo constante.
+- Responde-se depressa e processa-se depois; esperam-se **duplicados** e **ordem trocada**, com uma máquina de estados que só avança.
+- A **reconciliação** diária com o fornecedor apanha o que falhar.
+
 ---
 
 ## Prática: escreve tu

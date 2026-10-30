@@ -4,6 +4,8 @@
 
 **Ficheiros para ler:** `.github/workflows/ci.yml` (lê-o ao lado deste módulo, secção a secção).
 
+**Pré-requisitos:** módulos 02 (Docker e Compose) e 11 (os testes que o CI corre).
+
 ---
 
 ## 1. O que é CI/CD, em concreto
@@ -166,6 +168,8 @@ Por omissão, se um `step` falhar, o GitHub Actions **salta todos os seguintes**
 
 ## 10. O que falta para ser CD (não só CI)
 
+(O módulo 52 trata o que vem depois de publicar a imagem: *rolling updates*, azul/verde, canários e *feature flags*.)
+
 Este pipeline **termina nos testes**. Para teres entrega/deploy contínuo, acrescentarias um job novo, a seguir ao `smoke`:
 
 ```yaml
@@ -219,6 +223,16 @@ Foi assim que validámos este workflow ao escrevê-lo: com `actionlint` sempre, 
 ## 13. Branch protection: tornar o CI obrigatório
 
 Um workflow que corre mas que ninguém é **obrigado** a respeitar não protege nada. Em **Settings → Branches → Branch protection rules** do teu fork, podes exigir que os jobs do CI passem antes de um PR poder ser *merged* no `main`. É o que transforma "temos testes" em "é impossível mergear código que não passa os testes" — a diferença entre ter um alarme e ligá-lo.
+
+## Em resumo
+
+- **CI** é correr o lint, os testes e o build a cada alteração, numa máquina limpa; **CD** é publicar e fazer deploy automaticamente a seguir (este projeto ainda só tem CI).
+- Um workflow é disparado por eventos (`on`), tem **jobs** (máquinas novas, em paralelo por omissão) e cada job tem **steps**.
+- `permissions` mínimas, `timeout-minutes`, `npm ci` e cache das dependências são a base de um pipeline seguro, previsível e barato.
+- `needs` ordena jobs quando um depende de outro (os rápidos e baratos primeiro); `services` arranca contentores ao lado de um job; o runner tem Docker para o teste de fumo.
+- `if: failure()` guarda as provas de uma falha; `if: always()` garante a limpeza.
+- Para fazer deploy, usam-se segredos do repositório ou, melhor, **OIDC** (credenciais curtas, sem segredos guardados).
+- `actionlint` e `act` validam workflows sem gastar minutos; a *branch protection* torna o CI obrigatório.
 
 ---
 

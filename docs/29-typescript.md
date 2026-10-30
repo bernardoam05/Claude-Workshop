@@ -192,6 +192,17 @@ Num projeto real, a migração faz-se aos poucos:
 
 Opções do `tsconfig` que vale a pena ligar num projeto novo (estão todas no desta prática): `strict`, `noUncheckedIndexedAccess` (um `lista[0]` pode ser `undefined`, e o compilador obriga-te a tratar isso), `exactOptionalPropertyTypes` e `noImplicitReturns`.
 
+## Em resumo
+
+- Os tipos são documentação que o compilador verifica; **desaparecem ao compilar** e não validam nada em *runtime*.
+- **Genéricos** escrevem código que funciona para vários tipos sem perder informação (`T` em vez de `any`).
+- O compilador **estreita** os tipos a partir das verificações (`typeof`, `in`, *type guards*); as asserções (`as`) só calam o compilador.
+- **Uniões discriminadas** com um campo comum (`tipo`) e um `never` no fim do `switch` tornam impossível esquecer um caso.
+- Tipos mapeados, condicionais e *template literals* derivam tipos a partir de outros; tipos com **marca** distinguem valores com a mesma forma (um `IdUtilizador` não é um `IdTarefa`).
+- `satisfies` confirma uma forma sem perder o tipo exato; `as const` congela literais.
+- O que vem de fora **valida-se** com um esquema (zod) e o tipo **infere-se** dele: uma só fonte de verdade.
+- Migra-se JavaScript para TypeScript aos poucos, ficheiro a ficheiro, apertando o `strict` com o tempo.
+
 ---
 
 ## Prática: escreve tu

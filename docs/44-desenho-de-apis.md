@@ -77,6 +77,14 @@ Para atualizações parciais, o **JSON Merge Patch** (RFC 7396, `application/mer
 - **Webhooks** para avisar os clientes de mudanças, em vez de os obrigar a perguntar (módulo 54).
 - E quando o REST não serve (consultas muito variáveis, chamadas entre serviços com muito tráfego), o GraphQL e o gRPC (módulo 46).
 
+## Em resumo
+
+- Uma API é um **contrato** difícil de mudar depois de ter clientes: desenha-se antes (de preferência no OpenAPI), com nomes, métodos e códigos consistentes.
+- Os erros seguem um formato padrão, o ***Problem Details*** (RFC 9457), e um erro inesperado nunca revela detalhes internos.
+- A **paginação por cursor** (*keyset*) é rápida em qualquer página e estável quando entram dados novos; o `OFFSET` não é nenhuma das duas coisas.
+- Mudanças **compatíveis** fazem-se a qualquer momento; remover, renomear ou mudar o tipo de um campo (ou um valor novo num enum da resposta) exige uma **versão nova**, anunciada com `Deprecation` e `Sunset`.
+- As escritas concorrentes protegem-se com o **ETag e `If-Match`** (412 se alguém mudou entretanto, 428 se o cliente não o enviou); o **JSON Merge Patch** é o formato mais simples para alterações parciais.
+
 ---
 
 ## Prática: escreve tu

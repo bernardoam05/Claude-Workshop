@@ -90,6 +90,16 @@ As causas raramente são uma só (a ideia de "a causa raiz" engana: normalmente 
 
 *Toil* é o trabalho operacional manual, repetitivo, automatizável, sem valor duradouro, e que cresce com o tamanho do serviço: reiniciar processos à mão, criar contas, rodar certificados. O SRE propõe um limite (a Google usa 50% do tempo) e trata o resto como tempo para eliminar o *toil* com código. O módulo 24 (scripts de Bash) e o 20 (CI/CD) são exatamente isso.
 
+## Em resumo
+
+- **100% de fiabilidade é o objetivo errado**: a pergunta é quanto fiável tem de ser para os utilizadores estarem contentes.
+- O **SLI** mede o que os utilizadores sentem (a fração de pedidos bons), o **SLO** é o alvo interno e o **SLA** é o contrato, mais folgado.
+- O **orçamento de erro** (1 − SLO) é a margem para mudar; quando acaba, a equipa trava os lançamentos e trabalha na fiabilidade.
+- Alerta-se sobre **sintomas**, pela **taxa de queima** do orçamento, com uma janela longa e uma curta para cada regra.
+- Um plantão saudável tem poucos alertas, todos acionáveis, e um **runbook** para cada um.
+- Num incidente, há papéis claros e a prioridade é **mitigar**; depois, um **postmortem sem culpas**, com ações que têm dono e data.
+- O ***toil*** (trabalho manual repetitivo) elimina-se com código.
+
 ---
 
 ## Prática: escreve tu

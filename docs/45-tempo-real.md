@@ -108,6 +108,14 @@ location /chat {                        # WebSockets
 
 **Memória.** Cada ligação aberta ocupa memória no servidor. Dez mil utilizadores ligados são dez mil sockets. O Node lida bem com muitas ligações paradas (é o *event loop* do módulo 01), mas mede antes de prometer números.
 
+## Em resumo
+
+- O HTTP só responde a quem pergunta; para o servidor **empurrar** dados há o polling, os **Server-Sent Events** e os **WebSockets**.
+- O **SSE** é um fluxo de texto do servidor para o cliente sobre HTTP normal, com reconexão automática e retoma pelo último id: chega para notificações e painéis.
+- Os **WebSockets** são um canal bidirecional persistente: para chat, colaboração e jogos.
+- Em produção, as ligações **morrem sem avisar** (*heartbeats*), **caem** (reconexão com *backoff* e retoma), precisam de configuração nos proxies, e com **várias réplicas** é preciso um canal comum (Redis Pub/Sub, RabbitMQ) para difundir.
+- A autenticação e a memória por ligação também mudam: cada ligação aberta custa recursos no servidor.
+
 ---
 
 ## Prática: escreve tu

@@ -79,6 +79,15 @@ A maior parte da acessibilidade vem de graça com **HTML semântico**, e perde-s
 - **Com zoom a 200%** e com o texto maior, e com `prefers-reduced-motion` (sem animações para quem as desliga).
 - E, quando possível, **com pessoas** que usam tecnologias de apoio no dia a dia.
 
+## Em resumo
+
+- As **Core Web Vitals** medem o que os utilizadores sentem: **LCP** (carregar), **CLS** (não saltar) e **INP** (responder a cliques), no laboratório e no terreno.
+- Carrega-se depressa com scripts `defer`, menos JavaScript, a imagem principal com prioridade e o resto com `loading="lazy"`.
+- A página não salta se as imagens tiverem dimensões e o conteúdo novo não empurrar o que já lá está.
+- A página responde depressa se nenhuma **tarefa longa** (mais de 50 ms) ocupar a thread principal: faz-se menos, parte-se o trabalho e cede-se, ou usa-se um Web Worker.
+- A acessibilidade vem quase toda do **HTML semântico**: botões que são botões, nomes para tudo, teclado e foco visível, contraste, títulos por ordem, regiões vivas e o `<dialog>`.
+- Testa-se com o **axe**, com o teclado, com um leitor de ecrã e, quando possível, com pessoas.
+
 ---
 
 ## Prática: escreve tu

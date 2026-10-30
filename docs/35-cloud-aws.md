@@ -151,6 +151,16 @@ aws --endpoint-url http://localhost:4566 s3 mb s3://teste     # com a CLI da AWS
 aws --endpoint-url http://localhost:4566 s3 ls
 ```
 
+## Em resumo
+
+- A cloud é infraestrutura **alugada e programável**, paga pelo uso; a responsabilidade é **partilhada**: o fornecedor protege a infraestrutura, tu proteges o que pões lá.
+- **Regiões** e **zonas de disponibilidade** dão proximidade e tolerância a falhas.
+- O **IAM** diz quem pode fazer o quê: políticas com o **menor privilégio**, e papéis com credenciais temporárias em vez de chaves fixas.
+- Uma **VPC** é a tua rede privada, com sub-redes públicas e privadas.
+- Para correr código há máquinas (EC2), contentores (ECS/EKS) e funções (Lambda); para dados, o **S3** (objetos), o RDS (SQL gerido) e o **DynamoDB** (chave-valor); para mensagens, o **SQS** e o SNS.
+- Observabilidade e **custos** vigiam-se desde o primeiro dia.
+- O **LocalStack** simula os serviços da AWS na tua máquina, para praticar sem conta nem custos.
+
 ---
 
 ## Prática: escreve tu

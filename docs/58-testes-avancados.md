@@ -89,6 +89,14 @@ A pirâmide de testes do módulo 11 continua a valer: muitos testes unitários r
 | Mutação | código crítico, para avaliar e melhorar os testes (não em todo o código, a cada *commit*) |
 | Deterministas | sempre: qualquer teste que dependa de tempo ou de aleatoriedade |
 
+## Em resumo
+
+- Os testes por exemplos só cobrem os casos em que alguém pensou, e a cobertura não diz se os testes verificam alguma coisa.
+- Os **testes baseados em propriedades** (fast-check) verificam regras para qualquer entrada e **encolhem** a falha até ao exemplo mínimo; uma propriedade fraca deixa passar bugs.
+- Os **testes de contrato** orientados pelo consumidor apanham, nos testes de cada serviço, as mudanças que partem os outros.
+- Os **testes de mutação** estragam o código de propósito: um mutante que sobrevive mostra uma zona que nenhum teste verifica.
+- Os testes **instáveis** vêm do tempo, da aleatoriedade, da ordem e da concorrência; controlam-se injetando o relógio e o gerador, e com relógios falsos.
+
 ---
 
 ## Prática: escreve tu

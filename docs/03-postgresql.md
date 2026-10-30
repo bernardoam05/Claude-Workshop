@@ -4,6 +4,8 @@
 
 **Ficheiros para ler primeiro:** `src/api/src/db/migrations/001_create_tasks.sql`, `002_create_task_events.sql`, `src/api/src/repositories/taskRepository.js`, `src/api/src/db/migrate.js`, `src/api/src/db/pool.js`.
 
+**Pré-requisitos:** módulos 01 e 02 (o Postgres corre num contentor do Compose).
+
 ---
 
 ## 1. Porque uma BD relacional?
@@ -15,7 +17,7 @@ Os dados aqui têm **estrutura fixa** e **relações** (uma tarefa tem id, títu
 - **Transações**: ou tudo acontece, ou nada.
 - **Consultas ad-hoc**: `SELECT ... GROUP BY` sem precisar de código novo.
 
-Alternativa (NoSQL, ex.: MongoDB): flexível no schema, mas perdes as garantias acima e tens de as reimplementar na aplicação. Não é "melhor" nem "pior": é um trade-off (módulo 13).
+Alternativa (NoSQL, ex.: MongoDB): flexível no schema, mas perdes as garantias acima e tens de as reimplementar na aplicação. Não é "melhor" nem "pior": é um trade-off (módulo 13; o módulo 37 trata as bases de dados NoSQL a fundo).
 
 ## 2. Lê o schema
 
@@ -29,7 +31,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 ```
 
-Pergunta cada coluna:
+Esta é a primeira migração. As seguintes acrescentam os utilizadores (`003`) e a coluna `user_id`, que liga cada tarefa ao seu dono (`004`): a tabela real tem mais colunas do que esta. Pergunta cada coluna:
 
 - `SERIAL PRIMARY KEY`: `id` autoincrementa e é a chave que identifica a linha. Repara que o `SERIAL` gera `int4`. Ver a armadilha na secção 5.
 - `NOT NULL`: a coluna tem sempre valor. Sem isto, `NULL` seria um valor "possível" e teria de ser tratado em todo o código.
@@ -66,7 +68,7 @@ Regra que se aplica a **tudo**: nomes de tabelas e colunas não vêm como parâm
 **Experiência** (tenta a injeção na API, que está protegida):
 
 ```bash
-curl -s -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' \
+curl -s -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN" \
   -d '{"title":"x'"'"'); DROP TABLE tasks; --"}'
 ```
 
@@ -103,6 +105,9 @@ O schema **muda** com o tempo. Não se "edita a tabela à mão" em produção. C
 migrations/
   001_create_tasks.sql
   002_create_task_events.sql
+  003_create_users.sql
+  004_tasks_belong_to_users.sql
+  005_external_identities.sql
 ```
 
 `migrate.js` faz três coisas:
@@ -134,7 +139,7 @@ Experimenta:
 EXPLAIN ANALYZE SELECT * FROM tasks ORDER BY created_at DESC;
 ```
 
-Porque é que existe o índice `tasks_created_at_idx`? Corre o `EXPLAIN` com mais de 100 000 linhas (`INSERT ... SELECT generate_series(...)`) com e sem o índice (`DROP INDEX`). Mede a diferença. Um índice acelera leituras e **custa** escritas e espaço. Não se põem índices em tudo.
+Porque é que existe o índice `tasks_created_at_idx`? Corre o `EXPLAIN` com mais de 100 000 linhas (`INSERT ... SELECT generate_series(...)`) com e sem o índice (`DROP INDEX`). Mede a diferença. Um índice acelera leituras e **custa** escritas e espaço. Não se põem índices em tudo. (O módulo 36 ensina a escolher índices compostos, parciais e sobre expressões, e a ler o `EXPLAIN`.)
 
 ## 9. `ON CONFLICT`: upsert e idempotência
 
@@ -153,7 +158,7 @@ Se a chave já existe, nada é inserido e `RETURNING` não devolve linhas. O có
 `migrate.js` usa `BEGIN` / `COMMIT` / `ROLLBACK`. Experiência: escreve uma migração falsa com um erro no meio:
 
 ```sql
--- 003_teste.sql
+-- 006_teste.sql (o número a seguir ao da última migração que existe)
 CREATE TABLE teste (id int);
 SELECT 1/0;   -- erro de divisão por zero
 ```
@@ -162,7 +167,17 @@ O ficheiro vai dentro da imagem da API, por isso tens de a **reconstruir**: `doc
 
 ## 11. Índices vs consistência: o que a BD garante e o que não
 
-A BD garante consistência **dentro** de uma transação. Não garante consistência **entre** serviços (a BD e o RabbitMQ). Este é o tema do módulo 06 (dual-write).
+A BD garante consistência **dentro** de uma transação. Não garante consistência **entre** serviços (a BD e o RabbitMQ). Este é o tema do módulo 06 (dual-write). E mesmo dentro da BD, duas transações ao mesmo tempo podem pisar-se uma à outra: o módulo 38 mostra as corridas, os bloqueios e os níveis de isolamento.
+
+## Em resumo
+
+- Uma BD relacional dá **tipos, restrições, transações e consultas livres** que, numa alternativa sem esquema, terias de reimplementar no código.
+- O esquema protege os dados mesmo quando a aplicação tem bugs (`NOT NULL`, `CHECK`, chaves). Cada falta de uma restrição (como a `FOREIGN KEY` em `task_events`) deve ser uma decisão justificada.
+- **Parâmetros (`$1`), sempre**: o valor nunca é interpretado como SQL, e isso fecha a porta à injeção de SQL. Nomes de tabelas e colunas não podem ser parâmetros: usa-se uma lista branca.
+- `RETURNING` devolve a linha escrita sem um segundo `SELECT` (e sem a corrida entre os dois); `ON CONFLICT DO NOTHING` é o "inserir se não existir" atómico.
+- O driver devolve `bigint` como **texto**; por isso o projeto usa `SERIAL` e `::int`.
+- Um **pool** reaproveita ligações; uma consulta lenta que segura uma ligação pode esgotá-lo e parar todos os pedidos.
+- O esquema evolui por **migrações** numeradas, cada uma numa transação, e uma migração já aplicada nunca se edita: cria-se outra.
 
 ---
 

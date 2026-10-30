@@ -102,6 +102,16 @@ Na prática, muitas bases NoSQL deixam escolher por operação: o DynamoDB tem l
 
 E usar várias é normal (**persistência poliglota**): o Postgres como fonte da verdade, o Redis como cache, o OpenSearch para pesquisa, cada um alimentado por eventos (módulo 17).
 
+## Em resumo
+
+- As bases de dados NoSQL existem para **escalar horizontalmente**, guardar dados de forma variável e dar latência previsível, à custa de JOINs, consultas livres e, por vezes, transações.
+- Os tipos principais: **chave-valor**, **documentos**, **colunas largas**, **grafos** e **pesquisa**.
+- No **MongoDB**, os filtros têm a forma dos documentos (caminhos com pontos, arrays) e os relatórios usam o **pipeline de agregação**.
+- Modelar documentos é decidir entre **embutir** (lido junto, com limite) e **referenciar** (cresce sem limite, partilhado), com padrões como o subconjunto e as versões do esquema.
+- No **DynamoDB** só se lê por chave: listam-se primeiro os **padrões de acesso** e desenham-se as chaves (tabela única, índices secundários) para cada um ser uma só consulta.
+- O teorema CAP e os níveis de consistência escolhem-se por operação.
+- **Começa no Postgres** (com `jsonb`); o NoSQL escolhe-se por um problema concreto.
+
 ---
 
 ## Prática: escreve tu

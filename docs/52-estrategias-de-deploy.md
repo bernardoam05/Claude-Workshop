@@ -80,6 +80,15 @@ Cada passo é um deploy separado, e em cada um pode-se voltar ao anterior. É ma
 
 Quando um deploy corre mal, há duas opções: **reverter** (voltar à versão anterior) ou **corrigir para a frente** (*roll forward*: fazer um deploy com a correção). Reverter é quase sempre a primeira escolha, porque a versão anterior é conhecida e já funcionava; corrigir para a frente exige escrever código sob pressão e passar pelo pipeline todo. Só que reverter só é possível se a migração da base de dados for compatível com a versão anterior, e é exatamente isso que o expandir/contrair garante.
 
+## Em resumo
+
+- Uma boa estratégia de deploy dá três coisas: **sem paragem**, **raio de explosão pequeno** e **reversão rápida**.
+- O ***rolling update*** troca réplicas uma a uma (o padrão do Kubernetes); o **azul/verde** muda todo o tráfego de uma vez e reverte mudando-o de volta.
+- O **canário** manda primeiro uma pequena percentagem (dividida por um **hash estável** do utilizador) e compara as métricas antes de avançar.
+- As ***feature flags*** **separam o deploy do lançamento**: o código chega desligado e liga-se aos poucos, ou desliga-se num segundo. Têm data de remoção.
+- As mudanças de esquema fazem-se em **expandir/contrair**: passos compatíveis, cada um num deploy, para a versão antiga e a nova funcionarem ao mesmo tempo.
+- Reverter é quase sempre melhor do que corrigir sob pressão, e só é possível se a migração for compatível.
+
 ---
 
 ## Prática: escreve tu

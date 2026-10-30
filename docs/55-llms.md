@@ -84,13 +84,13 @@ A Anthropic tem várias famílias, com trade-offs entre capacidade, velocidade e
 |---|---|---|---|---|
 | Claude Opus 5.5 | `claude-opus-5-5` | 4 $ | 20 $ | o modelo por omissão: tarefas difíceis, código, agentes |
 | Claude Sonnet 5.5 | `claude-sonnet-5-5` | 2 $ | 10 $ | rápido e capaz, para o dia a dia |
-| Claude Haiku 5.5 | `claude-haiku-5-5` | 0,10 $ | 0,50 $ | grande volume e baixa latência: classificar, extrair |
+| Claude Haiku 5.5 | `claude-haiku-5-5` | 0,10 $ | 0,50 $ | grande volume e baixa latência: classificar, extrair (estes preços valem até 100 000 tokens de entrada; acima disso, 0,50 $ e 2,50 $) |
 | Claude Fable 5.1 | `claude-fable-5-1` | 10 $ | 50 $ | o mais capaz, para o raciocínio mais exigente |
 
 Faz as contas antes de lançar uma funcionalidade. Um resumo de um email com 2 000 tokens de entrada e 200 de saída no Opus 5.5 custa cerca de 0,012 $. Com 100 000 emails por dia, são 1 200 $ por dia; com o Haiku, 30 $. As alavancas para baixar o custo, pela ordem:
 
-1. **Cache de prompts:** se todos os pedidos começam com as mesmas instruções longas, marca-as com `cache_control` e as leituras seguintes custam cerca de 10% do preço normal.
-2. **Esforço:** os modelos atuais pensam antes de responder (*adaptive thinking*), e o parâmetro `output_config: { effort: "low" | "medium" | "high" | ... }` controla o quanto. Tarefas simples não precisam de esforço alto.
+1. **Cache de prompts:** se todos os pedidos começam com as mesmas instruções longas, marca-as com `cache_control` e as leituras seguintes custam uma fração do preço normal (10% no Sonnet 5.5, 5% no Opus 5.5).
+2. **Esforço:** os modelos atuais pensam antes de responder (*adaptive thinking*), e o parâmetro `output_config: { effort: "low" | "medium" | "high" | ... }` controla o quanto (no Opus 5.5, o valor por omissão é `medium`). Tarefas simples não precisam de esforço alto.
 3. **Modelo:** um modelo mais pequeno, para as rotas onde a qualidade se mantém. **Mede** com exemplos reais antes de trocar.
 4. **Batches:** pedidos que podem esperar horas custam metade, pela Batch API.
 
@@ -212,6 +212,17 @@ As defesas, por camadas:
 - **Avaliação** (*evals*): como os modelos não são deterministas, testa-se a qualidade com um conjunto de exemplos com as respostas esperadas, e mede-se a percentagem de acertos antes e depois de cada mudança de prompt ou de modelo. Sem isto, "melhorar o prompt" é adivinhação.
 - **Privacidade:** o que envias à API sai da tua infraestrutura. Não envies dados pessoais sem necessidade, e verifica as condições de retenção de dados e o enquadramento legal (o RGPD).
 - **Observabilidade:** regista o modelo, os tokens, a latência e o `stop_reason` de cada pedido (o módulo 19). O custo de uma funcionalidade com IA vê-se nas métricas, não na fatura do fim do mês.
+
+## Em resumo
+
+- Um LLM recebe texto (*tokens*) e gera texto; não tem memória entre pedidos, e paga-se por token de entrada e de saída.
+- A **Messages API** recebe uma lista de mensagens e devolve blocos de conteúdo; o **streaming** mostra a resposta à medida que é gerada.
+- O modelo escolhe-se pela tarefa e pelo custo; as alavancas para baixar o custo são a **cache de prompts**, o **esforço**, o modelo e os *batches*.
+- Bons prompts dão contexto, exemplos e o formato pedido; as **saídas estruturadas** garantem JSON válido segundo um esquema.
+- Com **ferramentas**, o modelo pede ações e a aplicação executa-as: é a base dos agentes.
+- O **RAG** dá ao modelo os teus dados: *embeddings*, pesquisa por semelhança (pgvector) e a resposta com as fontes.
+- O input do utilizador e os documentos são dados, não instruções: a ***prompt injection*** combate-se com permissões mínimas e confirmação humana para ações perigosas.
+- Em produção: limites, custos vigiados, avaliações e *fallbacks*.
 
 ---
 

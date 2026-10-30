@@ -100,6 +100,16 @@ Os padrões de resiliência só se provam quando as falhas acontecem, por isso p
 
 Um **service mesh** (Istio, Linkerd) aplica timeouts, tentativas e disjuntores na rede, à volta de cada serviço, sem mudar o código. É prático em sistemas grandes, mas a lógica de negócio (que alternativa usar, o que é essencial) continua a ser do código.
 
+## Em resumo
+
+- Numa rede, uma chamada tem três resultados: **sucesso**, **falha** e **não sei**; resiliência é decidir o que fazer em cada um.
+- Um serviço **lento** é mais perigoso do que um em baixo: os pedidos acumulam-se e a falha propaga-se em **cascata**.
+- Todas as chamadas de rede têm um **timeout** (e cancelam o trabalho); numa cadeia, propaga-se um **prazo**.
+- As **tentativas** só se fazem em operações idempotentes e erros transitórios, com *backoff* exponencial e *jitter*, e num só nível.
+- O **disjuntor** deixa de chamar uma dependência que está a falhar e testa-a de tempos a tempos; as **anteparas** limitam o que cada dependência pode ocupar; o **descarte de carga** recusa cedo.
+- Os **pedidos com cobertura** cortam a cauda de latência; as **alternativas** (cache, valores por omissão) degradam com elegância.
+- A resiliência prova-se **provocando falhas**: nos testes, com ferramentas como o Toxiproxy, e com engenharia do caos.
+
 ---
 
 ## Prática: escreve tu

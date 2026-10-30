@@ -70,6 +70,15 @@ As defesas, em camadas:
 3. **Um token CSRF**: um valor ligado à sessão (por exemplo, um HMAC do id da sessão), que a página recebe e envia num cabeçalho `X-CSRF-Token`. Um site alheio não o consegue ler (por causa da política de mesma origem), por isso não o consegue enviar.
 4. **Nunca mudar estado com `GET`.**
 
+## Em resumo
+
+- O `localStorage` está ao alcance de qualquer script da página: um XSS leva o token. Um cookie **`HttpOnly`** não pode ser lido pelo JavaScript.
+- Um cookie de sessão bem feito é `__Host-`, `HttpOnly`, `Secure` e `SameSite=Lax`; os prefixos são garantias que o browser verifica.
+- **Sessões no servidor** (o cookie leva só um id aleatório) revogam-se apagando uma linha; expiram por inatividade **e** ao fim de um tempo máximo, e o id **roda** depois do login.
+- Tokens de acesso curtos e tokens de renovação que **rodam**: um token gasto que reaparece prova que houve cópia, e revoga-se a família inteira.
+- Numa SPA, o padrão recomendado é o **BFF**: um servidor no mesmo domínio guarda os tokens, e o browser só tem um cookie.
+- Com cookies vem o **CSRF**: `SameSite`, verificar a origem (`Sec-Fetch-Site`), um token CSRF e nunca mudar estado com `GET`.
+
 ---
 
 ## Prática: escreve tu

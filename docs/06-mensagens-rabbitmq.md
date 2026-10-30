@@ -2,7 +2,9 @@
 
 **Objetivo:** perceber **porque** existem filas de mensagens, como o RabbitMQ as encaminha, e as garantias (e as não-garantias) de entrega. Esta é a parte mais conceptual do workshop: lê-a devagar.
 
-**Ficheiros para ler primeiro:** `src/api/src/messaging/publisher.js`, `src/worker/src/index.js` (topologia), `config/docker-compose.yml` (serviço `rabbitmq`).
+**Ficheiros para ler primeiro:** `src/api/src/messaging/publisher.js`, `src/worker/src/index.ts` (topologia), `config/docker-compose.yml` (serviço `rabbitmq`).
+
+**Pré-requisitos:** módulos 03 (transações e `ON CONFLICT`) e 04 (a camada de serviço, que publica os eventos). As experiências usam o `$TOKEN` do módulo 01.
 
 ---
 
@@ -142,8 +144,8 @@ Este é o problema mais importante do módulo e é fácil de não ver.
 O `updateTask` faz **duas coisas** em sistemas diferentes:
 
 ```js
-await repository.setDone(id, done);             // 1) escreve no Postgres
-await publisher.publish('task.completed', ...); // 2) escreve no RabbitMQ
+const task = await repository.setDone(id, userId, done);              // 1) escreve no Postgres
+await publisher.publish('task.completed', buildEvent('task.completed', task)); // 2) escreve no RabbitMQ
 ```
 
 Não existe transação que abranja Postgres **e** RabbitMQ. Se o passo 2 falhar (broker em baixo), a BD mudou mas o evento **nunca** existirá: o worker nunca conta a conclusão. Se invertermos a ordem, o evento sai mas a BD pode não ter mudado.
@@ -152,13 +154,13 @@ Não existe transação que abranja Postgres **e** RabbitMQ. Se o passo 2 falhar
 
 ```bash
 docker compose -f config/docker-compose.yml stop rabbitmq
-curl -s -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -d '{"title":"teste dual-write"}'
+curl -s -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN" -d '{"title":"teste dual-write"}'
 docker compose -f config/docker-compose.yml start rabbitmq
 ```
 
 Resultado: a API responde erro (500), mas a tarefa **foi gravada** (confirma com `GET /api/tasks`). O cliente acha que falhou e pode repetir, criando duplicados. Isto é o problema, em concreto.
 
-Soluções (discutimos no módulo 13):
+Soluções (discutimos no módulo 13, e o P3 da prática deste módulo implementa a primeira):
 
 - **Outbox pattern**: grava o evento **na mesma transação SQL** que a mudança, numa tabela `outbox`. Um processo separado lê a tabela e publica. Atómico, porque é só uma BD.
 - **Change Data Capture** (ex.: Debezium): lê o log de transações da BD e publica.
@@ -175,7 +177,7 @@ Escrevemos a primeira versão do publisher e do worker, e os testes unitários p
 
 **Porque é que os testes não apanharam?** Porque os fakes nunca "morrem". O teste assume que a dependência está sempre viva. Um teste de unidade não exercita o **estado de falha da infraestrutura**. Isto é o que os testes de integração (e as experiências com `docker compose stop`) são para.
 
-**Correção (ver `messaging/publisher.js` e `worker/src/index.js`):**
+**Correção (ver `messaging/publisher.js` e `worker/src/index.ts`):**
 
 - A API **reabre** a ligação no próximo `publish` quando a anterior caiu. Há um só pedido de reconexão de cada vez (o `opening` evita duas ligações em simultâneo), e num pedido HTTP só se tenta **uma vez**: não se faz um pedido esperar 20 segundos por um retry.
 - O worker **regista** a perda e sai com código `1`. O Docker reinicia-o com estado limpo. É uma estratégia simples e válida (*fail fast + restart*), mas é uma **escolha**, não um acaso. O exercício B11 pede a alternativa (reconexão dentro do processo).
@@ -186,11 +188,21 @@ Escrevemos a primeira versão do publisher e do worker, e os testes unitários p
 
 ```bash
 docker compose -f config/docker-compose.yml stop rabbitmq
-curl -i -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -d '{"title":"x"}'   # 500
+curl -i -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN" -d '{"title":"x"}'   # 500
 docker compose -f config/docker-compose.yml start rabbitmq
 sleep 25
-curl -i -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -d '{"title":"y"}'   # 201, sem reiniciar a API
+curl -i -X POST localhost:8080/api/tasks -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN" -d '{"title":"y"}'   # 201, sem reiniciar a API
 ```
+
+## Em resumo
+
+- Uma **fila** desacopla quem pede de quem faz: a API publica um evento e responde logo; o worker processa ao seu ritmo. O preço é a **consistência eventual**.
+- No RabbitMQ, publica-se num **exchange**, que encaminha para as filas pelos **bindings** e pela routing key (`direct`, `fanout`, `topic`).
+- Para uma mensagem sobreviver a um reinício, o exchange e a fila têm de ser **duráveis** e a mensagem **persistente**; com **publisher confirms**, o produtor sabe que o broker a recebeu.
+- O consumidor faz `ack` **só depois** de terminar o trabalho: a entrega é "**pelo menos uma vez**", por isso o consumidor tem de ser **idempotente**.
+- `prefetch` limita quantas mensagens um consumidor tem em mãos; uma **DLQ** guarda as que nunca vão poder ser processadas (`nack` sem requeue para erros permanentes, com requeue só para os transitórios).
+- Gravar na BD e publicar na fila são duas escritas em sistemas diferentes, sem transação comum: é o **dual-write**, que se resolve com o padrão **outbox** (ou CDC).
+- Os testes com dependências falsas não apanham as falhas de infraestrutura: um sistema distribuído testa-se **desligando peças**.
 
 ---
 

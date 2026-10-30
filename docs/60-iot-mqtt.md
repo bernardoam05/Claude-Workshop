@@ -162,6 +162,15 @@ Receber a mensagem é a parte fácil. O trabalho está no que vem a seguir:
 
 Enviar cada leitura para a cloud custa rede, energia e dinheiro, e não funciona quando a ligação cai. A **computação na borda** (*edge*) faz parte do trabalho num gateway local (um Raspberry Pi, um PC industrial): agrega leituras, envia só médias ou exceções, e continua a tomar decisões (desligar uma máquina em sobreaquecimento) mesmo sem Internet. A cloud fica com o histórico e a visão de conjunto.
 
+## Em resumo
+
+- Na IoT, os dispositivos têm pouca energia, memória e rede, e ligações que caem: os protocolos e o desenho refletem isso.
+- O **MQTT** é publicar/subscrever num **broker**, com **tópicos** hierárquicos e *wildcards* (`+` para um nível, `#` para o resto).
+- O **QoS** escolhe a garantia de entrega (0: no máximo uma vez, 1: pelo menos uma, 2: exatamente uma), cada uma com o seu custo.
+- As mensagens **retidas** dão o último valor a quem chega; o ***last will*** avisa quando um dispositivo desaparece; as sessões e o *keepalive* aguentam quedas.
+- A segurança passa por TLS, credenciais por dispositivo e permissões por tópico.
+- No servidor, a telemetria valida-se, guarda-se como série temporal e trata duplicados, atrasos e ordem trocada; o *edge computing* processa perto dos dispositivos.
+
 ---
 
 ## Prática: escreve tu

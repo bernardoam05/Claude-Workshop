@@ -217,6 +217,16 @@ ssh -L 5432:localhost:5432 servidor         # túnel: o Postgres do servidor fic
 
 Num servidor público, desliga o login com password (`PasswordAuthentication no` no `/etc/ssh/sshd_config`) e o login direto como root. Os ataques de força bruta ao SSH começam minutos depois de uma máquina aparecer na Internet.
 
+## Em resumo
+
+- No Linux, **tudo é um ficheiro** numa só árvore; as permissões (`rwx` para dono, grupo e outros) e o utilizador com que um processo corre decidem o que ele pode fazer.
+- Um **processo** tem um PID, um pai, um código de saída e recebe **sinais** (`SIGTERM` pede para terminar, `SIGKILL` mata sem perguntar).
+- Cada programa tem entrada, saída e erro; os **pipes** ligam programas pequenos (`grep`, `awk`, `sort`, `jq`) em fluxos que resolvem problemas grandes.
+- Um script de Bash que não mente começa com `set -euo pipefail`, põe **aspas em todas as variáveis**, limpa com `trap ... EXIT` e escreve ficheiros de forma atómica (temporário e `mv`).
+- O **systemd** mantém os serviços a correr e o `journalctl` mostra os seus logs.
+- Diagnosticar uma máquina começa sempre pelas mesmas perguntas: carga, memória, disco, rede, logs.
+- O **SSH** com chaves é a forma de entrar em servidores remotos; as chaves privadas nunca saem da tua máquina.
+
 ---
 
 ## Prática: escreve tu

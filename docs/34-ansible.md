@@ -250,6 +250,15 @@ O ficheiro cifrado pode ir para o Git. A password do Vault não: vive num gestor
 - **Testar roles com o Molecule**, que as aplica a contentores descartáveis e verifica a idempotência. É o que os testes desta prática fazem, à mão.
 - **Nada à mão nos servidores:** a mesma regra do Terraform. Uma alteração manual é apagada na próxima execução, ou (pior) fica, e o servidor deixa de ser reprodutível.
 
+## Em resumo
+
+- O Ansible **configura máquinas que já existem** (pacotes, ficheiros, serviços), por SSH e sem agente; o Terraform cria a infraestrutura, e o Docker empacota a aplicação.
+- O **inventário** diz que máquinas existem e em que grupos; um **playbook** aplica tarefas a grupos, e cada tarefa usa um **módulo**.
+- **Idempotência**: correr duas vezes deixa o mesmo resultado, e a segunda corrida não muda nada. Os módulos de `shell` quebram-na se não tiveres cuidado.
+- As **variáveis** têm uma ordem de precedência (`group_vars`, `host_vars`, extras); os **templates** Jinja2 geram ficheiros de configuração.
+- Os **handlers** só correm quando algo mudou (reiniciar um serviço depois de mudar a configuração); as **roles** organizam tudo para reutilizar.
+- Os segredos cifram-se com o **Ansible Vault**.
+
 ---
 
 ## Prática: escreve tu

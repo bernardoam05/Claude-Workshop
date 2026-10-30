@@ -81,6 +81,15 @@ A revisão de código (*code review*), num *pull request* (módulo 16), serve pa
 - **Revê o teu próprio diff antes de pedir revisão.** Apanha metade dos comentários antes de alguém os fazer.
 - **Não leves a peito**, e não discutas em 30 comentários: uma conversa de 5 minutos resolve.
 
+## Em resumo
+
+- O código é lido muito mais vezes do que escrito: "limpo" quer dizer **fácil de perceber e de mudar com segurança**, não seguir regras às cegas.
+- Bons **nomes** dizem o quê e porquê; as **funções** são pequenas, com poucos parâmetros, sem flags booleanas nem efeitos escondidos.
+- Um **cheiro** (função comprida, parâmetros a mais, aninhamento, números mágicos, duplicação) é um convite a olhar, com uma refatoração conhecida para cada um.
+- **Refatorar** é mudar a estrutura sem mudar o comportamento: primeiro testes de **caracterização**, depois passos pequenos, e as mudanças de comportamento em separado.
+- Numa **revisão de código**: o desenho primeiro, a parte mecânica às ferramentas, comentários sobre o código com o peso de cada um, e respostas rápidas.
+- **PRs pequenos** recebem revisões a sério.
+
 ---
 
 ## Prática: escreve tu

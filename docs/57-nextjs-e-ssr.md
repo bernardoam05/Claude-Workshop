@@ -60,6 +60,16 @@ Uma aplicação Next.js precisa de um servidor Node (ou de uma plataforma como a
 
 Para um painel interno atrás de um login, como o frontend do workshop, uma SPA com o Vite continua a ser uma escolha perfeitamente boa: não há SEO, os utilizadores usam a aplicação durante horas (o custo do primeiro carregamento dilui-se), e não há um servidor de renderização para operar.
 
+## Em resumo
+
+- Há quatro formas de renderizar: no cliente (**CSR**), no servidor a cada pedido (**SSR**), no build (**SSG**) e regenerada em segundo plano (**ISR**); cada uma troca frescura, desempenho e custo.
+- No SSR, o React **hidrata** o HTML do servidor com os mesmos dados, embutidos no HTML **sem permitir XSS** (escapar o `<`).
+- No App Router do Next.js, as rotas vêm das **pastas** (segmentos dinâmicos, apanha-tudo, grupos).
+- Os **componentes de servidor** (por omissão) leem dados diretamente e não vão para o browser; um `'use client'` torna o ficheiro e tudo o que ele importa de cliente.
+- Só as variáveis `NEXT_PUBLIC_` chegam ao cliente, e o pacote `server-only` impede código de servidor de lá ir parar.
+- A ISR serve a versão em cache e regenera em segundo plano; `revalidatePath` força a regeneração depois de uma escrita.
+- Para um painel atrás de login, uma SPA continua a ser uma escolha perfeitamente boa.
+
 ---
 
 ## Prática: escreve tu

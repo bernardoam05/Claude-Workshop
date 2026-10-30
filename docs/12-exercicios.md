@@ -129,8 +129,10 @@ Responde antes de codificar: o que acontece às mensagens que estavam "em voo" (
 
 ## Nível C: Estender
 
-### C11. Testes de integração com Postgres real
-Os testes atuais usam fakes. Escreve **um** teste de integração que:
+### C11. Testes de integração com Postgres real ✅ já implementado
+> Lê `src/api/test/integration/repositories.integration.test.js` e corre-o com `npm run test:integration` (em `src/api`, com o Postgres do compose). Depois acrescenta um teste para o `delete` de outro utilizador, que tem de devolver `false`. O enunciado original fica abaixo.
+
+Os testes unitários usam fakes. Escreve **um** teste de integração que:
 
 - Ligue a um Postgres real (o do compose, com a porta publicada temporariamente, ou um Postgres de teste).
 - Corra `migrate()`.
@@ -143,7 +145,9 @@ Mantém-no separado (`test/integration/`) para que `npm test` normal continue se
 Usa uma BD dedicada para os testes (ex.: `workshop_test`), para não sujares os dados do desenvolvimento. Limpa as tabelas no `before` de cada teste. Pensa em porque é que um teste de integração que deixa dados para trás torna os outros testes frágeis.
 </details>
 
-### C12. Métricas com Prometheus
+### C12. Métricas com Prometheus ✅ já implementado (módulo 19)
+> Lê `src/api/src/observability/metrics.js`. Repara que a rota `/metrics` **não** está debaixo de `/api`, por isso o Nginx não a deixa sair para fora: só o Prometheus, dentro da rede do Compose, a lê. Abre o Prometheus (`localhost:9090`), procura as métricas da API e confirma que as etiquetas usam a rota (`/api/tasks/:id`) e não o caminho real. O enunciado original fica abaixo.
+
 Acrescenta um endpoint `GET /metrics` à API com:
 
 - um contador de pedidos por rota e código HTTP;

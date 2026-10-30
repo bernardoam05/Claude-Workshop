@@ -80,6 +80,15 @@ O Postgres chega enquanto a pesquisa é uma funcionalidade entre outras: milhare
 
 Nesse caso, a base de dados continua a ser a fonte da verdade, e o índice de pesquisa é uma **cópia** alimentada por eventos (módulo 17) ou por *change data capture*. É consistente eventualmente: um documento acabado de criar pode demorar um segundo a aparecer na pesquisa, e a interface tem de contar com isso.
 
+## Em resumo
+
+- `LIKE '%texto%'` é lento (não usa índices), não percebe a língua nem ordena por relevância.
+- O **analisador** transforma texto em termos (minúsculas, sem acentos, sem palavras vazias, radicais) e aplica-se **igual** aos documentos e às consultas.
+- O **índice invertido** vai de cada termo para os documentos onde aparece; pesquisar é intersetar listas.
+- O **BM25** ordena por relevância: termos raros pesam mais (IDF), repetir um termo ajuda cada vez menos (saturação) e os documentos curtos ganham.
+- O Postgres tem tudo isto: `tsvector`, `websearch_to_tsquery`, índices **GIN**, `ts_rank`, `ts_headline` e o `pg_trgm` para erros de escrita.
+- Passa-se para um motor dedicado (Elasticsearch, OpenSearch, Meilisearch) quando a relevância, as facetas ou o volume o exigem; o índice passa a ser uma cópia, com consistência eventual.
+
 ---
 
 ## Prática: escreve tu

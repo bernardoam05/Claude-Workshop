@@ -4,6 +4,8 @@
 
 **Ficheiros para ler primeiro:** `src/api/Dockerfile`, `src/web/Dockerfile`, `src/api/.dockerignore`, `config/docker-compose.yml`.
 
+**Pré-requisitos:** módulo 01 (processos, portas e variáveis de ambiente). Precisas do Docker instalado e a correr.
+
 ---
 
 ## 1. O problema que o Docker resolve
@@ -142,7 +144,18 @@ Sem healthcheck, o `depends_on` com `service_healthy` falha ou não espera. O `w
 
 ## 9. `restart` e o que o Docker faz quando um processo morre
 
-`restart: unless-stopped` diz ao Docker: "se o processo principal terminar com erro, volta a arrancá-lo". É a rede de segurança para falhas transitórias (ex.: a BD reiniciou). Repara que `process.exit(1)` nos `index.js` é o que sinaliza a falha ao Docker. Se o processo saísse com código `0`, o Docker não o reiniciaria.
+`restart: unless-stopped` diz ao Docker: "se o processo principal terminar, volta a arrancá-lo, a menos que tenha sido eu a pará-lo" (com `docker stop` ou `compose stop`). É a rede de segurança para falhas transitórias (ex.: a BD reiniciou e a API morreu ao perder a ligação).
+
+As políticas possíveis:
+
+| Política | Reinicia quando o processo termina... |
+|---|---|
+| `no` (por omissão) | nunca |
+| `on-failure` | só se terminar com erro (código de saída diferente de `0`) |
+| `unless-stopped` | sempre, salvo se o paraste à mão |
+| `always` | sempre, mesmo depois de o parares e de o Docker reiniciar |
+
+O código de saída continua a importar: `process.exit(1)` nos `index.js` diz "terminei porque falhei", e é isso que o `on-failure`, os logs e o Kubernetes (módulo 32) usam para distinguir uma falha de um fim normal. Repara que o `kafka-init` tem `restart: "no"`: é um processo que corre uma vez (cria os tópicos) e termina, e não deve ser reiniciado.
 
 ## 10. Comandos essenciais
 
@@ -159,6 +172,16 @@ $C down                   # parar e remover contentores e rede (mantém volumes)
 $C down -v                # ... e apagar volumes (APAGA OS DADOS)
 $C build --no-cache api   # reconstruir ignorando a cache
 ```
+
+## Em resumo
+
+- Uma **imagem** é um modelo imutável (o programa e tudo de que depende); um **contentor** é uma imagem a correr. Partilha o kernel do host: não é uma máquina virtual.
+- Cada instrução do Dockerfile cria uma **camada** cacheada: o que muda pouco (as dependências) vem primeiro, o que muda muito (o código) vem no fim.
+- `RUN` corre no build, `CMD` quando o contentor arranca. `npm ci --omit=dev`, `USER node` e o `.dockerignore` dão imagens reproduzíveis, pequenas e menos expostas.
+- Um **multi-stage build** compila numa imagem e copia só o resultado para outra: a imagem final do frontend tem o Nginx e os ficheiros estáticos, sem Node.
+- O **Compose** cria uma rede onde os serviços se encontram pelo nome (`postgres:5432`); só se publica (`ports:`) o que tem de ser acessível de fora.
+- `depends_on` só espera que o contentor arranque; para esperar que esteja **pronto**, usa-se `condition: service_healthy` com um healthcheck.
+- A política `restart` decide se o Docker volta a arrancar um processo que terminou, e o código de saída diz se terminou por falha.
 
 ---
 

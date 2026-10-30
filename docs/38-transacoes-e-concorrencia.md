@@ -152,6 +152,15 @@ Os testes normais correm um pedido de cada vez, por isso nunca encontram corrida
 - contra uma **base de dados a sério**, com várias ligações: uma BD em memória com uma só ligação, ou um *mock*, serializa tudo e esconde o problema;
 - e repete-os: uma corrida aparece de vez em quando, não sempre.
 
+## Em resumo
+
+- Uma **condição de corrida** aparece quando dois pedidos leem o mesmo valor, decidem, e escrevem: os testes com um só utilizador nunca a apanham.
+- Uma **transação** é ACID: tudo ou nada, regras respeitadas, isolada das outras, e durável depois do `COMMIT`.
+- Há três formas de resolver a corrida: decidir **numa só instrução atómica** (`UPDATE ... WHERE disponiveis > 0`), **bloquear** a linha (`SELECT ... FOR UPDATE`, pessimista) ou **verificar a versão** ao gravar (otimista).
+- Bloquear linhas por ordens diferentes dá **deadlocks**: o Postgres mata uma das transações, e a aplicação repete-a. Bloquear sempre pela mesma ordem evita-os.
+- Os **níveis de isolamento** (*Read Committed*, *Repeatable Read*, *Serializable*) trocam anomalias por esperas e repetições.
+- A concorrência também existe fora da BD (caches, filas, ficheiros), e testa-se com vários pedidos em paralelo contra uma BD a sério.
+
 ---
 
 ## Prática: escreve tu

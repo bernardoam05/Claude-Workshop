@@ -320,6 +320,16 @@ Escrever o mesmo YAML para `dev` e `prod`, só com valores diferentes, depressa 
 
 E, cada vez mais, o deploy não é um `kubectl apply` no CI, mas **GitOps**: o Argo CD ou o Flux correm dentro do cluster e reconciliam-no com o que está num repositório Git. É o §2 aplicado ao próprio deploy.
 
+## Em resumo
+
+- O Kubernetes orquestra contentores em **muitas** máquinas: declaras o **estado desejado** e os controladores **reconciliam** continuamente o estado real com ele.
+- Um cluster tem um plano de controlo (API server, etcd, scheduler, controladores) e nós que correm os **pods** (um ou mais contentores juntos).
+- Escreves sobretudo **Deployments** (réplicas e atualizações), **Services** (um nome estável para um conjunto de pods) e **Ingress** (a entrada HTTP); as **labels** e os **selectors** ligam-nos.
+- As **probes** dizem ao Kubernetes se um pod está vivo (*liveness*) e pronto (*readiness*); os *requests* e *limits* reservam e limitam CPU e memória.
+- A configuração vem de **ConfigMaps** e **Secrets** (que estão só codificados em base64, não cifrados).
+- Os *rolling updates* trocam pods sem parar o serviço, com `rollout undo` para voltar atrás; o **HPA** escala pelo uso.
+- Namespaces e RBAC separam equipas e permissões; o **Helm** e o **Kustomize** gerem os manifestos para vários ambientes.
+
 ---
 
 ## Prática: escreve tu

@@ -57,6 +57,40 @@ export function createTaskService({ repository, cache, publisher, cacheTtlSecond
 
 Isto diz: "a função recebe UM objeto, e quero logo os campos `repository`, `cache`, `publisher` e `cacheTtlSeconds` dele, com esses nomes". É o padrão de **injeção de dependências** deste projeto (módulo 04) — parece complicado a ler a primeira vez, mas é só desempacotar.
 
+## Spread e rest (`...`)
+
+Os três pontos fazem duas coisas opostas, conforme o sítio onde aparecem.
+
+**Spread** ("espalhar"): copia o conteúdo de um objeto ou de um array para dentro de outro.
+
+```js
+const saved = { ...note, id: nextId++ };   // pratica/04-api-em-camadas/memoryNoteRepository.js
+```
+
+Isto cria um objeto **novo** com todos os campos de `note` e mais um `id`. O `note` original não muda. É a forma habitual de "acrescentar um campo" a dados que vieram de outro sítio, como juntar o `userId` (que vem do token) aos dados validados de um pedido: `{ ...dados, userId }`.
+
+A ordem importa: os campos que aparecem depois escrevem por cima dos anteriores.
+
+```js
+const fetchOptions = {
+  ...options,                 // tudo o que veio (method, body...)
+  headers: {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),   // src/web/src/api.js
+  },
+};
+```
+
+O `...(condição ? { ... } : {})` é um truque comum para acrescentar um campo **só se** uma condição for verdadeira: espalhar um objeto vazio não acrescenta nada.
+
+**Rest** ("o resto"): do lado esquerdo de uma desestruturação, ou nos parâmetros de uma função, junta o que sobra.
+
+```js
+const [primeiro, ...outros] = lista;          // outros: um array com o resto
+const { password, ...semPassword } = utilizador;   // semPassword: o objeto sem esse campo
+function registar(nivel, ...mensagens) { }     // mensagens: os argumentos a partir do segundo
+```
+
 ## Template literals (`` ` ` `` com `${}`)
 
 ```js
@@ -169,7 +203,7 @@ try {
 
 Repara que `catch` aqui não tem parâmetro (`catch { }`, não `catch (err) { }`) — é válido quando não precisas do erro original, só de saber que algo falhou.
 
-## TypeScript (só no `src/worker`): o que os `:tipo` significam
+## TypeScript (no `src/worker`, e na prática dos módulos 07 e 29): o que os `:tipo` significam
 
 ```ts
 export interface TaskEvent {

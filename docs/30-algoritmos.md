@@ -97,6 +97,15 @@ As perguntas que te levam à tabela: o que representa cada célula (`melhor[v]` 
 
 Ficar calado 10 minutos a pensar é o erro mais comum. O entrevistador quer ouvir o raciocínio, e muitas vezes ajuda quando percebe onde estás preso.
 
+## Em resumo
+
+- A notação **O grande** diz como o custo cresce com o tamanho dos dados; importa a ordem de grandeza (O(n) vs O(n²)), não os milissegundos.
+- Cada estrutura tem um custo por operação: arrays (acesso por índice), hash maps e conjuntos (procura em O(1)), pilhas e filas, heaps (o mínimo em O(log n)), árvores e grafos.
+- Poucos **padrões** resolvem a maioria dos problemas: hash map para procurar, dois ponteiros e janelas deslizantes, pilhas, pesquisa binária, heaps para os k maiores.
+- Em grafos, **BFS** encontra o caminho mais curto sem pesos e **DFS** explora; a ordenação topológica ordena dependências.
+- A **programação dinâmica** é recursão com memória: identificar os subproblemas que se repetem e guardar os resultados.
+- Numa entrevista: perceber e confirmar o problema, começar pela solução simples, melhorar, testar com exemplos, e **falar em voz alta**.
+
 ---
 
 ## Prática: escreve tu

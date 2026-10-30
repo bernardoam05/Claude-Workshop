@@ -2,6 +2,8 @@
 
 Este módulo responde a uma pergunta honesta: **o workshop cobre o que as vagas de fullstack/backend pedem?**
 
+**Pré-requisitos:** nenhum para ler; tira mais proveito dele depois dos módulos 01 a 11. A prática treina JavaScript de entrevista, e o [módulo 22](22-sintaxe-javascript.md) ajuda.
+
 Resposta curta: **cobre o núcleo que as vagas pedem, incluindo Keycloak, E2E, CI e OpenAPI.** Os módulos 24 a 61 acrescentaram, com prática em cada um: Linux e redes, segurança (OWASP), sessões e autorização, TypeScript, algoritmos, Python/Django, Kubernetes, Terraform, Ansible, AWS (num LocalStack), SQL avançado, system design, transações, multi-inquilino, DDD, NoSQL, pesquisa de texto, cache HTTP, desenho de APIs, tempo real, GraphQL e gRPC, OpenTelemetry, testes de carga, depuração e profiling, resiliência, SRE, estratégias de deploy, RGPD, pagamentos, LLMs, desempenho e acessibilidade, Next.js, testes avançados, clean code, IoT e um jogo. Ficam de fora sobretudo coisas que exigem uma conta numa cloud ou dependem da stack de cada empresa. O mapa completo de ferramentas da indústria está no [módulo 16](16-trabalhar-numa-empresa.md).
 
 Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitações, ou só em conceito) · ❌ não coberto
@@ -34,7 +36,7 @@ Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitaçõ
 | Sessões avançadas (cookies httpOnly, refresh tokens, BFF) | 🟡 | módulo 27: cookies seguros, sessões no servidor, rotação de tokens com deteção de reutilização e CSRF, na prática; no projeto, o token ainda vai no `localStorage` |
 | Segurança web (OWASP, CORS, rate limiting, segredos) | 🟡 | módulo 26: OWASP Top 10, com ataques reais na prática (injeção, XSS, IDOR, SSRF, path traversal, cabeçalhos). Na API do projeto: CORS evitado por desenho (módulo 10) e segredos por variável de ambiente; falta rate limiting no login e `helmet` (exercício D7) |
 | Autorização (RBAC, ABAC, ReBAC) | ✅ | módulo 28: papéis com herança, políticas, relações ao estilo do Zanzibar, e autorização dentro das consultas SQL |
-| Testes unitários | ✅ | módulo 11, 27 testes entre API e worker |
+| Testes unitários | ✅ | módulo 11: 31 testes unitários na API, 7 de integração e 5 no worker |
 | Testes de integração com BD real | ✅ | `src/api/test/integration/`, corre contra Postgres (`npm run test:integration`) |
 | Testes E2E (Playwright) | ✅ | `tests/e2e/`: login local, login Keycloak e logout num browser real; corre no CI |
 | Testes de carga | ✅ | módulo 48: k6 (em Docker) contra um servidor de testes, percentis e limiares |
@@ -85,6 +87,13 @@ Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitaçõ
 Os exercícios do bloco D (em `12-exercicios.md`) cobrem o que ficou de fora: **D5** (Kubernetes num cluster local, se tiveres kind ou minikube; prepara-te com o módulo 32), **D6** (deploy em cloud), **D8** (SSE). Os D1, D2 e D3 já estão implementados: o exercício é ler o código e fazer a experiência indicada.
 
 Para Git, no teu fork (ver [Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)), cria um branch por exercício e abre um PR para ti próprio. Só com isto praticas o fluxo de equipa.
+
+## Em resumo
+
+- O workshop cobre o **núcleo** que as vagas de backend e fullstack pedem, e os módulos 24 a 61 acrescentam a maior parte do resto, com prática.
+- O mapa separa o que está implementado e testado (✅), o que é parcial (🟡) e o que não está coberto (❌): saber o que **não** sabes é tão útil como o resto.
+- O que continua em falta é sobretudo trabalho no próprio projeto (Git em equipa, cloud a sério, levar ao sistema o que se praticou à parte), e os exercícios D dizem por onde começar.
+- Numa entrevista técnica conta tanto **explicar em voz alta** como o código: a prática deste módulo treina clássicos de *live coding* em JavaScript.
 
 ## Prática: escreve tu
 

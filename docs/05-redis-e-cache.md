@@ -4,6 +4,8 @@
 
 **Ficheiros para ler primeiro:** `src/api/src/cache/cache.js`, `src/api/src/services/taskService.js` (funções `listTasks`, `getStats`, `invalidate`).
 
+**Pré-requisitos:** módulos 03 (a BD, que é a fonte da verdade) e 04 (a camada de serviço, onde a cache é usada).
+
 ---
 
 ## 1. O que é o Redis
@@ -64,8 +66,9 @@ As chaves são construídas num só sítio, em `taskService.js`, por duas funç�
 A rota `GET /api/tasks` devolve `X-Cache: HIT` ou `MISS`. É uma ferramenta de **diagnóstico**, não de lógica. Em produção, costuma-se expor métricas de *hit ratio* em vez de cabeçalhos por pedido.
 
 ```bash
-curl -sI localhost:8080/api/tasks | grep -i x-cache   # MISS
-curl -sI localhost:8080/api/tasks | grep -i x-cache   # HIT
+# o $TOKEN é o da experiência 0 do módulo 01
+curl -si localhost:8080/api/tasks -H "Authorization: Bearer $TOKEN" | grep -i x-cache   # MISS
+curl -si localhost:8080/api/tasks -H "Authorization: Bearer $TOKEN" | grep -i x-cache   # HIT
 ```
 
 ## 6. Inspecionar o Redis
@@ -79,6 +82,16 @@ docker compose -f config/docker-compose.yml exec redis redis-cli
 ```
 
 Repara que `KEYS *` está **proibido** em produção: percorre todas as chaves e bloqueia o Redis (que é single-threaded para comandos). `SCAN` faz o mesmo em pedaços.
+
+## Em resumo
+
+- O **Redis** guarda dados em memória, partilhados por todas as réplicas da API; é muito rápido, mas a fonte da verdade continua a ser a BD.
+- **Cache-aside**: na leitura, procura na cache e, se falhar, vai à BD e guarda o resultado com um TTL; na escrita, grava na BD e **apaga** a chave (apagar é mais seguro do que atualizar).
+- A chave inclui o utilizador (`tasks:user:7`): uma chave partilhada mostraria os dados de uns aos outros.
+- O **TTL** é a rede de segurança para quando a invalidação falha; o seu valor é um compromisso entre dados frescos e carga na BD.
+- As chaves constroem-se num só sítio, porque um erro de digitação numa chave faz a invalidação falhar em silêncio.
+- Em produção, nunca `KEYS *` (bloqueia o Redis): usa-se `SCAN`.
+- A cache do lado do servidor é só uma das camadas: o módulo 43 mostra a cache HTTP no browser e numa CDN.
 
 ---
 

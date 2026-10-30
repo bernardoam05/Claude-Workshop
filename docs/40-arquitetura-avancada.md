@@ -128,6 +128,16 @@ E o problema que a saga não resolve sozinha: gravar na BD **e** publicar o even
 | Event sourcing | o histórico **é** o negócio (contabilidade, auditoria obrigatória) | "para ter histórico": uma tabela de auditoria chega |
 | Sagas | uma operação atravessa serviços com bases de dados próprias | dá para fazer numa só base de dados, com uma transação |
 
+## Em resumo
+
+- Quando o domínio é rico, a arquitetura em camadas deixa de chegar: a lógica espalha-se pelos serviços e as regras perdem-se.
+- O **DDD estratégico** divide o sistema em **contextos delimitados**, cada um com a sua linguagem ubíqua.
+- O **DDD tático** modela com **entidades** (com identidade), **objetos de valor** (definidos pelo valor) e **agregados** (fronteiras de consistência com uma raiz).
+- A **arquitetura hexagonal** põe o domínio no centro e liga-o ao mundo por **portas** (interfaces) e **adaptadores** (BD, HTTP, filas).
+- O **CQRS** separa o modelo de escrita do de leitura; o ***event sourcing*** guarda os eventos como a fonte da verdade e reconstrói o estado a partir deles.
+- As **sagas** coordenam transações que atravessam serviços, com ações de **compensação** quando um passo falha.
+- Cada padrão tem um custo: usa-se onde a complexidade do domínio o justifica, não por omissão.
+
 ---
 
 ## Prática: escreve tu

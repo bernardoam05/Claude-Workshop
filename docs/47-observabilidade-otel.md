@@ -122,6 +122,16 @@ Para a decisão ser a mesma em todos os serviços sem comunicação entre eles, 
 
 Para este projeto, os passos seriam: o `NodeSDK` com a instrumentação automática na API e no worker, o *agent* do OpenTelemetry no Spring (`activity`) e o pacote do .NET em `notifications`, um Jaeger (ou o Tempo, ao lado do Grafana do módulo 19) no compose, e o `trace_id` nos logs. São os exercícios D13 e D16 do módulo 12.
 
+## Em resumo
+
+- Os três pilares respondem a perguntas diferentes: as **métricas** dizem *que* algo está mal, os **traces** dizem *onde*, os **logs** dizem *porquê*.
+- Os **logs estruturados** (JSON, com níveis e campos fixos) pesquisam-se e agregam-se; nunca levam segredos nem dados pessoais.
+- Um **trace** é a árvore de **spans** de um pedido através dos serviços, cada um com a duração, os atributos e o estado.
+- O **OpenTelemetry** é o padrão aberto para instrumentar (API, SDK, instrumentação automática) e exportar para qualquer backend (Jaeger, Tempo, ferramentas pagas).
+- A **propagação** passa o contexto do trace entre serviços (o cabeçalho `traceparent`, e as mensagens nas filas); sem ela, cada serviço tem traces soltos.
+- A **amostragem** controla o custo: guardar todos os erros e só uma parte dos pedidos normais.
+- O id do trace nos logs junta tudo: de uma métrica, para um trace, para os logs desse pedido.
+
 ---
 
 ## Prática: escreve tu

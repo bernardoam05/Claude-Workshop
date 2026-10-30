@@ -4,6 +4,8 @@
 
 **Ficheiros para ler (por esta ordem):** `src/api/src/index.js` → `app.js` → `routes/tasks.js` → `services/taskService.js` → `repositories/taskRepository.js`.
 
+**Pré-requisitos:** módulos 01 (Express e middlewares) e 03 (repositórios e SQL).
+
 ---
 
 ## 1. O mapa das camadas
@@ -77,9 +79,19 @@ Lê `routes/tasks.js`. Uma rota típica tem quatro passos:
 Repara no `PATCH`:
 
 ```js
-const task = await service.updateTask(id, parsed.data.done);
+const task = await service.updateTask(req.user.userId, id, parsed.data.done);
 if (!task) throw new HttpError(404, 'Tarefa não encontrada');
 ```
+
+Repara nos três argumentos, e de onde vem cada um:
+
+| Argumento | Vem de | Quem garante que é válido |
+|---|---|---|
+| `req.user.userId` | o **token**: o middleware `requireAuth` verificou-o e pôs o utilizador em `req.user` | a autenticação (módulo 15) |
+| `id` | o **URL** (`/tasks/:id`) | o `parseId`, com zod |
+| `parsed.data.done` | o **corpo** do pedido | o `updateTaskSchema`, com zod |
+
+O `userId` **nunca** vem do corpo do pedido, e por isso os esquemas de validação nem o aceitam: o corpo é escrito pelo cliente, e qualquer pessoa consegue enviar `{"done": true, "userId": 7}` com um `curl`. Se o servidor acreditasse nesse campo, cada utilizador podia mexer nas tarefas dos outros (é o IDOR, o primeiro do OWASP Top 10, módulo 26). Quem diz quem és é o token; o serviço recebe o `userId` como um argumento à parte e junta-o aos dados quando grava.
 
 A rota **não sabe** porque é que a tarefa não existe. O serviço devolve `null`, a rota decide que isso é um `404`. Se amanhã o serviço lançar uma exceção própria, só a tradução muda.
 
@@ -93,7 +105,7 @@ title: z.string().trim().min(1).max(200)
 
 Três coisas a notar:
 
-- **`.trim()` antes de `.min(1)`**: `"   "` passa como vazio. A ordem das regras importa.
+- **`.trim()` antes de `.min(1)`**: `"   "` fica vazio depois do `trim`, e o `.min(1)` rejeita-o. Pela ordem contrária, três espaços passavam como um título válido. A ordem das regras importa.
 - **`z.coerce.number()`** para o `:id` da URL: os parâmetros de URL chegam sempre como string. `coerce` converte e valida numa só operação.
 - **`safeParse`** em vez de `parse`: não lança exceção, devolve `{ success, data | error }`. Mais fácil de tratar.
 
@@ -106,7 +118,7 @@ Lê `middleware/errorHandler.js`. Há dois tipos de erro:
 - **Esperados** (`HttpError(404, ...)`): o cliente fez algo que não podia. Devolvemos a mensagem.
 - **Inesperados** (qualquer outro): bugs ou infraestrutura. Registamos o stack trace e devolvemos `500` genérico.
 
-Isto mantém a API **previsível**: todos os erros têm o formato `{ "error": "..." }`.
+Isto mantém a API **previsível**: todos os erros têm o formato `{ "error": "..." }`. (Há um formato padrão para isto, o *Problem Details* do RFC 9457, que o módulo 44 apresenta.)
 
 ## 6. `app.js` vs `index.js`: separar a construção do arranque
 
@@ -124,6 +136,16 @@ Quando fazes `docker stop`, o Docker envia `SIGTERM` e espera uns segundos antes
 `index.js` trata o sinal: `server.close()` deixa de aceitar pedidos novos, espera pelos atuais, e só depois fecha a BD e sai com `process.exit(0)`.
 
 **Experiência:** `time docker compose ... stop api` e depois `docker compose ... logs api | tail`. Vê a mensagem `SIGTERM recebido, a encerrar`.
+
+## Em resumo
+
+- A API está dividida em **camadas**: as rotas traduzem HTTP, os serviços aplicam as regras de negócio, os repositórios falam SQL. Cada uma só conhece a forma da de baixo, e por isso cada uma muda e testa-se sozinha.
+- O `index.js` é o único sítio que **cria e liga** as peças (injeção de dependências manual); os serviços recebem o repositório, a cache e o publisher, e nos testes recebem versões falsas.
+- A rota **valida** a entrada, **chama** o serviço, **traduz** o resultado em códigos HTTP e **responde**. O serviço não sabe que existe HTTP.
+- O `userId` vem do **token** (posto em `req.user` pela autenticação), nunca do corpo do pedido; os dados do corpo vêm validados pelo zod.
+- Valida-se **na fronteira, uma vez**; as restrições da BD continuam lá como segunda defesa.
+- Erros esperados (`HttpError`) devolvem a sua mensagem; os inesperados dão um `500` genérico e ficam nos logs.
+- `app.js` **constrói** a aplicação e `index.js` **arranca-a** (e trata o `SIGTERM` para encerrar sem cortar pedidos): assim os testes importam a app sem ligar a infraestrutura.
 
 ---
 

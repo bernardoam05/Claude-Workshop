@@ -12,7 +12,7 @@
 
 Num produto como o Slack, o Jira ou o Notion, cada empresa cliente é um **inquilino** (*tenant*): tem os seus utilizadores, os seus dados, as suas configurações, e às vezes o seu plano (gratuito, empresarial). Todos usam a mesma aplicação, a correr na mesma infraestrutura. É isso que torna o SaaS barato de operar: um deploy serve milhares de clientes.
 
-O workshop já isola dados **por utilizador** (cada tarefa tem um `owner_id`). O multi-inquilino é um nível acima: as tarefas são da **organização**, partilhadas pelos seus membros, e o maior pesadelo de uma empresa SaaS é um cliente ver os dados de outro. Não é hipotético: é uma das fugas mais comuns e mais graves, e quase sempre vem de um `WHERE` esquecido numa consulta.
+O workshop já isola dados **por utilizador** (cada tarefa tem um `user_id`). O multi-inquilino é um nível acima: as tarefas são da **organização**, partilhadas pelos seus membros, e o maior pesadelo de uma empresa SaaS é um cliente ver os dados de outro. Não é hipotético: é uma das fugas mais comuns e mais graves, e quase sempre vem de um `WHERE` esquecido numa consulta.
 
 ## 2. Três modelos de isolamento
 
@@ -77,6 +77,15 @@ Partilhar a infraestrutura também partilha os recursos: um cliente que importa 
 ## 7. O resto do ciclo de vida
 
 Um inquilino também se **cria** (provisionar: dados iniciais, configuração, utilizadores), se **exporta** (o RGPD dá direito à portabilidade, módulo 53), e se **apaga** por inteiro quando o contrato acaba: com o esquema partilhado, isso é um `DELETE ... WHERE inquilino = ?` em todas as tabelas, mais as caches, os ficheiros e os *backups*. Pensar nisto no início poupa muito trabalho depois.
+
+## Em resumo
+
+- Num SaaS, cada organização cliente é um **inquilino**; o maior perigo é um inquilino ver os dados de outro.
+- Há três modelos de isolamento: **BD por inquilino** (o mais forte e caro), **esquema por inquilino**, e **esquema partilhado** com uma coluna de inquilino (o mais comum), muitas vezes misturados.
+- O inquilino de cada pedido vem do subdomínio, do token ou de um cabeçalho, e **a fonte autenticada manda**: fontes em conflito recusam o pedido.
+- No esquema partilhado, as **chaves compostas** `(inquilino, id)` impedem referências entre inquilinos, e um repositório criado para um inquilino nunca esquece o filtro.
+- A ***row-level security*** do Postgres é a segunda barreira: o inquilino define-se por transação, e a aplicação usa um papel que não ignora as políticas.
+- O **vizinho ruidoso** combate-se com quotas, filas justas e anteparas por inquilino.
 
 ---
 
@@ -343,7 +352,7 @@ export function criarQuotas({ porMinuto, excecoes = {}, agora = Date.now }) {
 ## Experiências
 
 1. **O workshop com organizações:** desenha (no papel) a migração da API do workshop de "tarefas por utilizador" para "tarefas por organização, partilhadas pelos membros". Que tabelas mudam? Como fazes a migração sem parar o serviço (módulo 52)?
-2. **RLS no Postgres do workshop:** com o `psql`, ativa o RLS na tabela `tasks` com uma política por `owner_id = current_setting('app.utilizador')::int`, cria um papel para a API, e vê o que acontece às consultas da API sem mudar o código. O que falta para funcionar?
+2. **RLS no Postgres do workshop:** com o `psql`, ativa o RLS na tabela `tasks` com uma política por `user_id = current_setting('app.utilizador')::int`, cria um papel para a API, e vê o que acontece às consultas da API sem mudar o código. O que falta para funcionar?
 3. **O superutilizador:** no PGlite (ou no `psql` como `postgres`), confirma que um superutilizador vê todas as linhas mesmo com o RLS forçado. Que consequências tem para a configuração da ligação da aplicação?
 4. **Uma fila justa no RabbitMQ:** como farias o P4 com o RabbitMQ (módulo 06)? Uma fila por inquilino, uma fila com prioridades, *consumers* com `prefetch`? Compara as opções.
 
