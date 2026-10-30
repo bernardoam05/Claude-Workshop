@@ -30,9 +30,16 @@ Vários exercícios deste módulo têm um "treino" em `pratica/`: a mesma ideia,
 | C12 · métricas com Prometheus | [19 P1](19-observabilidade-prometheus-grafana.md#p1--instrumentar-com-o-prom-client-35-min) |
 | C14 · outbox | [06 P3](06-mensagens-rabbitmq.md#p3--outbox-a-resposta-ao-dual-write-40-min) |
 | C16 · `X-Request-Id` | [01 P3](01-fundamentos.md#p3--a-mesma-api-com-express-e-um-middleware-teu-30-min) (e, em .NET, [21 P3](21-dotnet.md#p3--injeção-de-dependências-trocar-peças-e-tempos-de-vida-35-min)) |
-| C17 · administradores | [15 P4](15-autenticacao-manual-vs-keycloak.md#p4--autenticação-e-autorização-como-middlewares-25-min): `exigirPapel` e `podeEditar` |
+| C17 · administradores | [15 P4](15-autenticacao-manual-vs-keycloak.md#p4--autenticação-e-autorização-como-middlewares-25-min): `exigirPapel` e `podeEditar`; e os modelos completos em [28](28-autorizacao.md#prática-escreve-tu) (RBAC, ABAC, ReBAC) |
 | C18 · rate limiting no Nginx | [10 P3](10-nginx-proxy-e-origem.md#p3--segurança-e-desempenho-25-min) (e a versão em JavaScript, [05 P2](05-redis-e-cache.md#p2--rate-limiting-com-incr-e-expire-35-min)) |
 | D1 · pipeline de CI | [20](20-ci-cd-github-actions.md#prática-escreve-tu): três workflows escritos do zero |
+| D2 · TypeScript num serviço | [29](29-typescript.md#prática-escreve-tu): genéricos, uniões discriminadas e migrar um ficheiro de JavaScript |
+| D3 · onde guardar o token | [27](27-sessoes-e-tokens.md#prática-escreve-tu): cookies `HttpOnly`, sessões no servidor, rotação de tokens e CSRF |
+| D5 · Kubernetes | [32](32-kubernetes.md#prática-escreve-tu): Deployment, Service, ConfigMap, Secret, Ingress e HPA, validados com o esquema oficial |
+| D6 · deploy em cloud | [33](33-terraform.md#prática-escreve-tu): infraestrutura como código com o Terraform, primeiro no Docker local; [35](35-cloud-aws.md#prática-escreve-tu): S3, SQS, DynamoDB e IAM a sério, num LocalStack |
+| D7 · auditoria de segurança | [26](26-seguranca-owasp.md#prática-escreve-tu): corrigir código vulnerável até os ataques falharem; [26 P5](26-seguranca-owasp.md#p5--cabeçalhos-comparação-em-tempo-constante-e-cookies-20-min) é o `helmet` à mão |
+| D8 · tempo real com SSE | [45](45-tempo-real.md#prática-escreve-tu): um difusor de SSE, um cliente que reconecta, e um chat com WebSockets |
+| P3 · coluna nova sem downtime | [52](52-estrategias-de-deploy.md#prática-escreve-tu): expandir/contrair num Postgres, com a versão antiga e a nova ao mesmo tempo |
 
 ---
 

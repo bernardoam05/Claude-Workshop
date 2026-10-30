@@ -14,7 +14,7 @@ git clone git@github.com:<o-teu-utilizador>/Claude-Workshop.git
 cd Claude-Workshop
 ```
 
-Depois, abre **[`docs/00-indice.md`](docs/00-indice.md)** — é o mapa de todo o workshop: a arquitetura, o roteiro dos 23 módulos, como arrancar o sistema, e como testares a ti próprio (há um quiz de linha de comandos com correção automática).
+Depois, abre **[`docs/00-indice.md`](docs/00-indice.md)** — é o mapa de todo o workshop: a arquitetura, o roteiro dos 61 módulos, como arrancar o sistema, e como testares a ti próprio (há um quiz de linha de comandos com correção automática).
 
 ## O que vais construir e aprender
 
@@ -31,9 +31,24 @@ Depois, abre **[`docs/00-indice.md`](docs/00-indice.md)** — é o mapa de todo 
 | Microserviço | C# / .NET | [21](docs/21-dotnet.md) |
 | Identidade | JWT manual + Keycloak (OIDC/PKCE) | [15](docs/15-autenticacao-manual-vs-keycloak.md) |
 | Observabilidade | Prometheus + Grafana | [19](docs/19-observabilidade-prometheus-grafana.md) |
-| Containers | Docker, Docker Compose, Kubernetes | [02](docs/02-docker.md) |
+| Containers | Docker, Docker Compose, Kubernetes | [02](docs/02-docker.md), [32](docs/32-kubernetes.md) |
 | CI/CD | GitHub Actions | [20](docs/20-ci-cd-github-actions.md) |
 | Testes | Unitários, integração, E2E (Playwright) | [11](docs/11-testes-e-observabilidade.md) |
+| Sistema e rede | Linux, Bash, systemd, DNS, TCP, TLS | [24](docs/24-linux-e-bash.md), [25](docs/25-redes.md) |
+| Segurança | OWASP Top 10; sessões e cookies; autorização (RBAC, ABAC, ReBAC) | [26](docs/26-seguranca-owasp.md), [27](docs/27-sessoes-e-tokens.md), [28](docs/28-autorizacao.md) |
+| Linguagens | TypeScript a sério, algoritmos e estruturas de dados | [29](docs/29-typescript.md), [30](docs/30-algoritmos.md) |
+| Python | Django + Django REST Framework, uvicorn | [31](docs/31-django.md) |
+| Infraestrutura como código | Terraform, Ansible | [33](docs/33-terraform.md), [34](docs/34-ansible.md) |
+| Cloud | AWS (S3, SQS, DynamoDB, IAM) num LocalStack | [35](docs/35-cloud-aws.md) |
+| Arquitetura e dados | SQL avançado, system design, transações, multi-inquilino, DDD, hexagonal, event sourcing, sagas | [36](docs/36-sql-avancado.md) a [40](docs/40-arquitetura-avancada.md) |
+| Mais dados | MongoDB e DynamoDB, pesquisa de texto, cache HTTP e CDN | [41](docs/41-nosql.md), [42](docs/42-pesquisa-full-text.md), [43](docs/43-cache-http-e-cdn.md) |
+| APIs | Desenho de APIs (erros, paginação, versões), SSE e WebSockets, GraphQL, gRPC | [44](docs/44-desenho-de-apis.md), [45](docs/45-tempo-real.md), [46](docs/46-graphql-e-grpc.md) |
+| Produção | OpenTelemetry, k6, depuração e profiling em Node, resiliência, SRE, estratégias de deploy | [47](docs/47-observabilidade-otel.md) a [52](docs/52-estrategias-de-deploy.md) |
+| Produto | RGPD, pagamentos e webhooks, LLMs (API do Claude, RAG) | [53](docs/53-rgpd-e-privacidade.md), [54](docs/54-pagamentos-e-webhooks.md), [55](docs/55-llms.md) |
+| Frontend avançado | Core Web Vitals, acessibilidade, Next.js e SSR | [56](docs/56-performance-e-acessibilidade.md), [57](docs/57-nextjs-e-ssr.md) |
+| Qualidade | Testes por propriedades, contratos e mutação; clean code e revisão | [58](docs/58-testes-avancados.md), [59](docs/59-clean-code-e-revisao.md) |
+| IoT | MQTT (Mosquitto, paho-mqtt) | [60](docs/60-iot-mqtt.md) |
+| Jogos | pygame: ciclo de jogo, passo fixo | [61](docs/61-jogo-pygame.md) |
 
 **Em todos os módulos escreves código, não só lês:** cada um tem exercícios em [`pratica/`](pratica/), com testes automáticos que te dizem se está certo (`cd pratica && npm install && npm run verificar 01`). Ver [como funciona a prática](docs/00-indice.md#a-prática-ler-ensina-a-reconhecer-escrever-ensina-a-produzir).
 

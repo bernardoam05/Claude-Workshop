@@ -2,7 +2,7 @@
 
 Este módulo responde a uma pergunta honesta: **o workshop cobre o que as vagas de fullstack/backend pedem?**
 
-Resposta curta: **cobre o núcleo que as vagas pedem, incluindo Keycloak, E2E, CI e OpenAPI.** Ficam de fora sobretudo ferramentas que dependem da stack de cada empresa (Java/.NET, ORM, cloud, Terraform, Kafka). O mapa completo de ferramentas da indústria está no [módulo 16](16-trabalhar-numa-empresa.md).
+Resposta curta: **cobre o núcleo que as vagas pedem, incluindo Keycloak, E2E, CI e OpenAPI.** Os módulos 24 a 61 acrescentaram, com prática em cada um: Linux e redes, segurança (OWASP), sessões e autorização, TypeScript, algoritmos, Python/Django, Kubernetes, Terraform, Ansible, AWS (num LocalStack), SQL avançado, system design, transações, multi-inquilino, DDD, NoSQL, pesquisa de texto, cache HTTP, desenho de APIs, tempo real, GraphQL e gRPC, OpenTelemetry, testes de carga, depuração e profiling, resiliência, SRE, estratégias de deploy, RGPD, pagamentos, LLMs, desempenho e acessibilidade, Next.js, testes avançados, clean code, IoT e um jogo. Ficam de fora sobretudo coisas que exigem uma conta numa cloud ou dependem da stack de cada empresa. O mapa completo de ferramentas da indústria está no [módulo 16](16-trabalhar-numa-empresa.md).
 
 Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitações, ou só em conceito) · ❌ não coberto
 
@@ -15,54 +15,74 @@ Legenda: ✅ implementado e testado · 🟡 parcial (implementado com limitaçõ
 | Docker e Docker Compose | ✅ | módulo 02, `src/*/Dockerfile`, `config/docker-compose.yml` |
 | Imagens multi-stage, utilizador não-root | ✅ | módulo 02, `src/web/Dockerfile`, `src/worker/Dockerfile` |
 | SQL e modelação de dados | ✅ | módulo 03, migrações 001–004 |
-| Índices e planos de execução avançados | 🟡 | só `EXPLAIN` básico no módulo 03 |
+| SQL avançado, índices e planos de execução | ✅ | módulo 36: funções de janela, CTEs recursivas, relatórios, índices compostos, parciais e sobre expressões confirmados com o `EXPLAIN`; índices GIN no módulo 42 |
 | Migrações versionadas | 🟡 | `migrate.js` funciona, mas não tem lock entre instâncias (exercício C13) |
 | ORM | 🟡 | JPA/Hibernate no serviço Spring (módulo 18); a API Node continua com SQL à mão, de propósito |
 | REST e códigos HTTP | ✅ | módulos 01 e 04 |
 | OpenAPI / Swagger | ✅ | `src/api/openapi.yaml`, Swagger UI em `localhost:8088` |
 | Lint (ESLint) | ✅ | `src/api/eslint.config.js`, corre no CI. Prettier não configurado |
-| GraphQL, gRPC | ❌ | só comparação no módulo 13 |
-| WebSockets e SSE | 🟡 | só comparação com polling no módulo 08 (exercício D8) |
+| GraphQL, gRPC | ✅ | módulo 46: esquema e resolvers com DataLoader, serviço gRPC com streaming, na prática (o projeto continua em REST) |
+| WebSockets e SSE | ✅ | módulo 45: SSE, chat com WebSockets e reconexão, na prática; no projeto, exercício D8 |
 | Filas e mensagens (RabbitMQ) | ✅ | módulos 06 e 07, com reconexão e DLQ testadas |
 | Kafka | ✅ | módulo 17: tópico com 3 partições, chave por utilizador, consumer group, DLT, Kafka UI |
 | Cache (Redis, cache-aside, TTL) | ✅ | módulo 05, cache isolada por utilizador |
 | React: componentes, estado, efeitos | ✅ | módulo 08 |
 | React: routing, data fetching avançado (React Router, TanStack Query) | ❌ | o `App.jsx` faz isto à mão, o que é bom para aprender, mas não é o que se usa em equipas |
-| TypeScript | 🟡 | o **worker** está em TypeScript (`src/worker`, `strict` ativo); a API e o frontend ainda são JavaScript (exercício D2) |
+| TypeScript | ✅ | módulo 29 (tipos avançados e migrar JavaScript, na prática) e o **worker** (`src/worker`, `strict` ativo); a API e o frontend ainda são JavaScript (exercício D2) |
 | Autenticação e autorização (JWT, hash de passwords, dono por recurso) | ✅ | `authService.js`, `middleware/auth.js`, migrações 003–004, testes em `authService.test.js` |
 | Identity Provider (Keycloak, OIDC, PKCE, SSO) | ✅ | módulo 15, serviço `keycloak` no compose, `oidcVerifier.js`, `oidc.js`, testado no browser |
-| Sessões avançadas (cookies httpOnly, refresh tokens, BFF) | ❌ | o token vai no `localStorage` (módulo 15 explica o risco e a alternativa) |
-| Segurança web (OWASP, CORS, rate limiting, segredos) | 🟡 | CORS evitado por desenho (módulo 10), segredos por variável de ambiente, falta rate limiting e `helmet` (exercício D7) |
+| Sessões avançadas (cookies httpOnly, refresh tokens, BFF) | 🟡 | módulo 27: cookies seguros, sessões no servidor, rotação de tokens com deteção de reutilização e CSRF, na prática; no projeto, o token ainda vai no `localStorage` |
+| Segurança web (OWASP, CORS, rate limiting, segredos) | 🟡 | módulo 26: OWASP Top 10, com ataques reais na prática (injeção, XSS, IDOR, SSRF, path traversal, cabeçalhos). Na API do projeto: CORS evitado por desenho (módulo 10) e segredos por variável de ambiente; falta rate limiting no login e `helmet` (exercício D7) |
+| Autorização (RBAC, ABAC, ReBAC) | ✅ | módulo 28: papéis com herança, políticas, relações ao estilo do Zanzibar, e autorização dentro das consultas SQL |
 | Testes unitários | ✅ | módulo 11, 27 testes entre API e worker |
 | Testes de integração com BD real | ✅ | `src/api/test/integration/`, corre contra Postgres (`npm run test:integration`) |
 | Testes E2E (Playwright) | ✅ | `tests/e2e/`: login local, login Keycloak e logout num browser real; corre no CI |
-| Testes de carga | ❌ | não coberto |
+| Testes de carga | ✅ | módulo 48: k6 (em Docker) contra um servidor de testes, percentis e limiares |
 | Métricas, dashboards e alertas (Prometheus, Grafana) | ✅ | módulo 19: API, Spring e RabbitMQ instrumentados, dashboard e 5 alertas como código |
-| Logs estruturados e traces (Loki, OpenTelemetry) | ❌ | exercícios D13 e D16 |
+| Logs estruturados e traces (Loki, OpenTelemetry) | 🟡 | módulo 47: logs estruturados e traces com o SDK do OpenTelemetry, na prática; a stack do workshop ainda não envia traces (exercícios D13 e D16) |
 | Java + Spring Boot | ✅ | módulo 18: `src/activity` com JPA, Flyway, Spring Security (RBAC com Keycloak), Spring Kafka, Actuator, JUnit/Mockito/MockMvc |
 | .NET | ✅ | módulo 21: `src/notifications`, Minimal APIs, DI nativa, EF Core, RabbitMQ.Client v7, JWT Bearer + Keycloak (RBAC), xUnit |
 | CI/CD (GitHub Actions) | ✅ | módulo 20 + `.github/workflows/ci.yml`: testes, build, integração e teste de fumo, com `needs`, cache, artefactos e OIDC explicados |
 | Git no dia a dia (branches, PRs, rebase, conflitos) | 🟡 | já fizeste fork (ver [Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)); falta só praticar branches e PRs a sério |
-| Kubernetes | 🟡 | `config/k8s/api.yaml` (Deployment, Service, probes, segurança). Validado com o esquema oficial, **nunca aplicado a um cluster** |
-| Cloud (AWS, Azure, GCP) | ❌ | não coberto; exercício D6 é conceptual |
-| Infraestrutura como código (Terraform, Pulumi) | ❌ | não coberto |
-| Arquitetura (camadas, DI, DDD) | ✅ | módulo 04; DDD só pelo nome |
-| Linux, shell, redes | 🟡 | usados nos comandos; não há módulo dedicado |
+| Kubernetes | 🟡 | módulo 32: Deployment, Service, ConfigMap, Secret, Ingress, HPA, PDB e CronJob, escritos na prática e validados com o esquema oficial (kubeconform). `config/k8s/api.yaml` e as experiências com kind **nunca foram aplicados a um cluster** neste workshop |
+| Cloud (AWS, Azure, GCP) | 🟡 | módulo 35: S3, SQS, DynamoDB e IAM num LocalStack (a AWS local); um deploy numa conta real continua por fazer (exercício D6) |
+| Infraestrutura como código (Terraform, Pulumi) | ✅ | módulo 33: Terraform a sério na prática (variáveis, `for_each`, módulos, estado), sobre o Docker local; a parte de cloud (AWS, backend remoto) só é lida |
+| Gestão de configuração (Ansible) | ✅ | módulo 34: inventário, playbooks, templates, handlers e roles, aplicados a contentores e verificados pela idempotência |
+| Python no backend (Django, DRF) | ✅ | módulo 31: modelos, ORM, migrações, admin, API REST com o DRF, servida pelo uvicorn |
+| IoT (MQTT) | ✅ | módulo 60: tópicos, QoS, retidas, last will, com um broker Mosquitto real |
+| Arquitetura (camadas, DI, DDD) | ✅ | módulo 04 (camadas e DI), 37 (system design) e 40 (DDD, hexagonal, CQRS, event sourcing, sagas) |
+| Multi-inquilino (SaaS) | ✅ | módulo 39: resolver o inquilino, chaves compostas, row-level security no Postgres, filas justas e quotas |
+| Desenho de APIs (erros, paginação, versões) | ✅ | módulo 44: Problem Details, paginação por cursor, versões e mudanças compatíveis, `If-Match` e merge patch |
+| Depuração e profiling (Node) | ✅ | módulo 49: atraso do event loop, streams com backpressure, fugas de memória, worker threads |
+| Linux, shell, redes | ✅ | módulos 24 (Linux e Bash, com scripts testados) e 25 (IP, DNS, TCP, HTTP à mão, TLS) |
+| Algoritmos e estruturas de dados | ✅ | módulo 30, com os padrões das entrevistas e testes de tempo |
+| Transações e concorrência | ✅ | módulo 38: corridas, bloqueios e isolamento num Postgres a sério |
+| NoSQL (MongoDB, DynamoDB) | 🟡 | módulo 41: filtros e agregação do MongoDB e tabela única do DynamoDB escritos à mão; um MongoDB real só nas experiências |
+| Pesquisa de texto | ✅ | módulo 42: índice invertido, BM25 e a pesquisa do Postgres |
+| Cache HTTP e CDN | ✅ | módulo 43: `Cache-Control`, ETag/304, `Vary`, purgas por etiqueta |
+| Resiliência e SRE | ✅ | módulos 50 (timeouts, disjuntores, anteparas) e 51 (SLO, taxa de queima, postmortems) |
+| Estratégias de deploy | ✅ | módulo 52: canário, feature flags, azul/verde, migrações expandir/contrair |
+| Privacidade (RGPD) | ✅ | módulo 53: minimização, pseudonimização, logs sem dados pessoais, direitos dos titulares |
+| Pagamentos e webhooks | 🟡 | módulo 54: cêntimos, idempotência, assinaturas e máquinas de estados; sem um fornecedor real (o modo de teste da Stripe fica nas experiências) |
+| LLMs (API, ferramentas, RAG) | ✅ | módulo 55: API do Claude (com um servidor falso nos testes), ferramentas e RAG com pgvector |
+| Desempenho e acessibilidade no frontend | ✅ | módulo 56: Core Web Vitals e axe medidos num Chrome a sério |
+| Next.js e SSR | 🟡 | módulo 57: as peças (rotas, SSR, ISR, fronteiras) escritas à mão; um projeto Next.js só nas experiências |
+| Testes avançados e qualidade de código | ✅ | módulos 58 (propriedades, contratos, mutação) e 59 (refatorar com caracterização, revisão de código) |
 
 ---
 
 ## O que continua em falta (por ordem de importância)
 
 1. **Git em equipa**: já estás no teu fork ([Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)). Falta praticar um branch por exercício com um PR, para treinar o fluxo real de equipa.
-2. **Cloud e IaC**: o manifesto de Kubernetes nunca correu num cluster. Um deploy real exige uma conta e um registo de imagens.
-3. **TypeScript na API e no frontend**: o worker já tem, os outros não.
-4. **Tempo real e ORM**: SSE (D8) e a escolha de um ORM, com os trade-offs de cada um.
+2. **Cloud**: o Terraform (módulo 33), o Kubernetes (módulo 32) e os serviços da AWS (módulo 35, num LocalStack) já se praticam localmente, mas um deploy real numa cloud, com uma conta e um registo de imagens, continua por fazer (exercício D6).
+3. **TypeScript na API e no frontend**: o módulo 29 ensina-o e o worker já o usa; a API e o frontend ainda não (exercício D2).
+4. **Levar ao projeto o que os módulos 24 a 61 praticam à parte**: SSE na lista de tarefas (D8), traces da stack inteira (D13, D16), e a escolha de um ORM, com os trade-offs de cada um.
 
 ---
 
 ## Como fechar o que falta
 
-Os exercícios do bloco D (em `12-exercicios.md`) cobrem o que ficou de fora: **D5** (Kubernetes num cluster local, se tiveres kind ou minikube), **D6** (deploy em cloud), **D8** (SSE). Os D1, D2 e D3 já estão implementados: o exercício é ler o código e fazer a experiência indicada.
+Os exercícios do bloco D (em `12-exercicios.md`) cobrem o que ficou de fora: **D5** (Kubernetes num cluster local, se tiveres kind ou minikube; prepara-te com o módulo 32), **D6** (deploy em cloud), **D8** (SSE). Os D1, D2 e D3 já estão implementados: o exercício é ler o código e fazer a experiência indicada.
 
 Para Git, no teu fork (ver [Passo 0](00-indice.md#passo-0-faz-fork-deste-repositório)), cria um branch por exercício e abre um PR para ti próprio. Só com isto praticas o fluxo de equipa.
 

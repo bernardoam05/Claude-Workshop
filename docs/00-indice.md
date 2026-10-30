@@ -139,6 +139,7 @@ Fluxo de um clique em "concluir tarefa":
 | `src/web/vite.config.js` | Plugin `@tailwindcss/vite`: gera só as classes realmente usadas nos `.jsx` |
 | `pratica/` | Exercícios de escrita de código, um por módulo, com testes (secção "Prática" de cada módulo) |
 | `pratica/verificar.mjs` | `npm run verificar <NN>`: escolhe a ferramenta de testes certa para cada módulo |
+| `pratica/requirements.txt` | Dependências Python da prática (módulos 31, 34, 60, 61), instaladas sozinhas em `pratica/.venv` |
 
 ---
 
@@ -168,8 +169,53 @@ Fluxo de um clique em "concluir tarefa":
 | 20 | [CI/CD com GitHub Actions](20-ci-cd-github-actions.md) | Jobs, services, cache, artefactos, OIDC | 2,5 h |
 | 21 | [C# e .NET](21-dotnet.md) | Minimal APIs, DI nativa, EF Core, RabbitMQ.Client v7 | 3 h |
 | — | [Sintaxe: JavaScript/TS](22-sintaxe-javascript.md) · [C#](23-sintaxe-csharp.md) | Referência, não módulo — consulta sempre que precisares | — |
+| | **Ferramentas, segurança e linguagens de base** | | |
+| 24 | [Linux e Bash](24-linux-e-bash.md) | Ficheiros, permissões, processos, pipes, scripts, systemd, SSH | 3 h |
+| 25 | [Redes](25-redes.md) | IP e NAT, TCP/UDP, DNS, HTTP por dentro, TLS | 2,5 h |
+| 26 | [Segurança e OWASP Top 10](26-seguranca-owasp.md) | Injeção, XSS, IDOR, SSRF, cookies, cabeçalhos | 3 h |
+| 27 | [Sessões, cookies e tokens](27-sessoes-e-tokens.md) | Cookies HttpOnly, sessões no servidor, rotação de tokens, BFF, CSRF | 2,5 h |
+| 28 | [Autorização: RBAC, ABAC e ReBAC](28-autorizacao.md) | Papéis, políticas, relações (Zanzibar), filtrar no SQL | 3 h |
+| 29 | [TypeScript a sério](29-typescript.md) | Genéricos, uniões discriminadas, tipos mapeados, validar o que vem de fora, migrar JS | 3 h |
+| 30 | [Algoritmos e estruturas de dados](30-algoritmos.md) | Complexidade, estruturas de dados, padrões, grafos, programação dinâmica | 4 h |
+| 31 | [Python e Django](31-django.md) | Modelos, ORM, migrações, admin, Django REST Framework, uvicorn | 4 h |
+| | **Infraestrutura** | | |
+| 32 | [Kubernetes](32-kubernetes.md) | Pods, Deployments, Services, probes, ConfigMaps, HPA | 3 h |
+| 33 | [Terraform](33-terraform.md) | Infraestrutura como código: providers, estado, módulos | 3 h |
+| 34 | [Ansible](34-ansible.md) | Gestão de configuração: playbooks, templates, roles, idempotência | 2,5 h |
+| 35 | [Cloud: AWS](35-cloud-aws.md) | S3, SQS, DynamoDB e IAM, num LocalStack | 3 h |
+| | **Arquitetura e dados** | | |
+| 36 | [SQL avançado](36-sql-avancado.md) | Funções de janela, CTEs recursivas, índices e EXPLAIN, relatórios | 3 h |
+| 37 | [System design](37-system-design.md) | Estimativas, escalar aplicação e dados, CAP, limitação de pedidos | 3 h |
+| 38 | [Transações e concorrência](38-transacoes-e-concorrencia.md) | ACID, corridas, deadlocks, níveis de isolamento, bloqueio otimista | 3 h |
+| 39 | [Multi-inquilino](39-multi-inquilino.md) | Modelos de isolamento, chaves compostas, row-level security, vizinho ruidoso | 3 h |
+| 40 | [Arquitetura avançada](40-arquitetura-avancada.md) | DDD, hexagonal, CQRS, event sourcing, sagas | 3 h |
+| 41 | [Bases de dados NoSQL](41-nosql.md) | MongoDB (filtros, agregação, modelação), DynamoDB (tabela única) | 3 h |
+| 42 | [Pesquisa de texto](42-pesquisa-full-text.md) | Analisadores, índice invertido, BM25, pesquisa no Postgres | 3 h |
+| 43 | [Cache HTTP e CDN](43-cache-http-e-cdn.md) | Cache-Control, ETag e 304, Vary, invalidação | 2,5 h |
+| 44 | [Desenho de APIs](44-desenho-de-apis.md) | Problem Details, paginação por cursor, versões, If-Match e merge patch | 2,5 h |
+| 45 | [Tempo real](45-tempo-real.md) | SSE, WebSockets, reconexão e problemas de produção | 2,5 h |
+| 46 | [GraphQL e gRPC](46-graphql-e-grpc.md) | Esquemas, resolvers, N+1 e DataLoader, gRPC, evoluir contratos | 3 h |
+| | **Operar em produção** | | |
+| 47 | [OpenTelemetry e logs](47-observabilidade-otel.md) | Logs estruturados, traces, propagação, amostragem | 2,5 h |
+| 48 | [Testes de carga](48-testes-de-carga.md) | k6, percentis, tipos de teste, encontrar o gargalo | 2,5 h |
+| 49 | [Depuração e profiling em Node](49-depuracao-e-profiling.md) | Event loop, flame graphs, fugas de memória, streams, worker threads | 3 h |
+| 50 | [Resiliência](50-resiliencia.md) | Timeouts, tentativas, disjuntores, anteparas, cobertura | 3 h |
+| 51 | [SRE e incidentes](51-sre-e-incidentes.md) | SLO, orçamento de erro, taxa de queima, postmortems | 2,5 h |
+| 52 | [Estratégias de deploy](52-estrategias-de-deploy.md) | Rolling, azul/verde, canário, feature flags, expandir/contrair | 3 h |
+| | **Produto, negócio e frontend** | | |
+| 53 | [RGPD e privacidade](53-rgpd-e-privacidade.md) | Minimização, pseudonimização, consentimento, direitos | 2,5 h |
+| 54 | [Pagamentos e webhooks](54-pagamentos-e-webhooks.md) | Dinheiro em cêntimos, idempotência, assinaturas, máquinas de estados | 3 h |
+| 55 | [LLMs na aplicação](55-llms.md) | API do Claude, streaming, saídas estruturadas, ferramentas, RAG, prompt injection | 3 h |
+| 56 | [Desempenho e acessibilidade](56-performance-e-acessibilidade.md) | Core Web Vitals, tarefas longas, axe, teclado, `<dialog>` | 3 h |
+| 57 | [Next.js e SSR](57-nextjs-e-ssr.md) | Rotas por ficheiros, SSR sem XSS, ISR, servidor vs cliente | 3 h |
+| | **Qualidade** | | |
+| 58 | [Testes avançados](58-testes-avancados.md) | Propriedades (fast-check), contratos, mutação, testes deterministas | 3 h |
+| 59 | [Clean code e revisão](59-clean-code-e-revisao.md) | Cheiros, refatorar com caracterização, revisão de código | 2,5 h |
+| | **Projetos para acabar** | | |
+| 60 | [IoT com MQTT](60-iot-mqtt.md) | Tópicos, QoS, retidas, last will, telemetria | 3 h |
+| 61 | [Um jogo com pygame](61-jogo-pygame.md) | Ciclo de jogo, passo fixo, estados, regras separadas do ecrã | 3 h |
 
-Podes fazer por ordem. Os módulos 02, 03 e 06 são os mais densos.
+Podes fazer por ordem. Os módulos 01 a 23 constroem e explicam o sistema do workshop, e os módulos 02, 03 e 06 são os mais densos. A partir do 24, os módulos vão além dele e estão agrupados por tema: ferramentas, segurança e linguagens de base, infraestrutura, arquitetura e dados, operação em produção, produto e frontend, qualidade, e dois projetos para acabar. Cada um diz no topo de que módulos anteriores precisa, e todos os pré-requisitos vêm antes do módulo que os pede, por isso a ordem numérica funciona; mas podes saltar para o tema que te interessa, desde que faças os pré-requisitos.
 
 ---
 
@@ -191,8 +237,9 @@ Para cada módulo:
 
 Os módulos assumem que já sabes ler JavaScript e C# — e é normal não saberes, sobretudo se não forem as linguagens em que estudaste. Há duas referências feitas exatamente para isto, com linhas **reais** do projeto, não exemplos inventados:
 
-- **[Sintaxe de JavaScript/TypeScript](22-sintaxe-javascript.md)** — para os módulos 01 a 16 (`src/api`, `src/worker`, `src/web`).
+- **[Sintaxe de JavaScript/TypeScript](22-sintaxe-javascript.md)** — para os módulos 01 a 16 (`src/api`, `src/worker`, `src/web`) e para os módulos com JavaScript ou TypeScript a partir do 24.
 - **[Sintaxe de C#](23-sintaxe-csharp.md)** — para o módulo 21 (`src/notifications`).
+- **Python** — o essencial está no [módulo 31, secção 2](31-django.md#2-python-em-5-minutos-o-que-vais-usar-aqui), para os módulos 31, 34, 60 e 61.
 
 Não são para ler de uma vez. Abre-os quando uma linha de código não fizer sentido, procura a construção, volta ao ficheiro.
 
@@ -211,9 +258,14 @@ Cada módulo usa a ferramenta normal da sua tecnologia, e o `verificar` escolhe-
 
 | Módulos | Como se verifica |
 |---|---|
-| 01, 03 a 07, 11, 13 a 15, 17, 19, 20, 22 | `node --test` (o mesmo da API); o 07 corre também o compilador de TypeScript |
+| 01, 03 a 07, 11, 13 a 15, 17, 19, 20, 22, 25 a 30, 36, 37, 39 a 47, 49 a 55, 57 a 59 | `node --test` (o mesmo da API); o 07 e o 29 correm também o compilador de TypeScript |
+| 24 | `node --test` a correr os teus scripts de Bash a sério (com `jq`, `awk`, `curl`) |
+| 32 | `node --test` sobre os teus manifests + **kubeconform** (o esquema oficial do Kubernetes, em Docker) |
+| 33 | O **Terraform** a sério (`fmt`, `validate`, `plan`, `apply`, `destroy`), a criar contentores no teu Docker |
+| 35, 38, 48 | `node --test` contra serviços a sério em Docker: o **LocalStack** (a AWS local, 35), o **Postgres** (38), o **k6** (48) |
+| 31, 34, 60, 61 | **pytest**, num ambiente Python criado sozinho em `pratica/.venv` na primeira vez (o 34 configura contentores com o Ansible; o 60 usa um broker MQTT em Docker; o 61 corre o pygame sem janela) |
 | 08 | Vitest + Testing Library (componentes React num DOM simulado) |
-| 09 | Playwright no **Chrome** a sério (mede o layout) + `npm run estilos` para veres ao vivo |
+| 09, 56 | Playwright no **Chrome** a sério (o 09 mede o layout, com `npm run estilos` para veres ao vivo; o 56 mede o desempenho e corre o **axe**) |
 | 02, 10 | Docker a sério (`docker build`, `docker run`, `curl`) |
 | 16 | Repositórios Git de treino (`npm run git-cenario <nome>`) |
 | 18 | Maven + JUnit (ou em Docker, sem Maven instalado) |
@@ -225,7 +277,7 @@ O módulo 11 é diferente: lá **tu** escreves os testes, e o verificador confir
 
 ## Pré-requisitos e arranque
 
-Precisas de: **Docker** (com o daemon a correr), **Node.js 22+** e **npm** (para os testes e para desenvolver fora do Docker).
+Precisas de: **Docker** (com o daemon a correr), **Node.js 22+** e **npm** (para os testes e para desenvolver fora do Docker). Para os módulos 31, 34, 60 e 61, também do **Python 3.12+** com o `venv` (em Debian/Ubuntu: `sudo apt install python3-venv`).
 
 ```bash
 # Arrancar tudo (a partir da raiz do projeto)

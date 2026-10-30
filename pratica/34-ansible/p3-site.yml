@@ -1,0 +1,3 @@
+# P3 · O playbook "site": aplica a role "base" a TODOS os hosts.
+#
+# A role faz o trabalho (ver roles/base/); este ficheiro só diz A QUEM a aplicar.

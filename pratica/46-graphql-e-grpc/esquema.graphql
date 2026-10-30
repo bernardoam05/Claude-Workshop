@@ -1,0 +1,15 @@
+# P1 · O esquema GraphQL da API de tarefas (SDL). Ver docs/46-graphql-e-grpc.md, secção "Prática".
+#
+# type Utilizador: id (ID, obrigatório), nome (String, obrigatório), e
+#   tarefas(feita: Boolean): uma lista OBRIGATÓRIA de Tarefa OBRIGATÓRIAS  → [Tarefa!]!
+# type Tarefa: id (ID!), titulo (String!), feita (Boolean!), dono (Utilizador!)
+# type Query:
+#   eu: Utilizador                                  (null se não houver sessão)
+#   tarefa(id: ID!): Tarefa                         (null se não existir ou não for tua)
+#   tarefas(feita: Boolean, primeiras: Int = 10): [Tarefa!]!
+# type Mutation:
+#   criarTarefa(titulo: String!): Tarefa!
+#   concluirTarefa(id: ID!): Tarefa                 (null se não existir ou não for tua)
+#
+# O "!" quer dizer "nunca é null". Pensa em cada um: o que acontece ao cliente se prometeres
+# que nunca é null e afinal for?

@@ -1,0 +1,34 @@
+<!-- P2 · Um "modal" feito com uma <div>: não prende o foco, não fecha com Escape, um leitor de
+     ecrã não sabe que é um diálogo, e o resultado não é anunciado. Refaz com o <dialog> nativo
+     (aqui e em modal.js). Mantém os textos dos botões e os ids "abrir" e "estado". -->
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apagar tarefa</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; color: #222; }
+      button { padding: 0.5rem 1rem; }
+      .fundo { position: fixed; inset: 0; background: rgb(0 0 0 / 0.5); display: grid; place-items: center; }
+      .caixa { background: #fff; border-radius: 8px; padding: 1.5rem; max-width: 24rem; }
+      .perigo { background: #b91c1c; color: #fff; border: 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Tarefa: rever o PR</h1>
+      <button id="abrir" type="button">Apagar tarefa</button>
+      <p id="estado"></p>
+    </main>
+    <div id="confirmar" class="fundo" hidden>
+      <div class="caixa">
+        <h2>Apagar a tarefa?</h2>
+        <p>Esta ação não se pode desfazer.</p>
+        <button id="cancelar" type="button">Cancelar</button>
+        <button id="apagar" type="button" class="perigo">Apagar</button>
+      </div>
+    </div>
+    <script type="module" src="modal.js"></script>
+  </body>
+</html>

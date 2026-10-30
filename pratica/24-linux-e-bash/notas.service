@@ -1,0 +1,13 @@
+# P5 · Uma unidade do systemd para correr a API de notas como serviço do sistema.
+#
+# [Unit]: descrição "API de notas", e só arranca depois de a rede estar pronta (network-online.target,
+#         em After= E em Wants=)
+# [Service]:
+#   - corre /usr/bin/node /opt/notas/server.js, com a pasta de trabalho /opt/notas
+#   - como o utilizador e grupo "notas" (nunca root)
+#   - variáveis de ambiente PORT=3000 e NODE_ENV=production
+#   - os segredos vêm de um ficheiro: /etc/notas/segredos.env
+#   - se morrer com erro, reinicia (on-failure), à espera de 5 s entre tentativas
+#   - proteções: NoNewPrivileges=true, ProtectSystem=strict, PrivateTmp=true, e só pode escrever
+#     em /var/lib/notas (ReadWritePaths)
+# [Install]: arranca com o sistema normal (multi-user.target)

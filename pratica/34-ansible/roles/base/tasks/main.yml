@@ -1,0 +1,3 @@
+# P3 · As tarefas da role "base":
+#   1. cada um dos "utilizadores" existe (um loop sobre a lista), com shell /bin/sh
+#   2. o template motd.j2 → /etc/motd (modo 0644), que notifica o handler "motd alterado"

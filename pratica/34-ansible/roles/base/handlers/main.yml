@@ -1,0 +1,2 @@
+# P3 · Um handler "motd alterado" que acrescenta uma linha a /var/log/motd-alteracoes
+# (ansible.builtin.shell: echo alterado >> /var/log/motd-alteracoes)

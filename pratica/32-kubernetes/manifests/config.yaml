@@ -1,0 +1,12 @@
+# P2 · Namespace, ConfigMap, Secret e um Deployment que os usa.
+#
+# Tudo (exceto o próprio Namespace) vive no namespace "workshop".
+#
+# ConfigMap "notas-config": LOG_LEVEL=info e CACHE_TTL_SECONDS=60
+#   (repara: os valores de um ConfigMap são SEMPRE strings)
+# Secret "notas-secrets": DATABASE_URL=postgres://notas:notas@postgres:5432/notas
+#   (escrito em claro com stringData; o Kubernetes guarda-o em base64, que NÃO é cifra)
+#
+# Deployment "notas-worker" (1 réplica, imagem workshop/notas-worker:1.0.0, labels app: notas-worker):
+#   - recebe TODAS as chaves do ConfigMap como variáveis de ambiente (envFrom)
+#   - recebe só a DATABASE_URL do Secret, com o mesmo nome (env + secretKeyRef)

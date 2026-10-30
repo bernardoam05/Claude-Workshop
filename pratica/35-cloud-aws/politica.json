@@ -1,0 +1,3 @@
+{
+  "_comentario": "P4 · Uma política IAM de menor privilégio para a API de notas. Ver o comentário em politica.test.js e a secção 3 do módulo. Apaga esta chave quando começares (uma política a sério não a aceitaria)."
+}

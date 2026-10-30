@@ -1,0 +1,17 @@
+{
+  // As regras mais estritas, como num projeto novo a sério. noEmit: o tsc só verifica os tipos;
+  // os testes correm com o tsx, que tira as anotações e executa.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["*.ts"]
+}

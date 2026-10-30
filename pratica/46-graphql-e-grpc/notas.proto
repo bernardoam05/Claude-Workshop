@@ -1,0 +1,17 @@
+// P4 · O contrato gRPC do serviço de notas (Protocol Buffers, versão 3).
+//
+// syntax = "proto3"; e package notas;
+//
+// message Nota      { int32 id = 1; string titulo = 2; bool feita = 3; }
+// message PedidoNota { int32 id = 1; }
+// message PedidoLista { bool so_por_fazer = 1; }
+// message NovaNota  { string titulo = 1; }
+//
+// service Notas {
+//   rpc Obter (PedidoNota) returns (Nota);                 // unário: um pedido, uma resposta
+//   rpc Listar (PedidoLista) returns (stream Nota);        // o servidor envia várias, em stream
+//   rpc Criar (NovaNota) returns (Nota);
+// }
+//
+// Os números (= 1, = 2...) são a identidade de cada campo no formato binário: nunca os mudes depois
+// de o serviço estar em uso (ver a secção 7 do módulo).

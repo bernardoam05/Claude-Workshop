@@ -1,0 +1,12 @@
+# P1 · Deployment + Service da app "notas" (ver docs/32-kubernetes.md, secção "Prática").
+#
+# Deployment "notas":
+#   - imagem workshop/notas:1.0.0 (com versão: nunca :latest), 2 réplicas
+#   - os pods têm a label app: notas, e o selector do Deployment escolhe exatamente essa label
+#   - o contentor expõe a porta 3000 com o NOME "http"
+#   - readinessProbe: GET /health na porta http · livenessProbe: tcpSocket na porta http
+#   - requests (cpu 100m, memória 64Mi) e limits (cpu 500m, memória 128Mi)
+#
+# Service "notas" (ClusterIP): porta 80, que encaminha para a porta com o nome "http" dos pods app: notas.
+#
+# Dois objetos no mesmo ficheiro separam-se com uma linha só com ---

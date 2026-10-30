@@ -1243,6 +1243,2463 @@
           "explain": "KeycloakRoleClaims.AddRealmRoles resolve exatamente o mesmo problema que KeycloakRealmRoles resolveu em Java."
         }
       ]
+    },
+    {
+      "id": "24",
+      "title": "Linux e Bash",
+      "doc": "docs/24-linux-e-bash.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que faz o 'set -euo pipefail' no início de um script de Bash?",
+          "options": [
+            "Torna o script mais rápido",
+            "Para no primeiro erro, trata variáveis por definir como erro, e faz um pipe falhar se qualquer parte falhar",
+            "Esconde os erros do utilizador",
+            "Obriga o script a correr como root"
+          ],
+          "answer": 1,
+          "explain": "Sem ele, um script continua depois de um comando falhar, e um 'rm -rf \"$PASTA/\"' com a variável vazia apaga a raiz."
+        },
+        {
+          "type": "mcq",
+          "q": "Um ficheiro tem permissões 640. O que pode fazer quem não é o dono nem do grupo?",
+          "options": [
+            "Ler",
+            "Ler e escrever",
+            "Nada",
+            "Executar"
+          ],
+          "answer": 2,
+          "explain": "6 (rw-) para o dono, 4 (r--) para o grupo, 0 (---) para os outros."
+        },
+        {
+          "type": "mcq",
+          "q": "Que sinal envia o 'docker stop' (e o Kubernetes) primeiro, para a app poder terminar com cuidado?",
+          "options": [
+            "SIGKILL",
+            "SIGTERM",
+            "SIGHUP",
+            "SIGSTOP"
+          ],
+          "answer": 1,
+          "explain": "Só se a app não terminar dentro do prazo (10 s por omissão no Docker) é que vem o SIGKILL, que não se pode apanhar."
+        },
+        {
+          "type": "short",
+          "q": "Que comando mostra os logs de um serviço do systemd chamado 'notas', em tempo real?",
+          "answers": [
+            "journalctl -u notas -f",
+            "journalctl -fu notas",
+            "journalctl -f -u notas"
+          ],
+          "explain": "O journal guarda os logs de todos os serviços; -u filtra por unidade e -f segue como o tail -f."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que um script deve escrever as mensagens de erro no stderr?",
+          "options": [
+            "Porque o stderr é mais rápido",
+            "Para o stdout ter só o resultado, que outros programas leem e encadeiam com pipes",
+            "Porque o stdout não aceita texto com acentos",
+            "Porque o stderr fica guardado para sempre"
+          ],
+          "answer": 1,
+          "explain": "Separados, o resultado pode ir para um ficheiro ou para outro programa e os erros continuam visíveis."
+        }
+      ]
+    },
+    {
+      "id": "25",
+      "title": "Redes",
+      "doc": "docs/25-redes.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Quantos endereços tem a rede 10.0.0.0/24?",
+          "options": [
+            "24",
+            "256",
+            "65 536",
+            "16 777 216"
+          ],
+          "answer": 1,
+          "explain": "Sobram 32 - 24 = 8 bits para os endereços: 2^8 = 256."
+        },
+        {
+          "type": "mcq",
+          "q": "Um pedido falha com ECONNREFUSED. Em que camada está o problema mais provável?",
+          "options": [
+            "DNS: o nome não existe",
+            "TCP: a máquina respondeu, mas ninguém está a ouvir nessa porta",
+            "TLS: o certificado expirou",
+            "HTTP: a API devolveu 500"
+          ],
+          "answer": 1,
+          "explain": "Uma firewall que deita fora os pacotes dá ETIMEDOUT; um 'não há ninguém nessa porta' dá ECONNREFUSED."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que o HTTP/1.1 precisa do Content-Length ou do Transfer-Encoding: chunked?",
+          "options": [
+            "Para comprimir o corpo",
+            "Porque o TCP é um stream de bytes sem fronteiras: sem isso, quem recebe não sabe onde acaba a resposta",
+            "Para o browser mostrar uma barra de progresso",
+            "Porque o TLS o exige"
+          ],
+          "answer": 1,
+          "explain": "O TCP não tem mensagens; é o protocolo por cima que tem de dizer onde cada uma acaba."
+        },
+        {
+          "type": "short",
+          "q": "Que campo de um registo DNS diz durante quantos segundos a resposta pode ficar em cache (sigla em inglês)?",
+          "answers": [
+            "ttl",
+            "time to live"
+          ],
+          "explain": "Antes de mudares um IP, baixa o TTL com antecedência."
+        },
+        {
+          "type": "mcq",
+          "q": "Um certificado TLS autoassinado é recusado porque...",
+          "options": [
+            "usa uma cifra fraca",
+            "não foi assinado por uma autoridade de certificação em que o cliente confie",
+            "não tem data de validade",
+            "só funciona com HTTP/1.1"
+          ],
+          "answer": 1,
+          "explain": "Serve para testes e redes internas, se o cliente receber explicitamente esse certificado como de confiança (a opção ca)."
+        }
+      ]
+    },
+    {
+      "id": "26",
+      "title": "Segurança e OWASP Top 10",
+      "doc": "docs/26-seguranca-owasp.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a correção certa para a injeção de SQL num campo de pesquisa?",
+          "options": [
+            "Remover as plicas do texto antes de o colar no SQL",
+            "Queries parametrizadas ($1, $2): o SQL e os valores viajam separados e os valores nunca são lidos como código",
+            "Limitar o texto a 50 caracteres",
+            "Validar o texto no frontend"
+          ],
+          "answer": 1,
+          "explain": "Filtrar caracteres é uma lista de proibidos que alguém acaba por contornar. Para nomes de colunas (ORDER BY), que não podem ser parâmetros, usa-se uma lista de permitidos."
+        },
+        {
+          "type": "mcq",
+          "q": "A Ana muda o id no URL (/notas/7 → /notas/8) e lê a nota do Bruno. Como se chama esta falha?",
+          "options": [
+            "XSS",
+            "CSRF",
+            "IDOR (controlo de acesso partido)",
+            "SSRF"
+          ],
+          "answer": 2,
+          "explain": "Insecure Direct Object Reference. A correção é verificar a posse em cada pedido, no servidor (WHERE id = $1 AND user_id = $2), e não esconder os ids."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que responder 404 (e não 403) a quem pede a nota de outra pessoa é uma boa ideia?",
+          "options": [
+            "Porque 403 não existe em HTTP",
+            "Porque assim a resposta é igual à de uma nota inexistente, e o atacante não descobre que ids existem",
+            "Porque 404 é mais rápido",
+            "Porque o browser repete os pedidos 403"
+          ],
+          "answer": 1,
+          "explain": "Um 403 confirma que o recurso existe. A diferença entre 'não existe' e 'não é teu' é informação útil a quem ataca."
+        },
+        {
+          "type": "short",
+          "q": "Que atributo de uma cookie impede o JavaScript da página de a ler (e um XSS de a roubar)?",
+          "answers": [
+            "httponly",
+            "http-only",
+            "http only"
+          ],
+          "explain": "Junto com Secure e SameSite=Lax, é a configuração recomendada para cookies de sessão."
+        },
+        {
+          "type": "mcq",
+          "q": "Que endereço é o alvo clássico de um ataque SSRF numa cloud, porque entrega credenciais à máquina?",
+          "options": [
+            "127.0.0.1:3000",
+            "169.254.169.254 (o serviço de metadados)",
+            "8.8.8.8",
+            "10.0.0.1"
+          ],
+          "answer": 1,
+          "explain": "Foi o caso da Capital One em 2019. Defesas: lista de permitidos, recusar redes internas depois de resolver o DNS, e o IMDSv2 na AWS."
+        }
+      ]
+    },
+    {
+      "id": "27",
+      "title": "Sessões, cookies e tokens",
+      "doc": "docs/27-sessoes-e-tokens.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que faz o atributo HttpOnly num cookie?",
+          "options": [
+            "Só é enviado por HTTP, nunca por HTTPS",
+            "O JavaScript da página não o consegue ler",
+            "Expira ao fechar o browser",
+            "Só vai em pedidos do mesmo site"
+          ],
+          "answer": 1,
+          "explain": "Um XSS deixa de conseguir roubar a sessão (mas continua a poder agir na página)."
+        },
+        {
+          "type": "mcq",
+          "q": "Que exige o prefixo __Host- num cookie?",
+          "options": [
+            "HttpOnly",
+            "Secure, Path=/ e nenhum Domain",
+            "SameSite=Strict",
+            "Max-Age"
+          ],
+          "answer": 1,
+          "explain": "Fica preso ao anfitrião exato: um subdomínio não o pode sobrepor."
+        },
+        {
+          "type": "short",
+          "q": "Como se chama o ataque em que um site malicioso faz o browser da vítima enviar um pedido autenticado (com o cookie) para outro site (sigla)?",
+          "answers": [
+            "csrf",
+            "xsrf"
+          ],
+          "explain": "Defesas: SameSite, verificar a origem (Sec-Fetch-Site), token CSRF, nunca mudar estado com GET."
+        },
+        {
+          "type": "mcq",
+          "q": "Um token de renovação já gasto volta a ser usado. O que deve o servidor fazer?",
+          "options": [
+            "Aceitar, se ainda não expirou",
+            "Revogar a família inteira de tokens desse login",
+            "Ignorar o pedido",
+            "Emitir um token novo e avisar o utilizador"
+          ],
+          "answer": 1,
+          "explain": "Há duas cópias e não se sabe qual é a do atacante."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque se roda o id da sessão depois do login?",
+          "options": [
+            "Para poupar memória",
+            "Contra a fixação de sessão: um id plantado antes do login não fica autenticado",
+            "Porque o cookie expira",
+            "Por causa do SameSite"
+          ],
+          "answer": 1,
+          "explain": "O mesmo se faz quando os privilégios mudam."
+        }
+      ]
+    },
+    {
+      "id": "28",
+      "title": "Autorização",
+      "doc": "docs/28-autorizacao.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a diferença entre autenticação e autorização?",
+          "options": [
+            "São sinónimos",
+            "Autenticação é quem és; autorização é o que podes fazer",
+            "Autenticação é no browser; autorização no servidor",
+            "Autorização é só para admins"
+          ],
+          "answer": 1,
+          "explain": "O módulo 15 trata da primeira; este módulo da segunda."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual é o problema típico do RBAC quando se quer 'editor só do projeto 7'?",
+          "options": [
+            "Não suporta herança",
+            "A explosão de papéis: um papel por combinação",
+            "Não funciona com o Keycloak",
+            "É lento"
+          ],
+          "answer": 1,
+          "explain": "Permissões sobre objetos ficam melhor em relações ou atributos."
+        },
+        {
+          "type": "short",
+          "q": "Que sistema da Google, descrito num artigo de 2019, popularizou o controlo de acessos baseado em relações (ReBAC)?",
+          "answers": [
+            "zanzibar",
+            "google zanzibar"
+          ],
+          "explain": "Hoje existe em código aberto no SpiceDB e no OpenFGA."
+        },
+        {
+          "type": "mcq",
+          "q": "Num avaliador de políticas, uma condição lança um erro. Qual deve ser a decisão?",
+          "options": [
+            "Permitir",
+            "Negar (falhar fechado)",
+            "Ignorar essa política",
+            "Repetir até funcionar"
+          ],
+          "answer": 1,
+          "explain": "Os erros de autorização devem acontecer do lado seguro."
+        },
+        {
+          "type": "mcq",
+          "q": "Onde devem estar as regras de 'quem vê o quê' numa listagem de tarefas?",
+          "options": [
+            "Na interface",
+            "Num filtro em memória depois de carregar tudo",
+            "Na própria consulta SQL, a bater com as verificações individuais",
+            "Só nos logs"
+          ],
+          "answer": 2,
+          "explain": "Uma ida à base de dados, paginação correta, e nenhuma listagem esquecida."
+        }
+      ]
+    },
+    {
+      "id": "29",
+      "title": "TypeScript a sério",
+      "doc": "docs/29-typescript.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Para dados que vêm de fora (JSON, pedidos), que tipo se deve usar antes de os validar?",
+          "options": [
+            "any",
+            "unknown: obriga a verificar antes de usar",
+            "object",
+            "never"
+          ],
+          "answer": 1,
+          "explain": "O any desliga o compilador; o unknown obriga a estreitar (com typeof, type guards ou um esquema) antes de usar."
+        },
+        {
+          "type": "mcq",
+          "q": "Para que serve a função nunca(x: never) no default de um switch sobre uma união discriminada?",
+          "options": [
+            "Para o código correr mais depressa",
+            "Para o código deixar de compilar se alguém acrescentar um caso à união e se esquecer de o tratar",
+            "Para apanhar exceções",
+            "Para converter tipos"
+          ],
+          "answer": 1,
+          "explain": "Se todos os casos forem tratados, o valor é never no default; um caso novo esquecido torna-o num tipo que não é never."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual é a diferença entre 'satisfies' e uma anotação de tipo (const x: T = ...)?",
+          "options": [
+            "Nenhuma",
+            "satisfies verifica que o valor cumpre T sem o alargar para T, mantendo os tipos exatos (ex.: literais)",
+            "satisfies não verifica nada",
+            "A anotação é mais segura"
+          ],
+          "answer": 1,
+          "explain": "Com a anotação, o tipo passa a ser T e perdem-se os literais; com satisfies, verifica-se e mantém-se o tipo exato."
+        },
+        {
+          "type": "short",
+          "q": "Que operador de tipos dá a união das chaves de um tipo T?",
+          "answers": [
+            "keyof",
+            "keyof t"
+          ],
+          "explain": "Usado em restrições como K extends keyof T e em tipos mapeados [K in keyof T]."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que 'JSON.parse(texto) as Tarefa[]' não protege de nada?",
+          "options": [
+            "Porque o JSON.parse é lento",
+            "Porque o 'as' só fala com o compilador: em tempo de execução não se verifica nada, e os tipos já foram apagados",
+            "Porque falta um await",
+            "Porque devia ser 'as const'"
+          ],
+          "answer": 1,
+          "explain": "Nas fronteiras valida-se em tempo de execução (Zod), com o tipo inferido do esquema."
+        }
+      ]
+    },
+    {
+      "id": "30",
+      "title": "Algoritmos e estruturas de dados",
+      "doc": "docs/30-algoritmos.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a complexidade de 'for (const x of a) if (b.includes(x)) ...', com a e b do mesmo tamanho n?",
+          "options": [
+            "O(n)",
+            "O(n log n)",
+            "O(n²)",
+            "O(log n)"
+          ],
+          "answer": 2,
+          "explain": "O includes percorre b de cada vez. Com um Set(b) e has(), fica O(n)."
+        },
+        {
+          "type": "mcq",
+          "q": "O que devolve [10, 9, 1].sort() em JavaScript?",
+          "options": [
+            "[1, 9, 10]",
+            "[10, 9, 1]",
+            "[1, 10, 9]",
+            "Um erro"
+          ],
+          "answer": 2,
+          "explain": "Sem função de comparação, o sort compara como texto: '1' < '10' < '9'. Para números: sort((a, b) => a - b)."
+        },
+        {
+          "type": "mcq",
+          "q": "Para encontrar o caminho com MENOS passos numa grelha sem pesos, que algoritmo usas?",
+          "options": [
+            "DFS",
+            "BFS",
+            "Ordenação topológica",
+            "Pesquisa binária"
+          ],
+          "answer": 1,
+          "explain": "O BFS visita por ordem de distância; a primeira chegada é a mais curta. Com custos diferentes, usa-se o Dijkstra."
+        },
+        {
+          "type": "short",
+          "q": "Que estrutura de dados dá sempre o menor (ou maior) elemento em O(log n) por inserção e extração?",
+          "answers": [
+            "heap",
+            "min heap",
+            "minheap",
+            "fila de prioridade",
+            "priority queue",
+            "max heap"
+          ],
+          "explain": "É a base das filas de prioridade, dos 'k maiores' e do Dijkstra."
+        },
+        {
+          "type": "mcq",
+          "q": "Quando é que um problema pede programação dinâmica?",
+          "options": [
+            "Sempre que há um array",
+            "Quando se parte em subproblemas mais pequenos que se repetem, e guardar as respostas evita recalculá-las",
+            "Quando os dados estão ordenados",
+            "Quando há strings"
+          ],
+          "answer": 1,
+          "explain": "A recursão ingénua do Fibonacci é O(2^n); guardando os subproblemas, passa a O(n)."
+        }
+      ]
+    },
+    {
+      "id": "31",
+      "title": "Python e Django",
+      "doc": "docs/31-django.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Num projeto Django, o que faz o 'python manage.py makemigrations'?",
+          "options": [
+            "Aplica as migrações à base de dados",
+            "Compara os modelos com as migrações existentes e gera um ficheiro de migração novo com as diferenças",
+            "Apaga a base de dados e cria-a de novo",
+            "Gera os modelos a partir das tabelas"
+          ],
+          "answer": 1,
+          "explain": "As migrações são geradas, revistas e vão para o Git. Quem as aplica é o 'migrate'."
+        },
+        {
+          "type": "mcq",
+          "q": "Uma lista de 100 notas faz 101 queries à BD. Como se chama o problema e como se resolve no Django?",
+          "options": [
+            "Deadlock; com transações",
+            "N+1; com select_related (chaves estrangeiras) ou prefetch_related (muitos-para-muitos)",
+            "Injeção de SQL; com parâmetros",
+            "Cache miss; com Redis"
+          ],
+          "answer": 1,
+          "explain": "Uma query para a lista e uma por item para a relação. O prefetch_related faz uma só query extra para todos os itens."
+        },
+        {
+          "type": "mcq",
+          "q": "No NotaViewSet, porque é que o get_queryset filtra por dono=self.request.user?",
+          "options": [
+            "Para a lista vir ordenada",
+            "Porque todas as operações (lista, detalhe, PATCH, DELETE) partem dele: a nota de outra pessoa dá 404 sem mais código",
+            "Porque o DRF obriga",
+            "Para usar menos memória"
+          ],
+          "answer": 1,
+          "explain": "É a autorização num sítio só, a defesa contra o IDOR do módulo 26."
+        },
+        {
+          "type": "short",
+          "q": "Que servidor ASGI usaste para servir o Django no P3 (o mesmo que o FastAPI usa)?",
+          "answers": [
+            "uvicorn"
+          ],
+          "explain": "ASGI é a interface assíncrona; o gunicorn é o servidor WSGI clássico. Em produção, com vários --workers, por causa do GIL."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual destas é uma vantagem do Django sobre o Flask para um produto com base de dados e backoffice?",
+          "options": [
+            "É mais pequeno e não impõe nada",
+            "Traz ORM, migrações, autenticação e um painel de administração prontos a usar",
+            "É o único que suporta Python 3",
+            "Não precisa de servidor de aplicações"
+          ],
+          "answer": 1,
+          "explain": "O Flask é micro: escolhes e juntas as peças. O Django é 'pilhas incluídas': as decisões já estão tomadas e as convenções são partilhadas."
+        }
+      ]
+    },
+    {
+      "id": "32",
+      "title": "Kubernetes",
+      "doc": "docs/32-kubernetes.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que acontece se o selector de um Service não coincidir com as labels dos pods?",
+          "options": [
+            "O kubectl apply recusa o Service",
+            "O Service fica sem endpoints e os pedidos falham, sem erro nenhum no apply",
+            "O Kubernetes corrige as labels sozinho",
+            "Os pods são reiniciados em ciclo"
+          ],
+          "answer": 1,
+          "explain": "O Kubernetes liga objetos por labels, não por nome. Um selector que não apanha nenhum pod não é um erro de sintaxe: o Service existe, mas não tem para onde enviar tráfego (kubectl get endpoints mostra a lista vazia)."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que a liveness probe da API NÃO deve verificar a base de dados?",
+          "options": [
+            "Porque a liveness não aceita pedidos HTTP",
+            "Porque, com a BD em baixo, o Kubernetes reiniciaria todas as réplicas da API em ciclo, sem resolver nada",
+            "Porque a BD não tem um endpoint /health",
+            "Porque a liveness só corre uma vez, no arranque"
+          ],
+          "answer": 1,
+          "explain": "A liveness responde a 'estou bloqueado?', e se falhar o contentor é reiniciado. As dependências são trabalho da readiness, que só tira o pod do tráfego."
+        },
+        {
+          "type": "mcq",
+          "q": "Um HPA configurado para 70% de CPU não escala. O que falta quase de certeza?",
+          "options": [
+            "Um Service do tipo LoadBalancer",
+            "resources.requests de CPU no Deployment (a percentagem é sobre eles) ou o metrics-server no cluster",
+            "Uma livenessProbe",
+            "Mais nós no cluster"
+          ],
+          "answer": 1,
+          "explain": "A utilização é calculada em relação aos requests. Sem requests, ou sem o metrics-server a recolher métricas, o HPA mostra <unknown> e não faz nada."
+        },
+        {
+          "type": "short",
+          "q": "Que estado vês num pod cujo contentor arranca e morre repetidamente (em inglês, como o kubectl o mostra)?",
+          "answers": [
+            "crashloopbackoff",
+            "crash loop backoff"
+          ],
+          "explain": "O Kubernetes reinicia-o com esperas cada vez maiores. O diagnóstico é kubectl logs --previous, que mostra os logs do contentor antes de morrer."
+        },
+        {
+          "type": "mcq",
+          "q": "Um Secret do Kubernetes guarda os valores...",
+          "options": [
+            "cifrados com AES por omissão, por isso pode ir para o Git",
+            "em base64, que é uma codificação e não uma cifra: quem lê o Secret lê o valor",
+            "com hash bcrypt, como as passwords",
+            "só na memória dos pods, nunca no etcd"
+          ],
+          "answer": 1,
+          "explain": "base64 descodifica-se com um comando. A proteção vem do RBAC, da cifra do etcd (se ativada) e de os Secrets não irem para o Git (External Secrets, Sealed Secrets)."
+        }
+      ]
+    },
+    {
+      "id": "33",
+      "title": "Terraform",
+      "doc": "docs/33-terraform.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Porque é que o ficheiro terraform.tfstate nunca vai para o Git?",
+          "options": [
+            "Porque é muito grande",
+            "Porque contém, em texto simples, os atributos dos recursos, incluindo passwords e chaves",
+            "Porque o Terraform o apaga no fim de cada apply",
+            "Porque o Git não aceita ficheiros JSON"
+          ],
+          "answer": 1,
+          "explain": "O estado é a memória do Terraform sobre o mundo real, com tudo o que o provider sabe. Numa equipa, vive num backend remoto, cifrado e com bloqueio."
+        },
+        {
+          "type": "mcq",
+          "q": "No output de um terraform plan, o que significa -/+ ?",
+          "options": [
+            "O recurso vai ser alterado no sítio",
+            "O recurso vai ser apagado e criado de novo, porque o atributo que mudou não pode ser alterado no sítio",
+            "O recurso já não existe e vai ser ignorado",
+            "O plano falhou"
+          ],
+          "answer": 1,
+          "explain": "Lê sempre o '# forces replacement': numa base de dados, recriar quer dizer perder os dados."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque se prefere for_each a count para criar vários recursos parecidos?",
+          "options": [
+            "O count não existe nas versões recentes",
+            "Com count, os recursos são identificados pela posição: tirar um do meio da lista desloca os outros e recria-os sem necessidade",
+            "for_each é mais rápido a aplicar",
+            "count não aceita variáveis"
+          ],
+          "answer": 1,
+          "explain": "Com for_each, cada recurso é identificado por uma chave estável, e tirar um só apaga esse."
+        },
+        {
+          "type": "short",
+          "q": "Que comando do Terraform mostra o que vai mudar, sem mudar nada?",
+          "answers": [
+            "terraform plan",
+            "plan"
+          ],
+          "explain": "O plan é o passo que se revê num Pull Request antes do apply."
+        },
+        {
+          "type": "mcq",
+          "q": "Num módulo que usa recursos docker_*, falta o bloco required_providers. O que acontece no init?",
+          "options": [
+            "Funciona igual, porque a raiz já declara o provider",
+            "O Terraform assume hashicorp/docker, que não existe no registry, e o init falha",
+            "O módulo é ignorado",
+            "O Terraform instala a versão mais recente de todos os providers"
+          ],
+          "answer": 1,
+          "explain": "Cada módulo declara os providers de que precisa. Sem a fonte (kreuzwerker/docker), o nome curto é interpretado como hashicorp/<nome>."
+        }
+      ]
+    },
+    {
+      "id": "34",
+      "title": "Ansible",
+      "doc": "docs/34-ansible.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que quer dizer que um playbook é idempotente?",
+          "options": [
+            "Que corre em todos os hosts ao mesmo tempo",
+            "Que corrê-lo várias vezes deixa as máquinas no mesmo estado que a primeira vez, e a segunda execução tem changed=0",
+            "Que não precisa de inventário",
+            "Que nunca falha"
+          ],
+          "answer": 1,
+          "explain": "Os módulos verificam o estado antes de agir. É o que distingue o Ansible de um script de shell corrido por SSH."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que tarefas com ansible.builtin.shell estragam a idempotência?",
+          "options": [
+            "Porque o shell não existe em Linux",
+            "Porque o Ansible não sabe o que o comando fez, por isso diz sempre 'changed' e corre-o sempre",
+            "Porque o shell só funciona com SSH",
+            "Porque o shell corre como root"
+          ],
+          "answer": 1,
+          "explain": "Se não houver um módulo para o que precisas, usa creates:/removes: ou changed_when: para dizer ao Ansible quando o comando é necessário."
+        },
+        {
+          "type": "mcq",
+          "q": "Quando corre um handler?",
+          "options": [
+            "No início da play, antes das tarefas",
+            "Sempre no fim da play",
+            "Só quando uma tarefa que o notifica mudou alguma coisa, e uma só vez, no fim da play",
+            "Quando o playbook falha"
+          ],
+          "answer": 2,
+          "explain": "É assim que se reinicia um serviço só quando a sua configuração mudou mesmo."
+        },
+        {
+          "type": "short",
+          "q": "Que variável do Ansible tem o nome do host tal como está no inventário?",
+          "answers": [
+            "inventory_hostname"
+          ],
+          "explain": "Usada nos templates (host = {{ inventory_hostname }}) para personalizar ficheiros por máquina."
+        },
+        {
+          "type": "mcq",
+          "q": "Uma variável é definida nos defaults/ de uma role, no group_vars/ do grupo e com -e na linha de comandos. Qual ganha?",
+          "options": [
+            "A dos defaults da role",
+            "A do group_vars",
+            "A do -e (extra vars), que ganha sempre",
+            "A que aparecer primeiro no ficheiro"
+          ],
+          "answer": 2,
+          "explain": "Os defaults de uma role são a prioridade mais baixa (feitos para serem substituídos); as extra vars são a mais alta."
+        }
+      ]
+    },
+    {
+      "id": "35",
+      "title": "Cloud: AWS",
+      "doc": "docs/35-cloud-aws.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "No modelo de responsabilidade partilhada da AWS, de quem é a culpa de um bucket S3 público com dados de clientes?",
+          "options": [
+            "Da AWS",
+            "Do cliente: a segurança NA cloud (configuração, acessos) é responsabilidade dele",
+            "De ninguém",
+            "Do fornecedor de Internet"
+          ],
+          "answer": 1,
+          "explain": "A AWS protege a infraestrutura; quem configura os recursos protege o que lá põe."
+        },
+        {
+          "type": "mcq",
+          "q": "Como deve uma API na AWS obter credenciais para falar com o S3?",
+          "options": [
+            "Uma chave de acesso no código",
+            "Uma chave de acesso num .env",
+            "Um papel IAM associado ao serviço: o SDK obtém credenciais temporárias sozinho",
+            "A password da conta root"
+          ],
+          "answer": 2,
+          "explain": "Credenciais de curta duração, renovadas automaticamente, sem nada guardado em ficheiros."
+        },
+        {
+          "type": "mcq",
+          "q": "No SQS, o que acontece a uma mensagem recebida que o consumidor não apaga?",
+          "options": [
+            "Desaparece",
+            "Fica invisível durante o visibility timeout e depois volta à fila; ao fim de N tentativas vai para a DLQ",
+            "É reenviada imediatamente",
+            "Fica bloqueada para sempre"
+          ],
+          "answer": 1,
+          "explain": "É o equivalente ao nack do RabbitMQ; por isso só se apaga depois de processar com sucesso."
+        },
+        {
+          "type": "short",
+          "q": "Que tipo de URL dá a um browser acesso temporário a um ficheiro privado do S3, sem credenciais?",
+          "answers": [
+            "pré-assinado",
+            "pre-assinado",
+            "presigned",
+            "presigned url",
+            "url pré-assinado",
+            "url pre-assinado"
+          ],
+          "explain": "A assinatura vai nos parâmetros do URL e expira ao fim do tempo pedido."
+        },
+        {
+          "type": "mcq",
+          "q": "No DynamoDB, porque se prefere uma Query a um Scan?",
+          "options": [
+            "A Query devolve mais dados",
+            "A Query lê só uma partição; o Scan lê a tabela inteira (lento e caro numa tabela grande)",
+            "O Scan não existe",
+            "A Query não tem custos"
+          ],
+          "answer": 1,
+          "explain": "No DynamoDB modela-se pelas consultas: a chave de partição é escolhida para que cada consulta seja uma Query."
+        }
+      ]
+    },
+    {
+      "id": "36",
+      "title": "SQL avançado",
+      "doc": "docs/36-sql-avancado.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a diferença entre um GROUP BY e uma função de janela?",
+          "options": [
+            "Nenhuma",
+            "O GROUP BY junta as linhas num resultado por grupo; a função de janela calcula sobre um grupo mas mantém cada linha",
+            "A função de janela é mais lenta sempre",
+            "O GROUP BY não suporta ORDER BY"
+          ],
+          "answer": 1,
+          "explain": "Ex.: sum(pontos) OVER (PARTITION BY projeto) põe o total do projeto em cada linha."
+        },
+        {
+          "type": "mcq",
+          "q": "Como se obtém o top 3 de cada projeto?",
+          "options": [
+            "LIMIT 3 com GROUP BY projeto",
+            "row_number() OVER (PARTITION BY projeto ORDER BY ...) numa subconsulta, e WHERE posicao <= 3 por fora",
+            "HAVING count(*) <= 3",
+            "Não é possível em SQL"
+          ],
+          "answer": 1,
+          "explain": "Não se pode filtrar uma função de janela no próprio WHERE."
+        },
+        {
+          "type": "short",
+          "q": "Que construção do SQL percorre uma árvore guardada com pai_id numa só consulta (três palavras em inglês)?",
+          "answers": [
+            "with recursive",
+            "cte recursiva",
+            "recursive cte"
+          ],
+          "explain": "Âncora + passo, repetido até não haver linhas novas."
+        },
+        {
+          "type": "mcq",
+          "q": "Para WHERE utilizador = ? ORDER BY criada_em DESC LIMIT 20, que índice é o certo?",
+          "options": [
+            "(criada_em)",
+            "(criada_em, utilizador)",
+            "(utilizador, criada_em DESC)",
+            "um índice em cada coluna"
+          ],
+          "answer": 2,
+          "explain": "Igualdade primeiro, ordenação depois: lê 20 entradas e para, sem Sort."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que WHERE lower(email) = ... não usa um índice simples em email?",
+          "options": [
+            "Porque lower é lento",
+            "Porque o índice guarda email, não lower(email); é preciso um índice sobre a expressão",
+            "Porque o Postgres não suporta índices em texto",
+            "Usa sempre"
+          ],
+          "answer": 1,
+          "explain": "CREATE INDEX ON utilizadores (lower(email))."
+        }
+      ]
+    },
+    {
+      "id": "37",
+      "title": "System design",
+      "doc": "docs/37-system-design.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a condição para escalar uma API horizontalmente (mais réplicas atrás de um balanceador)?",
+          "options": [
+            "Usar uma base de dados NoSQL",
+            "Ser sem estado: nada que tenha de sobreviver fica na memória ou no disco de uma réplica",
+            "Ter um IP fixo",
+            "Correr em Kubernetes"
+          ],
+          "answer": 1,
+          "explain": "Sessões, ficheiros e contadores vão para a BD, a cache ou um armazenamento partilhado; qualquer réplica pode então atender qualquer pedido."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque se usa hashing consistente em vez de hash(chave) % N para distribuir chaves?",
+          "options": [
+            "É mais rápido de calcular",
+            "Quando o número de nós muda, só uma pequena fração das chaves muda de nó (com % N, mudam quase todas)",
+            "Garante que nunca há colisões",
+            "Cifra as chaves"
+          ],
+          "answer": 1,
+          "explain": "Com % N, passar de 4 para 5 nós move ~80% das chaves; com o anel, ~20%."
+        },
+        {
+          "type": "mcq",
+          "q": "Um utilizador cria uma tarefa e, ao recarregar a página, não a vê; segundos depois, aparece. Que mecanismo é o suspeito mais provável?",
+          "options": [
+            "Um deadlock",
+            "O atraso de replicação: a leitura foi a uma réplica que ainda não tinha recebido a escrita",
+            "Uma injeção de SQL",
+            "O CORS"
+          ],
+          "answer": 1,
+          "explain": "A solução habitual é ler do primário logo a seguir às escritas do próprio utilizador (read-your-writes)."
+        },
+        {
+          "type": "short",
+          "q": "Que teorema diz que, com uma partição de rede, um sistema distribuído tem de escolher entre consistência e disponibilidade?",
+          "answers": [
+            "cap",
+            "teorema cap",
+            "cap theorem"
+          ],
+          "explain": "O PACELC acrescenta que, mesmo sem partições, há um trade-off entre latência e consistência."
+        },
+        {
+          "type": "mcq",
+          "q": "No desenho de um feed, o que é o fan-out na escrita?",
+          "options": [
+            "Ler as publicações de todos os seguidos quando o feed é aberto",
+            "Copiar cada publicação para o feed de cada seguidor no momento em que é publicada",
+            "Enviar as publicações por email",
+            "Apagar publicações antigas"
+          ],
+          "answer": 1,
+          "explain": "Leitura instantânea, publicação cara; não serve para contas com milhões de seguidores, que se tratam na leitura."
+        }
+      ]
+    },
+    {
+      "id": "38",
+      "title": "Transações e concorrência",
+      "doc": "docs/38-transacoes-e-concorrencia.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Porque é que 'SELECT stock; if (stock > 0) UPDATE stock = stock_lido - 1' vende a mais com pedidos em simultâneo?",
+          "options": [
+            "Porque o SQL é lento",
+            "Porque dois pedidos podem ler o mesmo valor antes de qualquer um escrever (uma condição de corrida)",
+            "Porque falta um índice",
+            "Porque o Node é single-threaded"
+          ],
+          "answer": 1,
+          "explain": "A correção mais simples: UPDATE ... SET stock = stock - 1 WHERE id = $1 AND stock > 0, numa só instrução."
+        },
+        {
+          "type": "mcq",
+          "q": "Como se evitam deadlocks entre transferências A→B e B→A?",
+          "options": [
+            "Com um timeout maior",
+            "Bloqueando as contas sempre pela mesma ordem (ex.: o id menor primeiro)",
+            "Desligando as transações",
+            "Usando READ UNCOMMITTED"
+          ],
+          "answer": 1,
+          "explain": "Se todas pedem os bloqueios pela mesma ordem, nenhuma pode ficar com B à espera de A enquanto outra tem A à espera de B."
+        },
+        {
+          "type": "short",
+          "q": "Que código SQLSTATE indica que o Postgres cancelou uma transação SERIALIZABLE e que ela deve ser repetida?",
+          "answers": [
+            "40001"
+          ],
+          "explain": "Não é um bug: é o Postgres a dizer 'tenta outra vez'. O 40P01 é um deadlock."
+        },
+        {
+          "type": "mcq",
+          "q": "No pg (Node), porque é que uma transação não pode usar pool.query em cada instrução?",
+          "options": [
+            "Porque o pool.query é mais lento",
+            "Porque cada pool.query pode usar uma ligação diferente, e uma transação vive numa só ligação",
+            "Porque o pool não aceita BEGIN",
+            "Porque o pool só faz SELECT"
+          ],
+          "answer": 1,
+          "explain": "Pede-se um cliente com pool.connect(), usa-se em todas as instruções, e liberta-se sempre no finally."
+        },
+        {
+          "type": "mcq",
+          "q": "Que anomalia o SERIALIZABLE apanha e o REPEATABLE READ não, como dois médicos a sair do turno ao mesmo tempo?",
+          "options": [
+            "Dirty read",
+            "Write skew: cada transação lê o mesmo estado e escreve em linhas diferentes, quebrando uma regra que envolve as duas",
+            "Deadlock",
+            "Phantom delete"
+          ],
+          "answer": 1,
+          "explain": "Como não escrevem na mesma linha, nenhum bloqueio as impede; só a deteção de dependências do SERIALIZABLE."
+        }
+      ]
+    },
+    {
+      "id": "39",
+      "title": "Multi-inquilino",
+      "doc": "docs/39-multi-inquilino.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é o modelo de isolamento mais usado em SaaS, por ser o mais barato de operar?",
+          "options": [
+            "Base de dados por inquilino",
+            "Esquema por inquilino",
+            "Esquema partilhado com uma coluna de inquilino",
+            "Um servidor por inquilino"
+          ],
+          "answer": 2,
+          "explain": "O risco é esquecer o filtro; daí as chaves compostas e o RLS."
+        },
+        {
+          "type": "mcq",
+          "q": "O token diz 'acme' e o cabeçalho X-Inquilino diz 'globex'. O que deve acontecer?",
+          "options": [
+            "Usar o cabeçalho",
+            "Usar o token e ignorar o cabeçalho em silêncio",
+            "Recusar o pedido: as fontes estão em conflito",
+            "Mostrar os dados das duas"
+          ],
+          "answer": 2,
+          "explain": "A fonte autenticada manda; um conflito é um sinal de ataque ou de erro."
+        },
+        {
+          "type": "short",
+          "q": "Que funcionalidade do Postgres filtra as linhas por uma política em todas as consultas, mesmo sem WHERE (sigla)?",
+          "answers": [
+            "rls",
+            "row level security",
+            "row-level security"
+          ],
+          "explain": "Os superutilizadores ignoram-na; a aplicação usa um papel próprio."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque se usa set_config('app.inquilino', x, true) com o true no fim?",
+          "options": [
+            "Para ser mais rápido",
+            "Para a definição valer só até ao fim da transação e não passar para o pedido seguinte no pool de ligações",
+            "Para guardar no disco",
+            "Para o RLS ficar desligado"
+          ],
+          "answer": 1,
+          "explain": "Uma definição de sessão passaria para outro inquilino na mesma ligação."
+        },
+        {
+          "type": "mcq",
+          "q": "O que resolve uma fila justa (round-robin por inquilino)?",
+          "options": [
+            "Duplicados",
+            "O vizinho ruidoso: mil trabalhos de um cliente não atrasam o único trabalho de outro",
+            "Ordem dos eventos",
+            "Falta de memória"
+          ],
+          "answer": 1,
+          "explain": "Junta-se a quotas por inquilino e a anteparas para os clientes grandes."
+        }
+      ]
+    },
+    {
+      "id": "40",
+      "title": "Arquitetura avançada",
+      "doc": "docs/40-arquitetura-avancada.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a diferença entre uma entidade e um objeto de valor, em DDD?",
+          "options": [
+            "Nenhuma",
+            "A entidade tem identidade que se mantém quando os dados mudam; o objeto de valor é definido pelos valores e é imutável",
+            "O objeto de valor vai para a BD e a entidade não",
+            "A entidade é sempre maior"
+          ],
+          "answer": 1,
+          "explain": "Dinheiro(1234, 'EUR') é um objeto de valor; a encomenda E1 continua a ser a E1 com outras linhas."
+        },
+        {
+          "type": "mcq",
+          "q": "Na arquitetura hexagonal, para onde apontam as dependências?",
+          "options": [
+            "Do domínio para a base de dados",
+            "Para dentro: o núcleo define portas e não importa infraestrutura; os adaptadores dependem do núcleo",
+            "Para fora, para o HTTP",
+            "Não há dependências"
+          ],
+          "answer": 1,
+          "explain": "É o que permite testar os casos de uso com adaptadores em memória e trocar o SMTP ou o Postgres sem tocar nas regras."
+        },
+        {
+          "type": "short",
+          "q": "Que padrão separa o modelo que muda os dados do modelo que os lê (sigla)?",
+          "answers": [
+            "cqrs"
+          ],
+          "explain": "Command Query Responsibility Segregation: os modelos de leitura atualizam-se a partir dos eventos, com consistência eventual."
+        },
+        {
+          "type": "mcq",
+          "q": "No event sourcing, o que se guarda?",
+          "options": [
+            "Só o estado atual",
+            "A sequência de eventos que aconteceu; o estado calcula-se aplicando-os",
+            "Um backup diário",
+            "Os logs da aplicação"
+          ],
+          "answer": 1,
+          "explain": "Histórico completo e auditável, projeções novas a qualquer momento; em troca, versões de eventos, snapshots e mais complexidade."
+        },
+        {
+          "type": "mcq",
+          "q": "Numa saga, o que acontece quando um passo falha?",
+          "options": [
+            "A base de dados faz rollback de tudo",
+            "Executam-se as compensações dos passos anteriores, pela ordem inversa",
+            "Repete-se a saga para sempre",
+            "Ignora-se o passo"
+          ],
+          "answer": 1,
+          "explain": "Uma compensação é uma ação de negócio nova (reembolsar, libertar), não um rollback; também pode falhar e tem de ser repetida."
+        }
+      ]
+    },
+    {
+      "id": "41",
+      "title": "NoSQL",
+      "doc": "docs/41-nosql.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "No MongoDB, que documentos devolve find({ tags: 'urgente' })?",
+          "options": [
+            "Só os que têm tags exatamente igual a 'urgente'",
+            "Os que têm tags igual a 'urgente' ou um array tags que contém 'urgente'",
+            "Nenhum: é preciso $in",
+            "Os que têm a palavra 'urgente' em qualquer campo"
+          ],
+          "answer": 1,
+          "explain": "Nos arrays, a igualdade corresponde a qualquer elemento."
+        },
+        {
+          "type": "mcq",
+          "q": "Quando é melhor referenciar do que embutir um subdocumento?",
+          "options": [
+            "Quando os dados são sempre lidos com o pai",
+            "Quando a coleção filha cresce sem limite ou é partilhada por muitos pais",
+            "Nunca: embutir é sempre melhor",
+            "Quando são poucos campos"
+          ],
+          "answer": 1,
+          "explain": "Embutir sem limite rebenta os 16 MB e torna cada leitura pesada."
+        },
+        {
+          "type": "short",
+          "q": "No DynamoDB, que operação lê a tabela inteira e deve ser evitada (em inglês)?",
+          "answers": [
+            "scan"
+          ],
+          "explain": "As operações eficientes são GetItem e Query, sempre por chave."
+        },
+        {
+          "type": "mcq",
+          "q": "Num desenho de tabela única, como se obtém um projeto e todas as suas tarefas?",
+          "options": [
+            "Com um JOIN",
+            "Com uma Query à partição PK = PROJ#id, onde o projeto e as tarefas vivem juntos",
+            "Com dois Scan",
+            "Com um índice de texto"
+          ],
+          "answer": 1,
+          "explain": "Os itens relacionados partilham a chave de partição, e a SK distingue os tipos."
+        },
+        {
+          "type": "mcq",
+          "q": "O que diz o teorema CAP?",
+          "options": [
+            "Que uma base de dados não pode ser rápida e barata",
+            "Que, numa partição de rede, um sistema distribuído tem de escolher entre consistência e disponibilidade",
+            "Que o SQL não escala",
+            "Que as transações são impossíveis em NoSQL"
+          ],
+          "answer": 1,
+          "explain": "O PACELC acrescenta a troca entre latência e consistência mesmo sem falhas."
+        }
+      ]
+    },
+    {
+      "id": "42",
+      "title": "Pesquisa full-text",
+      "doc": "docs/42-pesquisa-full-text.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Porque é que WHERE titulo ILIKE '%texto%' é lento numa tabela grande?",
+          "options": [
+            "Porque o ILIKE é mais lento do que o LIKE",
+            "Porque o % no início impede o uso de um índice B-tree, e o Postgres lê a tabela toda",
+            "Porque converte para minúsculas",
+            "Não é lento"
+          ],
+          "answer": 1,
+          "explain": "Um índice de texto (GIN com tsvector, ou trigramas) resolve isto."
+        },
+        {
+          "type": "short",
+          "q": "Como se chama a estrutura que vai de cada termo para a lista de documentos onde aparece?",
+          "answers": [
+            "índice invertido",
+            "indice invertido",
+            "inverted index"
+          ],
+          "explain": "É a base do Lucene e do GIN do Postgres."
+        },
+        {
+          "type": "mcq",
+          "q": "No BM25, o que faz o parâmetro k1?",
+          "options": [
+            "Controla o peso do comprimento do documento",
+            "Controla a saturação: cada ocorrência repetida de um termo ajuda cada vez menos",
+            "Define o número de resultados",
+            "Escolhe a língua"
+          ],
+          "answer": 1,
+          "explain": "O b controla a normalização pelo comprimento."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que um termo que aparece em quase todos os documentos pesa pouco?",
+          "options": [
+            "Por causa do IDF, que é quase zero para termos muito comuns",
+            "Porque é removido sempre",
+            "Porque o TF é zero",
+            "Por causa do comprimento médio"
+          ],
+          "answer": 0,
+          "explain": "Um termo comum não distingue um documento dos outros."
+        },
+        {
+          "type": "mcq",
+          "q": "No Postgres, o que faz websearch_to_tsquery('portuguese', 'tarefa urgente -casa')?",
+          "options": [
+            "Pesquisa na web",
+            "Transforma o texto numa tsquery com radicais, E entre os termos, e exclusão de 'casa'",
+            "Cria um índice",
+            "Devolve um excerto"
+          ],
+          "answer": 1,
+          "explain": "Aceita a sintaxe de um motor de pesquisa: aspas, or e -excluir."
+        }
+      ]
+    },
+    {
+      "id": "43",
+      "title": "Cache HTTP e CDN",
+      "doc": "docs/43-cache-http-e-cdn.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que significa Cache-Control: no-cache?",
+          "options": [
+            "Não guardar a resposta em lado nenhum",
+            "Pode guardar, mas tem de revalidar com a origem antes de cada uso",
+            "Só a CDN pode guardar",
+            "Guardar durante 0 segundos e depois apagar"
+          ],
+          "answer": 1,
+          "explain": "Para não guardar de todo é no-store."
+        },
+        {
+          "type": "mcq",
+          "q": "Que Cache-Control usarias para app.3f2a9c1b.js (nome com hash)?",
+          "options": [
+            "no-cache",
+            "private, max-age=60",
+            "public, max-age=31536000, immutable",
+            "no-store"
+          ],
+          "answer": 2,
+          "explain": "Uma versão nova tem um nome novo, por isso este ficheiro nunca muda."
+        },
+        {
+          "type": "short",
+          "q": "Que código de estado responde a origem quando o If-None-Match corresponde ao ETag atual?",
+          "answers": [
+            "304",
+            "304 not modified"
+          ],
+          "explain": "Sem corpo: a cache usa a cópia que tem."
+        },
+        {
+          "type": "mcq",
+          "q": "Para que serve o cabeçalho Vary: Accept-Language?",
+          "options": [
+            "Para comprimir a resposta",
+            "Para a cache guardar uma entrada por cada valor do Accept-Language do pedido",
+            "Para mudar a língua do servidor",
+            "Para proibir a cache"
+          ],
+          "answer": 1,
+          "explain": "Sem ele, a cache serviria a primeira língua a toda a gente."
+        },
+        {
+          "type": "mcq",
+          "q": "Que diretiva impede uma CDN de guardar uma resposta, mas deixa o browser guardá-la?",
+          "options": [
+            "public",
+            "private",
+            "immutable",
+            "s-maxage=0"
+          ],
+          "answer": 1,
+          "explain": "private: só a cache do próprio utilizador."
+        }
+      ]
+    },
+    {
+      "id": "44",
+      "title": "Desenho de APIs",
+      "doc": "docs/44-desenho-de-apis.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Que formato padrão o RFC 9457 define para os erros de uma API HTTP?",
+          "options": [
+            "application/error+xml",
+            "Problem Details: application/problem+json com type, title, status, detail, instance",
+            "Um campo error com texto livre",
+            "Os códigos HTTP chegam, sem corpo"
+          ],
+          "answer": 1,
+          "explain": "Podem acrescentar-se extensões, como uma lista de erros de validação."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual é a vantagem principal da paginação por cursor sobre o OFFSET?",
+          "options": [
+            "Permite saltar para qualquer página",
+            "É rápida em qualquer página e estável quando entram linhas novas",
+            "Não precisa de ORDER BY",
+            "Funciona sem índices"
+          ],
+          "answer": 1,
+          "explain": "O OFFSET lê e deita fora as linhas anteriores, e desloca-se com inserções."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual destas mudanças NÃO parte os clientes existentes?",
+          "options": [
+            "Remover um campo da resposta",
+            "Um campo novo na resposta",
+            "Mudar o tipo de um campo",
+            "Um campo novo obrigatório no pedido"
+          ],
+          "answer": 1,
+          "explain": "Os clientes devem ignorar campos que não conhecem."
+        },
+        {
+          "type": "short",
+          "q": "Que código HTTP responde um servidor quando o If-Match não corresponde ao ETag atual?",
+          "answers": [
+            "412",
+            "412 precondition failed"
+          ],
+          "explain": "Evita a atualização perdida; o 428 exige que o If-Match venha."
+        },
+        {
+          "type": "mcq",
+          "q": "Num JSON Merge Patch, o que faz { \"prazo\": null }?",
+          "options": [
+            "Põe o prazo a null",
+            "Apaga o campo prazo",
+            "Ignora o campo",
+            "Dá erro"
+          ],
+          "answer": 1,
+          "explain": "Por isso o merge patch não consegue pôr um campo a null; para isso há o JSON Patch."
+        }
+      ]
+    },
+    {
+      "id": "45",
+      "title": "Tempo real: SSE e WebSockets",
+      "doc": "docs/45-tempo-real.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Para notificações que só vão do servidor para o browser, qual é normalmente a escolha mais simples?",
+          "options": [
+            "WebSockets",
+            "Server-Sent Events (SSE)",
+            "Polling a cada 100 ms",
+            "Um email"
+          ],
+          "answer": 1,
+          "explain": "É HTTP, passa pelos proxies, usa a mesma autenticação, e o EventSource volta a ligar sozinho."
+        },
+        {
+          "type": "short",
+          "q": "Que cabeçalho envia o EventSource ao voltar a ligar, para o servidor reenviar o que se perdeu?",
+          "answers": [
+            "last-event-id"
+          ],
+          "explain": "Com os eventos recentes guardados, o servidor envia os que têm id maior do que esse."
+        },
+        {
+          "type": "mcq",
+          "q": "Para que serve o batimento (ping/pong) num servidor de WebSockets?",
+          "options": [
+            "Para medir a velocidade da rede",
+            "Para detetar e terminar ligações mortas que nunca chegaram a fechar (portátil fechado, Wi-Fi que caiu)",
+            "Para cifrar as mensagens",
+            "Para o browser saber a hora"
+          ],
+          "answer": 1,
+          "explain": "Sem ele, o servidor acumula sockets mortos; e os proxies fecham ligações paradas."
+        },
+        {
+          "type": "mcq",
+          "q": "Com 3 réplicas de uma API com WebSockets, porque é que uma mensagem de chat não chega a todos?",
+          "options": [
+            "Porque os WebSockets não suportam várias réplicas",
+            "Porque cada réplica só conhece os clientes ligados a si; é preciso um canal entre réplicas (ex.: pub/sub do Redis)",
+            "Porque o balanceador apaga mensagens",
+            "Porque o JSON é grande demais"
+          ],
+          "answer": 1,
+          "explain": "Cada réplica publica no canal e entrega o que recebe aos seus próprios clientes."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que um cliente que volta a ligar usa backoff exponencial com jitter?",
+          "options": [
+            "Para gastar menos bateria",
+            "Para não sobrecarregar o servidor: sem espera crescente e aleatória, milhares de clientes voltam todos no mesmo instante",
+            "Porque o protocolo obriga",
+            "Para as mensagens chegarem por ordem"
+          ],
+          "answer": 1,
+          "explain": "As quedas costumam ser coletivas; o aleatório espalha as reconexões."
+        }
+      ]
+    },
+    {
+      "id": "46",
+      "title": "GraphQL e gRPC",
+      "doc": "docs/46-graphql-e-grpc.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Que problema do REST o GraphQL resolve?",
+          "options": [
+            "A falta de autenticação",
+            "Dados a mais e pedidos a mais: o cliente pede exatamente os campos e as relações de que precisa, num só pedido",
+            "A lentidão das bases de dados",
+            "A cache HTTP"
+          ],
+          "answer": 1,
+          "explain": "Over-fetching e under-fetching; em troca, a cache HTTP e a monitorização ficam mais difíceis."
+        },
+        {
+          "type": "mcq",
+          "q": "Para que serve um DataLoader numa API GraphQL?",
+          "options": [
+            "Para validar o esquema",
+            "Para juntar os pedidos de vários resolvers do mesmo tique numa só consulta (e evitar o N+1)",
+            "Para fazer upload de ficheiros",
+            "Para gerar o código do cliente"
+          ],
+          "answer": 1,
+          "explain": "Cria-se um por pedido, e a função de lote devolve os resultados pela ordem das chaves."
+        },
+        {
+          "type": "short",
+          "q": "Em que formato se escreve o contrato de um serviço gRPC (o ficheiro .proto)?",
+          "answers": [
+            "protocol buffers",
+            "protobuf",
+            "proto",
+            "proto3"
+          ],
+          "explain": "Binário, compacto, com números de campo que nunca se mudam depois de o serviço estar em uso."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que nunca se muda o número de um campo num .proto já em uso?",
+          "options": [
+            "Porque o compilador não deixa",
+            "Porque é o número (e não o nome) que identifica o campo no formato binário: um cliente antigo leria o valor errado, sem erro",
+            "Porque os números têm de ser sequenciais",
+            "Porque afeta o desempenho"
+          ],
+          "answer": 1,
+          "explain": "Acrescentar campos novos é seguro; para remover, marca-se o número como reserved."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual destas é a escolha mais comum para a comunicação interna entre microserviços com muitas chamadas e várias linguagens?",
+          "options": [
+            "GraphQL",
+            "gRPC",
+            "SOAP",
+            "Email"
+          ],
+          "answer": 1,
+          "explain": "HTTP/2, binário, contrato obrigatório, streaming nativo e prazos que viajam com o pedido."
+        }
+      ]
+    },
+    {
+      "id": "47",
+      "title": "Logs estruturados e OpenTelemetry",
+      "doc": "docs/47-observabilidade-otel.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a vantagem de um log estruturado (JSON) sobre um log em texto livre?",
+          "options": [
+            "Ocupa menos espaço",
+            "Cada campo pesquisa-se, filtra-se e agrupa-se diretamente, sem expressões regulares frágeis",
+            "É mais bonito no terminal",
+            "Não precisa de níveis"
+          ],
+          "answer": 1,
+          "explain": "Uma mensagem fixa e campos variáveis: todas as ocorrências agrupam-se, e 'nivel = error AND utilizador_id = 42' é uma consulta simples."
+        },
+        {
+          "type": "mcq",
+          "q": "Num trace distribuído, o que têm em comum todos os spans de um mesmo pedido, em todos os serviços?",
+          "options": [
+            "O span id",
+            "O trace id",
+            "O nome",
+            "A duração"
+          ],
+          "answer": 1,
+          "explain": "Cada operação tem o seu span id e aponta para o pai; o trace id é o mesmo do princípio ao fim."
+        },
+        {
+          "type": "short",
+          "q": "Que cabeçalho HTTP do padrão W3C leva o contexto do trace de um serviço para o seguinte?",
+          "answers": [
+            "traceparent"
+          ],
+          "explain": "Formato 00-<trace id>-<span id do pai>-<flags>; quem chama injeta, quem recebe extrai."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual é a vantagem da amostragem na cauda (tail sampling) sobre a amostragem na cabeça?",
+          "options": [
+            "É mais barata",
+            "Decide no fim do trace, por isso pode guardar sempre os pedidos com erro ou lentos",
+            "Não precisa de collector",
+            "Guarda todos os traces"
+          ],
+          "answer": 1,
+          "explain": "Na cabeça decide-se às cegas; na cauda já se sabe como o pedido correu, à custa de guardar os traces até acabarem."
+        },
+        {
+          "type": "mcq",
+          "q": "O que é a API do OpenTelemetry sem um SDK configurado?",
+          "options": [
+            "Um erro no arranque",
+            "Uma camada que não faz nada (os spans não vão para lado nenhum) e quase não custa",
+            "Um exportador para a consola",
+            "O mesmo que o Collector"
+          ],
+          "answer": 1,
+          "explain": "É o que permite às bibliotecas instrumentarem-se sem impor nada; quem decide para onde vai a telemetria é a app, ao configurar o SDK."
+        }
+      ]
+    },
+    {
+      "id": "48",
+      "title": "Testes de carga com k6",
+      "doc": "docs/48-testes-de-carga.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Porque é que não se usa a média para descrever a latência de uma API?",
+          "options": [
+            "Porque é difícil de calcular",
+            "Porque esconde os casos lentos: 99 pedidos de 10 ms e um de 10 s dão uma média que não descreve nenhum pedido real",
+            "Porque o k6 não a mostra",
+            "Porque a média é sempre maior que o p99"
+          ],
+          "answer": 1,
+          "explain": "Os objetivos escrevem-se em percentis (p95, p99), que mostram a experiência dos utilizadores azarados."
+        },
+        {
+          "type": "mcq",
+          "q": "No k6, qual é a diferença entre um check e um threshold?",
+          "options": [
+            "Nenhuma",
+            "Um check verifica cada resposta e só conta passagens/falhas; um threshold é um critério sobre as métricas do teste todo que, se falhar, faz o teste falhar",
+            "Um threshold só serve para o CPU",
+            "Um check para o teste no primeiro erro"
+          ],
+          "answer": 1,
+          "explain": "É o threshold que dá o código de saída 99 e faz falhar um pipeline de CI."
+        },
+        {
+          "type": "mcq",
+          "q": "Uma API Node fica lenta sob carga e até o /health (que não faz nada) demora. Qual é o suspeito mais provável?",
+          "options": [
+            "A rede",
+            "Uma operação síncrona pesada que bloqueia o event loop (a única thread de JavaScript)",
+            "O DNS",
+            "O tamanho dos cabeçalhos"
+          ],
+          "answer": 1,
+          "explain": "Enquanto o código síncrono corre, nenhum outro pedido é atendido; foi o problema da pesquisa do P3."
+        },
+        {
+          "type": "short",
+          "q": "Que lei relaciona os pedidos em curso, o débito e a latência (pedidos em curso = débito × latência)?",
+          "answers": [
+            "little",
+            "lei de little",
+            "little's law",
+            "lei de little's"
+          ],
+          "explain": "Se a latência sobe 10 vezes com o mesmo débito, há 10 vezes mais pedidos em curso: ligações, memória, threads."
+        },
+        {
+          "type": "mcq",
+          "q": "Que tipo de teste usarias para encontrar uma fuga de memória?",
+          "options": [
+            "Smoke",
+            "Pico (spike)",
+            "Resistência (soak): carga normal durante horas",
+            "Rutura"
+          ],
+          "answer": 2,
+          "explain": "As fugas só aparecem com o tempo; um teste curto não as mostra."
+        }
+      ]
+    },
+    {
+      "id": "49",
+      "title": "Depuração e profiling em Node",
+      "doc": "docs/49-depuracao-e-profiling.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Um pedido executa um ciclo de 200 ms de CPU. O que acontece aos outros pedidos no mesmo processo Node?",
+          "options": [
+            "Nada: o Node é assíncrono",
+            "Esperam até o ciclo acabar: o event loop está bloqueado",
+            "Correm noutra thread automaticamente",
+            "São rejeitados"
+          ],
+          "answer": 1,
+          "explain": "O teu JavaScript corre numa só thread; o I/O é que é assíncrono."
+        },
+        {
+          "type": "mcq",
+          "q": "Num flame graph, o que indica uma barra muito larga?",
+          "options": [
+            "Uma função com muitas linhas",
+            "Uma função onde se passou muito tempo (contando as que ela chamou)",
+            "Um erro",
+            "Uma fuga de memória"
+          ],
+          "answer": 1,
+          "explain": "Procura-se a barra larga no topo da pilha."
+        },
+        {
+          "type": "short",
+          "q": "Como se chama o mecanismo que faz uma origem rápida esperar quando o destino de um stream está cheio (em inglês)?",
+          "answers": [
+            "backpressure",
+            "contrapressão"
+          ],
+          "explain": "O pipeline trata disso e propaga os erros."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual destas é a causa mais comum de uma fuga de memória num servidor Node?",
+          "options": [
+            "Usar const em vez de let",
+            "Uma cache (Map) sem limite, ou listeners que nunca se retiram",
+            "Usar async/await",
+            "Usar streams"
+          ],
+          "answer": 1,
+          "explain": "Objetos que continuam referenciados nunca são libertados."
+        },
+        {
+          "type": "mcq",
+          "q": "Que alternativa NÃO bloqueia o event loop para calcular um hash PBKDF2?",
+          "options": [
+            "crypto.pbkdf2Sync",
+            "crypto.pbkdf2 (assíncrona, corre na thread pool do libuv)",
+            "Um ciclo for",
+            "JSON.stringify"
+          ],
+          "answer": 1,
+          "explain": "Para trabalho de CPU próprio, worker threads."
+        }
+      ]
+    },
+    {
+      "id": "50",
+      "title": "Resiliência",
+      "doc": "docs/50-resiliencia.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Porque é que um serviço lento costuma ser mais perigoso do que um serviço em baixo?",
+          "options": [
+            "Porque gasta mais CPU",
+            "Porque segura os pedidos de quem chama: os recursos (ligações, memória, pool) esgotam-se e a lentidão alastra em cascata",
+            "Porque devolve dados errados",
+            "Não é: é igual"
+          ],
+          "answer": 1,
+          "explain": "Um serviço em baixo falha depressa; um lento faz acumular pedidos em curso (lei de Little)."
+        },
+        {
+          "type": "mcq",
+          "q": "O que faz um disjuntor (circuit breaker) no estado aberto?",
+          "options": [
+            "Chama o serviço com mais tentativas",
+            "Falha imediatamente, sem chamar o serviço, até passar o tempo de espera",
+            "Guarda os pedidos numa fila",
+            "Reinicia o serviço"
+          ],
+          "answer": 1,
+          "explain": "Quem chama não fica à espera e o serviço tem tempo para recuperar; depois, uma tentativa em meio-aberto decide se fecha."
+        },
+        {
+          "type": "short",
+          "q": "Que padrão limita quantos recursos uma dependência pode ocupar, para a sua lentidão não afundar o resto (nome em inglês)?",
+          "answers": [
+            "bulkhead",
+            "antepara",
+            "bulkheads"
+          ],
+          "explain": "Como os compartimentos estanques de um navio: no máximo N pedidos simultâneos e uma fila pequena por dependência."
+        },
+        {
+          "type": "mcq",
+          "q": "Três serviços em cadeia repetem cada falha 3 vezes. Um pedido do utilizador pode gerar quantas chamadas à última dependência?",
+          "options": [
+            "3",
+            "9",
+            "27",
+            "81"
+          ],
+          "answer": 2,
+          "explain": "3 × 3 × 3. Por isso se tenta num só nível, ou com um orçamento de tentativas."
+        },
+        {
+          "type": "mcq",
+          "q": "Quando é seguro usar pedidos com cobertura (hedging)?",
+          "options": [
+            "Sempre",
+            "Só em operações idempotentes, como leituras",
+            "Só em pagamentos",
+            "Nunca"
+          ],
+          "answer": 1,
+          "explain": "Duas cópias de um pedido que cria ou cobra algo podem executar as duas."
+        }
+      ]
+    },
+    {
+      "id": "51",
+      "title": "SRE e incidentes",
+      "doc": "docs/51-sre-e-incidentes.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a diferença entre um SLO e um SLA?",
+          "options": [
+            "São sinónimos",
+            "O SLO é um objetivo interno; o SLA é um contrato com clientes, com consequências, e é mais folgado",
+            "O SLA é interno; o SLO é o contrato",
+            "O SLO mede a latência e o SLA a disponibilidade"
+          ],
+          "answer": 1,
+          "explain": "O SLO é mais exigente do que o SLA para haver margem para agir antes de pagar penalizações."
+        },
+        {
+          "type": "mcq",
+          "q": "Com um SLO de 99,9% e 2 000 000 de pedidos num mês, quantos pedidos maus permite o orçamento de erro?",
+          "options": [
+            "200",
+            "2000",
+            "20 000",
+            "999"
+          ],
+          "answer": 1,
+          "explain": "(1 − 0,999) × 2 000 000 = 2000."
+        },
+        {
+          "type": "short",
+          "q": "Como se chama a razão entre a fração de pedidos maus e a fração permitida pelo SLO (em inglês)?",
+          "answers": [
+            "burn rate",
+            "taxa de queima"
+          ],
+          "explain": "Uma taxa de 1 gasta o orçamento exatamente no fim do período; 14,4 gasta 2% numa hora."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que os alertas por taxa de queima usam uma janela longa E uma curta?",
+          "options": [
+            "Para gastar menos memória",
+            "A longa confirma que o problema é significativo; a curta que ainda está a acontecer, para o alerta parar depressa",
+            "Por compatibilidade com o Prometheus",
+            "Para alertar duas vezes"
+          ],
+          "answer": 1,
+          "explain": "Só a longa demoraria a desligar; só a curta dispararia com qualquer pico."
+        },
+        {
+          "type": "mcq",
+          "q": "Numa resposta a incidente, qual é a primeira prioridade?",
+          "options": [
+            "Encontrar a causa raiz",
+            "Mitigar (reverter, desligar a flag, desviar tráfego) e repor o serviço",
+            "Escrever o postmortem",
+            "Encontrar quem fez o deploy"
+          ],
+          "answer": 1,
+          "explain": "A causa investiga-se depois, com o serviço de pé."
+        }
+      ]
+    },
+    {
+      "id": "52",
+      "title": "Estratégias de deploy",
+      "doc": "docs/52-estrategias-de-deploy.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Qual é a principal vantagem do azul/verde sobre um rolling update?",
+          "options": [
+            "Usa menos recursos",
+            "Reverter é mudar o balanceador de volta, em segundos, e as versões não se misturam",
+            "Não precisa de balanceador",
+            "Dispensa testes"
+          ],
+          "answer": 1,
+          "explain": "A versão anterior continua ligada, sem tráfego; o custo é o dobro dos recursos durante a troca."
+        },
+        {
+          "type": "mcq",
+          "q": "Num canário, porque se divide o tráfego com um hash do id do utilizador?",
+          "options": [
+            "Por segurança",
+            "Para cada utilizador ficar sempre na mesma versão, em qualquer servidor, sem guardar estado",
+            "Porque é mais rápido do que Math.random",
+            "Para cifrar o id"
+          ],
+          "answer": 1,
+          "explain": "E ao subir a percentagem, quem já estava na versão nova continua lá."
+        },
+        {
+          "type": "short",
+          "q": "Como se chama o padrão de migração que parte uma mudança incompatível de esquema em passos compatíveis (em inglês, duas palavras ligadas por /)?",
+          "answers": [
+            "expand/contract",
+            "expandir/contrair",
+            "expand contract",
+            "parallel change"
+          ],
+          "explain": "Expandir, escrita dupla, preencher, mudar leituras, contrair."
+        },
+        {
+          "type": "mcq",
+          "q": "O que deve fazer o código quando pede uma feature flag que não existe, ou o serviço de flags está em baixo?",
+          "options": [
+            "Lançar um erro",
+            "Devolver um valor por omissão seguro",
+            "Ligar a funcionalidade",
+            "Esperar até o serviço voltar"
+          ],
+          "answer": 1,
+          "explain": "Uma flag nunca pode ser a razão de a aplicação falhar."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que o preenchimento de uma coluna nova numa tabela grande se faz em lotes?",
+          "options": [
+            "Porque o SQL não permite UPDATE sem WHERE",
+            "Para não bloquear muitas linhas durante muito tempo nem gerar um pico de escrita",
+            "Para poupar disco",
+            "Porque o Postgres limita o UPDATE a 1000 linhas"
+          ],
+          "answer": 1,
+          "explain": "Lotes pequenos, cada um numa transação curta, convivem com o tráfego normal."
+        }
+      ]
+    },
+    {
+      "id": "53",
+      "title": "RGPD e privacidade",
+      "doc": "docs/53-rgpd-e-privacidade.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Um endereço IP é um dado pessoal?",
+          "options": [
+            "Nunca",
+            "Pode ser: é informação sobre uma pessoa identificável com meios razoáveis",
+            "Só se for IPv6",
+            "Só se estiver junto do nome"
+          ],
+          "answer": 1,
+          "explain": "O critério é se dá para chegar à pessoa, não se o nome está lá."
+        },
+        {
+          "type": "mcq",
+          "q": "Que base legal justifica guardar o email e a morada para entregar uma encomenda?",
+          "options": [
+            "Consentimento",
+            "Execução de um contrato",
+            "Interesse público",
+            "Nenhuma: não é preciso"
+          ],
+          "answer": 1,
+          "explain": "O consentimento seria a base errada: é necessário para o contrato e não pode ser retirado a meio."
+        },
+        {
+          "type": "short",
+          "q": "Que construção criptográfica, com uma chave secreta, dá um pseudónimo estável que não se consegue testar com uma lista de valores (sigla)?",
+          "answers": [
+            "hmac",
+            "hmac-sha256"
+          ],
+          "explain": "Um hash simples é vulnerável a quem tem uma lista de candidatos; o HMAC exige a chave."
+        },
+        {
+          "type": "mcq",
+          "q": "Um utilizador pede para apagar a conta mas tem faturas. O que se faz às faturas?",
+          "options": [
+            "Apagam-se também",
+            "Guardam-se pelo prazo legal, desligadas da conta",
+            "Ficam ligadas à conta para sempre",
+            "Enviam-se ao utilizador e apagam-se"
+          ],
+          "answer": 1,
+          "explain": "A obrigação legal é uma exceção ao direito ao apagamento."
+        },
+        {
+          "type": "mcq",
+          "q": "Em quanto tempo deve uma violação de dados pessoais ser comunicada à autoridade de controlo?",
+          "options": [
+            "24 horas",
+            "72 horas",
+            "Um mês",
+            "Só se houver coima"
+          ],
+          "answer": 1,
+          "explain": "72 horas depois de se tomar conhecimento; às pessoas afetadas se o risco for elevado."
+        }
+      ]
+    },
+    {
+      "id": "54",
+      "title": "Pagamentos e webhooks",
+      "doc": "docs/54-pagamentos-e-webhooks.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Como se deve guardar 19,99 € numa base de dados?",
+          "options": [
+            "double precision 19.99",
+            "integer 1999 (cêntimos) ou numeric(12,2)",
+            "text '19,99 €'",
+            "real 19.99"
+          ],
+          "answer": 1,
+          "explain": "Os números de vírgula flutuante não representam exatamente a maior parte das frações decimais."
+        },
+        {
+          "type": "mcq",
+          "q": "Para que serve uma chave de idempotência num pedido de cobrança?",
+          "options": [
+            "Para cifrar o pedido",
+            "Para que repetir o pedido (depois de um 'não sei') devolva o resultado da primeira vez em vez de cobrar outra vez",
+            "Para identificar o cliente",
+            "Para acelerar o pedido"
+          ],
+          "answer": 1,
+          "explain": "O cliente envia a mesma chave em todas as tentativas da mesma operação."
+        },
+        {
+          "type": "short",
+          "q": "Que função do node:crypto se usa para comparar assinaturas sem revelar informação pelo tempo de resposta?",
+          "answers": [
+            "timingsafeequal",
+            "crypto.timingsafeequal"
+          ],
+          "explain": "Compara em tempo constante; exige Buffers do mesmo comprimento."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que os webhooks assinados incluem um timestamp na assinatura?",
+          "options": [
+            "Para ordenar os eventos",
+            "Para impedir que um pedido intercetado seja reenviado mais tarde (replay)",
+            "Para calcular a latência",
+            "Por causa do fuso horário"
+          ],
+          "answer": 1,
+          "explain": "Recusa-se o que tiver mais de alguns minutos."
+        },
+        {
+          "type": "mcq",
+          "q": "O evento 'capturado' chega antes do 'autorizado' do mesmo pagamento. O que faz um recetor bem feito?",
+          "options": [
+            "Rejeita com erro 500 para o fornecedor repetir",
+            "Aplica o capturado e ignora depois o autorizado, porque o estado só avança",
+            "Aplica os dois pela ordem de chegada, ficando autorizado",
+            "Apaga o pagamento"
+          ],
+          "answer": 1,
+          "explain": "A entrega não garante ordem; a máquina de estados só avança."
+        }
+      ]
+    },
+    {
+      "id": "55",
+      "title": "LLMs numa aplicação",
+      "doc": "docs/55-llms.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Numa conversa com a Messages API, como é que o modelo 'se lembra' das mensagens anteriores?",
+          "options": [
+            "A API guarda a conversa pelo id da sessão",
+            "Não se lembra: envias o histórico todo em cada pedido",
+            "O modelo aprende com cada pedido",
+            "Pelo cabeçalho anthropic-version"
+          ],
+          "answer": 1,
+          "explain": "A API não tem estado. O histórico (incluindo o content completo das respostas do assistant) vai em cada pedido."
+        },
+        {
+          "type": "mcq",
+          "q": "Uma resposta vem com stop_reason \"max_tokens\". O que quer dizer?",
+          "options": [
+            "O modelo terminou normalmente",
+            "A resposta foi cortada por ter atingido o limite de tokens",
+            "O modelo quer usar uma ferramenta",
+            "O modelo recusou"
+          ],
+          "answer": 1,
+          "explain": "Lê sempre o stop_reason antes do conteúdo: uma resposta cortada parece normal mas acaba a meio."
+        },
+        {
+          "type": "mcq",
+          "q": "No ciclo de um agente, quem executa a ferramenta?",
+          "options": [
+            "O modelo, nos servidores da Anthropic",
+            "O teu código: o modelo só pede (tool_use), e tu devolves o resultado (tool_result)",
+            "O browser do utilizador",
+            "Ninguém: é simulado"
+          ],
+          "answer": 1,
+          "explain": "É por isso que a autorização e a validação das ferramentas são responsabilidade tua."
+        },
+        {
+          "type": "short",
+          "q": "Que técnica dá ao modelo os pedaços relevantes dos teus documentos, encontrados por proximidade de embeddings (sigla)?",
+          "answers": [
+            "rag",
+            "retrieval-augmented generation",
+            "retrieval augmented generation"
+          ],
+          "explain": "Indexar (partir, embeddings, guardar) e, em cada pergunta, procurar os mais próximos e pô-los no prompt."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual é a melhor defesa contra prompt injection numa ferramenta que envia emails?",
+          "options": [
+            "Pedir no system prompt para não obedecer a instruções estranhas",
+            "Menor privilégio e confirmação humana: não dar a ferramenta a quem não precisa, e confirmar antes de ações irreversíveis",
+            "Usar um modelo maior",
+            "Pôr o prompt em maiúsculas"
+          ],
+          "answer": 1,
+          "explain": "O prompt ajuda, mas não é uma barreira; as defesas reais estão no código e no desenho das ferramentas."
+        }
+      ]
+    },
+    {
+      "id": "56",
+      "title": "Desempenho e acessibilidade",
+      "doc": "docs/56-performance-e-acessibilidade.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que mede o CLS (Cumulative Layout Shift)?",
+          "options": [
+            "O tempo até à primeira pintura",
+            "Quanto o conteúdo salta de sítio enquanto a página carrega",
+            "O atraso de resposta a um clique",
+            "O tamanho do JavaScript"
+          ],
+          "answer": 1,
+          "explain": "A causa mais comum são imagens sem width e height."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual é o efeito de <script src=\"x.js\" defer> no <head>?",
+          "options": [
+            "Bloqueia a página até o script chegar",
+            "Descarrega em paralelo e corre depois de o HTML ser lido, por ordem",
+            "Nunca corre",
+            "Corre antes do HTML"
+          ],
+          "answer": 1,
+          "explain": "Sem defer (nem async nem type=module), o script bloqueia a pintura."
+        },
+        {
+          "type": "short",
+          "q": "Como se chama uma tarefa na thread principal com mais de 50 ms (em português ou inglês)?",
+          "answers": [
+            "tarefa longa",
+            "long task",
+            "longtask"
+          ],
+          "explain": "É a causa número um de um INP mau; parte-se o trabalho e cede-se a thread."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que o placeholder não substitui um <label>?",
+          "options": [
+            "Porque não é suportado pelos browsers",
+            "Porque desaparece quando se escreve e não é um nome acessível fiável",
+            "Porque é sempre cinzento",
+            "Porque não se pode traduzir"
+          ],
+          "answer": 1,
+          "explain": "O campo precisa de uma etiqueta associada com for/id."
+        },
+        {
+          "type": "mcq",
+          "q": "O que é que o <dialog> com showModal() faz por ti?",
+          "options": [
+            "Nada, é só estilo",
+            "Torna o resto da página inerte, põe o foco no diálogo, fecha com Escape e devolve o foco a quem o abriu",
+            "Envia o formulário para o servidor",
+            "Impede o Escape"
+          ],
+          "answer": 1,
+          "explain": "A primeira regra do ARIA: usa o elemento HTML que já faz isso."
+        }
+      ]
+    },
+    {
+      "id": "57",
+      "title": "Next.js e SSR",
+      "doc": "docs/57-nextjs-e-ssr.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que é a hidratação, no SSR com React?",
+          "options": [
+            "Gerar o HTML no servidor",
+            "O React no cliente liga os event listeners ao HTML que veio do servidor, usando os mesmos dados",
+            "Comprimir o HTML",
+            "Guardar a página em cache"
+          ],
+          "answer": 1,
+          "explain": "Se o HTML do cliente não bater com o do servidor, há um erro de hidratação."
+        },
+        {
+          "type": "mcq",
+          "q": "No App Router do Next.js, que ficheiro serve o URL /tarefas/42?",
+          "options": [
+            "app/tarefas/42.js",
+            "app/tarefas/[id]/page.js",
+            "pages/tarefas.js",
+            "app/[tarefas]/[42]/page.js"
+          ],
+          "answer": 1,
+          "explain": "Pastas são segmentos; [id] é dinâmico e chega em params.id."
+        },
+        {
+          "type": "short",
+          "q": "Que diretiva, no início de um ficheiro, marca um componente de cliente no Next.js?",
+          "answers": [
+            "use client",
+            "'use client'",
+            "\"use client\""
+          ],
+          "explain": "Tudo o que esse ficheiro importa passa também a ser de cliente."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que JSON.stringify(dados) não chega para embutir dados num <script> no HTML?",
+          "options": [
+            "Porque o JSON não suporta acentos",
+            "Porque um texto com </script> fecha o script e o resto é executado como HTML (XSS)",
+            "Porque é lento",
+            "Porque o browser não lê JSON"
+          ],
+          "answer": 1,
+          "explain": "Escapa-se o < como \\u003c (o mesmo valor em JSON)."
+        },
+        {
+          "type": "mcq",
+          "q": "O que faz uma página com ISR quando o tempo de revalidate passou?",
+          "options": [
+            "Fica em branco até ser gerada",
+            "Serve logo a versão velha e regenera em segundo plano",
+            "Devolve um erro 503",
+            "Gera a página a cada pedido daí em diante"
+          ],
+          "answer": 1,
+          "explain": "É o stale-while-revalidate, no servidor; revalidatePath força a regeneração a pedido."
+        }
+      ]
+    },
+    {
+      "id": "58",
+      "title": "Testes avançados",
+      "doc": "docs/58-testes-avancados.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que faz o fast-check quando encontra uma entrada que parte uma propriedade?",
+          "options": [
+            "Para e mostra a primeira entrada aleatória",
+            "Encolhe a entrada até ao exemplo mínimo que ainda falha, e mostra a semente",
+            "Ignora e continua",
+            "Corre o teste de novo até passar"
+          ],
+          "answer": 1,
+          "explain": "O shrinking dá um contraexemplo pequeno e compreensível; a semente permite reproduzi-lo."
+        },
+        {
+          "type": "mcq",
+          "q": "Num teste de contrato orientado pelo consumidor, quem escreve o contrato?",
+          "options": [
+            "O fornecedor (a API)",
+            "O consumidor (ex.: o frontend), com o que realmente usa",
+            "Uma terceira equipa de QA",
+            "É gerado a partir do OpenAPI"
+          ],
+          "answer": 1,
+          "explain": "O fornecedor depois verifica, nos seus testes, que cumpre todos os contratos."
+        },
+        {
+          "type": "short",
+          "q": "Num teste de mutação, como se chama um mutante que os testes não detetam (os testes continuam a passar)?",
+          "answers": [
+            "sobrevivente",
+            "mutante sobrevivente",
+            "survived",
+            "sobreviveu"
+          ],
+          "explain": "Mostra uma zona do código cujo comportamento nenhum teste verifica."
+        },
+        {
+          "type": "mcq",
+          "q": "Num max(a, b) com 'a > b ? a : b', o mutante 'a >= b' sobrevive a todos os testes. Porquê?",
+          "options": [
+            "Os testes são fracos",
+            "É um mutante equivalente: muda o código sem mudar o comportamento",
+            "O Stryker tem um bug",
+            "Porque a e b são números"
+          ],
+          "answer": 1,
+          "explain": "Por isso não se persegue uma pontuação de 100%."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual é a melhor forma de testar código que usa setTimeout de 5 segundos?",
+          "options": [
+            "Esperar 5 segundos no teste",
+            "Usar um relógio falso (ex.: mock.timers no node:test) e avançar o tempo",
+            "Reduzir o tempo para 1 ms em produção",
+            "Não testar"
+          ],
+          "answer": 1,
+          "explain": "O teste fica instantâneo e determinista."
+        }
+      ]
+    },
+    {
+      "id": "59",
+      "title": "Clean code e revisão",
+      "doc": "docs/59-clean-code-e-revisao.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O que é refatorar?",
+          "options": [
+            "Reescrever o código do zero",
+            "Mudar a estrutura do código sem mudar o comportamento",
+            "Corrigir bugs",
+            "Acrescentar funcionalidades"
+          ],
+          "answer": 1,
+          "explain": "Mudanças de comportamento vão noutro commit."
+        },
+        {
+          "type": "short",
+          "q": "Como se chamam os testes que registam o que o código antigo faz agora, certo ou errado, antes de o refatorar?",
+          "answers": [
+            "testes de caracterização",
+            "caracterização",
+            "characterization tests",
+            "golden master"
+          ],
+          "explain": "Michael Feathers, Working Effectively with Legacy Code."
+        },
+        {
+          "type": "mcq",
+          "q": "Qual destes NÃO é normalmente um cheiro de código?",
+          "options": [
+            "Uma função com 7 parâmetros",
+            "if aninhados com 5 níveis",
+            "Uma constante com nome, MINIMO_SEM_PORTES = 50",
+            "O mesmo switch sobre um tipo repetido em vários sítios"
+          ],
+          "answer": 2,
+          "explain": "Dar nome aos números mágicos é precisamente a cura."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque se preferem pull requests pequenos?",
+          "options": [
+            "Porque o Git não aceita grandes",
+            "Porque recebem revisões cuidadosas e são fáceis de reverter; os grandes recebem um 'LGTM'",
+            "Porque gastam menos disco",
+            "Por causa do CI"
+          ],
+          "answer": 1,
+          "explain": "Os defeitos encontrados por linha caem muito acima de umas 400 linhas."
+        },
+        {
+          "type": "mcq",
+          "q": "Numa revisão de código, o que deve ficar para as ferramentas automáticas?",
+          "options": [
+            "O desenho da solução",
+            "Os casos esquecidos",
+            "A formatação, o lint e verificações mecânicas como console.log esquecidos",
+            "As permissões"
+          ],
+          "answer": 2,
+          "explain": "Os humanos concentram-se no que as máquinas não veem."
+        }
+      ]
+    },
+    {
+      "id": "60",
+      "title": "IoT com MQTT",
+      "doc": "docs/60-iot-mqtt.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "O filtro casa/+/temperatura apanha qual destes tópicos?",
+          "options": [
+            "casa/temperatura",
+            "casa/sala/temperatura",
+            "casa/r/c/temperatura",
+            "casa/sala/temperatura/max"
+          ],
+          "answer": 1,
+          "explain": "O + substitui exatamente um nível. Para zero ou mais níveis, no fim, usa-se o #."
+        },
+        {
+          "type": "mcq",
+          "q": "Com QoS 1, o que tem o consumidor de aguentar?",
+          "options": [
+            "Perder mensagens",
+            "Receber a mesma mensagem mais do que uma vez (pelo menos uma vez), por isso tem de ser idempotente",
+            "Mensagens fora do formato JSON",
+            "Ligações cifradas"
+          ],
+          "answer": 1,
+          "explain": "Se a confirmação (PUBACK) se perder, quem publica reenvia. É a mesma lição do RabbitMQ no módulo 06."
+        },
+        {
+          "type": "mcq",
+          "q": "Para que serve o Last Will and Testament?",
+          "options": [
+            "Para cifrar as mensagens",
+            "Para o broker publicar uma mensagem (ex.: 'offline') se o cliente desaparecer sem se despedir",
+            "Para guardar a última leitura de cada sensor",
+            "Para reenviar mensagens perdidas"
+          ],
+          "answer": 1,
+          "explain": "Configura-se antes de ligar. Uma saída limpa (DISCONNECT) não o dispara: quem se despede publica o seu próprio 'offline'."
+        },
+        {
+          "type": "short",
+          "q": "Que flag faz o broker guardar a última mensagem de um tópico e entregá-la a quem subscrever depois (em inglês)?",
+          "answers": [
+            "retain",
+            "retained",
+            "retida"
+          ],
+          "explain": "Serve para estados (online/offline, aberto/fechado): um dashboard que abre agora sabe logo o estado atual."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que um termóstato precisa de histerese?",
+          "options": [
+            "Para poupar bateria no sensor",
+            "Para não ligar e desligar a cada leitura quando a temperatura oscila à volta do alvo",
+            "Para converter Celsius em Fahrenheit",
+            "Para filtrar mensagens inválidas"
+          ],
+          "answer": 1,
+          "explain": "Com uma margem (liga abaixo de alvo-margem, desliga acima de alvo+margem), o estado só muda quando a mudança é real."
+        }
+      ]
+    },
+    {
+      "id": "61",
+      "title": "Um jogo com pygame",
+      "doc": "docs/61-jogo-pygame.md",
+      "questions": [
+        {
+          "type": "mcq",
+          "q": "Porque é que a Cobra não deve andar uma casa por frame?",
+          "options": [
+            "Porque o pygame não permite",
+            "Porque a velocidade do jogo passaria a depender dos FPS do computador",
+            "Porque assim a cobra não cresce",
+            "Porque os frames são aleatórios"
+          ],
+          "answer": 1,
+          "explain": "Com um passo fixo (um acumulador de tempo real), as regras avançam ao mesmo ritmo em qualquer máquina, e o desenho corre ao ritmo que conseguir."
+        },
+        {
+          "type": "mcq",
+          "q": "O que é a 'espiral da morte' num ciclo com passo fixo, e como se evita?",
+          "options": [
+            "Um bug do pygame; atualizando a versão",
+            "Depois de um engasgo, correr todos os passos em atraso atrasa ainda mais o frame seguinte; evita-se com um máximo de passos por frame, descartando o resto",
+            "A cobra a morder a própria cauda; com histerese",
+            "O ecrã a cintilar; com flip()"
+          ],
+          "answer": 1,
+          "explain": "Mais vale o jogo saltar um bocado do que nunca recuperar o atraso."
+        },
+        {
+          "type": "mcq",
+          "q": "Porque é que o cobra.py (as regras) não importa o pygame?",
+          "options": [
+            "Por causa da licença do pygame",
+            "Para as regras se testarem sem ecrã e se reutilizarem noutras interfaces (terminal, bot, servidor)",
+            "Porque o pygame é lento",
+            "Porque o Python não deixa importar o pygame em dois ficheiros"
+          ],
+          "answer": 1,
+          "explain": "É a mesma separação das camadas do módulo 04: o núcleo não conhece a interface."
+        },
+        {
+          "type": "short",
+          "q": "Que função do pygame mostra de uma vez, no ecrã, tudo o que foi desenhado no frame?",
+          "answers": [
+            "pygame.display.flip",
+            "display.flip",
+            "flip",
+            "pygame.display.flip()",
+            "flip()"
+          ],
+          "explain": "Desenha-se numa imagem escondida e o flip troca-a com a visível (double buffering), sem cintilação."
+        },
+        {
+          "type": "mcq",
+          "q": "Como se tornam testáveis as partes aleatórias do jogo (onde aparece a comida)?",
+          "options": [
+            "Não se testam",
+            "Com um gerador próprio com semente, random.Random(semente): a mesma semente dá sempre o mesmo jogo",
+            "Repetindo o teste até passar",
+            "Usando time.sleep"
+          ],
+          "answer": 1,
+          "explain": "A mesma técnica serve para replays e para jogos em rede (lockstep)."
+        }
+      ]
     }
   ],
   "geral": {

@@ -1,0 +1,28 @@
+<!-- P3 · Esta página demora a aparecer e salta quando a imagem chega. Corrige o carregamento:
+     o que bloqueia a primeira pintura, o que faz a página saltar (CLS), a prioridade da imagem
+     principal, e o que se descarrega sem ser preciso. Não mudes os textos nem os ids. -->
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workshop</title>
+    <script src="analitica.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0 auto; max-width: 800px; color: #222; }
+      img { max-width: 100%; height: auto; display: block; }
+      .longo { height: 6000px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="img/capa.svg" alt="Capa do workshop" />
+      <h1>Bem-vindo ao workshop</h1>
+      <p id="texto">Este texto deve aparecer depressa e não saltar quando a imagem chega.</p>
+      <div class="longo"></div>
+      <img src="img/rodape.svg" alt="" />
+      <p>© <span id="ano"></span></p>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

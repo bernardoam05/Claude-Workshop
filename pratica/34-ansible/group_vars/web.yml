@@ -1,0 +1,5 @@
+# P2 · Variáveis do grupo "web" (o Ansible carrega este ficheiro sozinho, pelo nome do grupo).
+#
+#   porta: 8080
+#   ambiente: producao
+#   workers: uma lista com "envio" e "limpeza"

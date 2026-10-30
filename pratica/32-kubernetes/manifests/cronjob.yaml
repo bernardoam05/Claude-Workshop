@@ -1,0 +1,9 @@
+# P4 · Uma tarefa agendada: limpar as notas apagadas há mais de 30 dias, todas as noites às 03:00.
+#
+# CronJob "limpeza":
+#   - schedule: todos os dias às 03:00 (formato cron, como no Linux)
+#   - se a execução anterior ainda estiver a correr, a nova NÃO arranca (concurrencyPolicy)
+#   - guarda o histórico de 3 execuções com sucesso e 1 falhada
+#   - cada execução (Job) tenta no máximo 2 vezes (backoffLimit) e é morta ao fim de 10 minutos
+#   - o pod corre: imagem workshop/notas:1.0.0, comando ["node", "limpeza.js", "--dias=30"],
+#     e em caso de erro o contentor recomeça no mesmo pod (restartPolicy)

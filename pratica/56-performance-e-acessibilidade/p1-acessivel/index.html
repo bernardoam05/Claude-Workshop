@@ -1,0 +1,49 @@
+<!-- P1 · Esta página funciona com um rato e uns olhos que veem bem. Torna-a acessível:
+     os testes correm o axe (que deteta problemas automaticamente) e usam só o teclado.
+     Não mudes o texto visível nem os ids. -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>As minhas tarefas</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; color: #222; }
+      header { display: flex; align-items: center; gap: 0.5rem; }
+      .dica { color: #aaa; }
+      .botao { background: #3b82f6; color: #fff; padding: 0.5rem 1rem; display: inline-block; cursor: pointer; border-radius: 4px; margin-top: 0.75rem; }
+      *:focus { outline: none; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="/"><img src="logo.svg" /></a>
+    </header>
+    <h1>As minhas tarefas</h1>
+    <h4>Nova tarefa</h4>
+    <form id="nova">
+      <input id="titulo" name="titulo" placeholder="Título" required />
+      <select id="prioridade" name="prioridade">
+        <option>Alta</option>
+        <option selected>Normal</option>
+        <option>Baixa</option>
+      </select>
+      <br />
+      <div class="botao" onclick="document.getElementById('nova').requestSubmit()">Criar</div>
+    </form>
+    <p class="dica">Prima Enter no título para criar.</p>
+    <h4>Lista</h4>
+    <ul id="lista"></ul>
+    <script>
+      const form = document.getElementById('nova');
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const li = document.createElement('li');
+        li.textContent = `${form.titulo.value} (${form.prioridade.value})`;
+        document.getElementById('lista').append(li);
+        form.reset();
+        form.titulo.focus();
+      });
+    </script>
+  </body>
+</html>

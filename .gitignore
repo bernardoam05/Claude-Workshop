@@ -35,3 +35,28 @@ pratica/16-trabalhar-numa-empresa/cenarios/
 # Artefactos ocasionais de experiências (ver docs/12-exercicios.md, exercício A5).
 *.tmp
 .quiz-results.json
+
+# Python (módulos 31, 34, 60, 61): o ambiente virtual reconstrói-se a partir de pratica/requirements.txt.
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+db.sqlite3
+
+# Terraform (módulo 33): providers descarregados e ESTADO. O estado pode conter segredos e
+# nunca vai para o Git; numa equipa vive num "backend remoto" (ver o módulo 33, secção 6).
+.terraform/
+# (o .terraform.lock.hcl, pelo contrário, VAI para o Git: é o package-lock dos providers.)
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Ansible (módulo 34): coleções instaladas pelo ansible-galaxy e ficheiros temporários.
+pratica/34-ansible/.colecoes/
+*.retry
+
+# Ferramentas descarregadas pela prática (ex.: o binário do Terraform, módulo 33).
+pratica/.ferramentas/
+# Ficheiros gerados pelo P1 do módulo 33 (o "recurso" que o Terraform cria).
+pratica/33-terraform/p1-ficheiros/gerado/

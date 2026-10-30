@@ -1,0 +1,21 @@
+# Dependências Python da prática (módulos 31, 34, 60 e 61). Não precisas de as instalar à mão:
+# na primeira vez que um módulo com Python é verificado, o `npm run verificar` cria o ambiente
+# virtual em pratica/.venv e instala esta lista. Versões fixas, como num package-lock.json.
+
+# Testes (todos os módulos Python)
+pytest==9.2.0
+
+# 34 · Ansible (o controlador; os "servidores" geridos são contentores Docker)
+ansible-core==2.21.5
+
+# 31 · Django, Django REST Framework e o servidor ASGI
+Django==6.1.2
+djangorestframework==3.18.3
+pytest-django==4.14.0
+uvicorn==0.54.0
+
+# 60 · IoT: cliente MQTT
+paho-mqtt==2.1.0
+
+# 61 · Jogo: pygame-ce (a versão mantida pela comunidade; importa-se como "import pygame")
+pygame-ce==2.5.8

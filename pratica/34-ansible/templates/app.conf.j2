@@ -1,0 +1,12 @@
+{# P2 · O template (Jinja2) do ficheiro de configuração da app. Deve produzir EXATAMENTE:
+
+# Gerido pelo Ansible: não edites à mão.
+porta = 8080
+ambiente = producao
+host = ans-web1
+workers:
+  - envio
+  - limpeza
+
+(com o valor de "host" igual ao nome do host no inventário: inventory_hostname, e uma linha
+"  - <nome>" por cada elemento da lista "workers"). Apaga este comentário quando começares. #}

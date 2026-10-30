@@ -1,0 +1,8 @@
+# P1 · O primeiro playbook, para TODOS os hosts.
+#
+# Uma play ("Base comum") com três tarefas, cada uma com um "name" que explique o que faz:
+#   1. o utilizador de sistema "app" existe (módulo ansible.builtin.user, system: true)
+#   2. a pasta /srv/app existe, pertence ao "app" e tem permissões 0755 (ansible.builtin.file)
+#   3. o ficheiro /srv/app/LEIA-ME tem o conteúdo "Gerido pelo Ansible\n" (ansible.builtin.copy, content:)
+#
+# Os testes correm-no DUAS vezes: na segunda, nenhuma tarefa pode dizer "changed".

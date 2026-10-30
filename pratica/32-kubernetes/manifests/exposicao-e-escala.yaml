@@ -1,0 +1,7 @@
+# P3 · Expor e escalar a app do P1 (estes objetos apontam para o Deployment e o Service do app.yaml).
+#
+# Ingress "notas": pedidos para o host notas.local, em qualquer caminho (prefixo /), vão para o
+#   Service "notas", na porta 80. ingressClassName: nginx
+# HorizontalPodAutoscaler "notas" (autoscaling/v2): escala o Deployment "notas" entre 2 e 6 réplicas,
+#   para manter o CPU médio em 70% do que os pods pediram (requests)
+# PodDisruptionBudget "notas": numa manutenção do cluster, fica sempre pelo menos 1 pod app: notas a correr

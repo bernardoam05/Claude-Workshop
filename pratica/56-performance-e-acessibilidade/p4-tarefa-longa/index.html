@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Processar</title>
+  </head>
+  <body>
+    <main>
+      <h1>Recalcular estatísticas</h1>
+      <button id="processar" type="button">Processar</button>
+      <progress id="progresso" max="1" value="0" aria-label="Progresso"></progress>
+      <output id="resultado"></output>
+    </main>
+    <script type="module">
+      import { processarTudo } from './processar.js';
+      const itens = Array.from({ length: 300 }, (_, i) => i);
+      document.getElementById('processar').addEventListener('click', async () => {
+        const progresso = document.getElementById('progresso');
+        const soma = await processarTudo(itens, (feitos) => (progresso.value = feitos / itens.length));
+        document.getElementById('resultado').textContent = `Soma: ${soma}`;
+      });
+    </script>
+  </body>
+</html>

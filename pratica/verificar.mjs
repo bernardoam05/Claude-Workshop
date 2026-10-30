@@ -7,6 +7,7 @@
 //   verificar.sh  → script de shell     · *.test.jsx   → Vitest (React, precisa de um DOM)
 //   playwright.config.js → Playwright (estilos: só um browser a sério calcula o layout)
 //   verificar.mjs → um verificador próprio do módulo (ex.: o 11, que testa os TEUS testes)
+//   test_*.py     → pytest, no ambiente virtual pratica/.venv (criado na primeira vez)
 //   o resto       → node --test (o mesmo executor de testes da API em src/api)
 // Se o Maven ou o dotnet não estiverem instalados, corre-os dentro de um contentor Docker.
 import { spawnSync } from 'node:child_process';
@@ -33,12 +34,13 @@ if (!pasta) {
 }
 const dir = join(root, pasta);
 
-// Lista recursiva de ficheiros, ignorando o que é gerado (dependências, builds).
+// Lista recursiva de ficheiros, ignorando o que é gerado (dependências, builds) e as pastas
+// escondidas (.venv, .terraform, .colecoes do Ansible...), que trazem testes que não são teus.
 function ficheiros(base) {
-  const ignorar = new Set(['node_modules', 'target', 'bin', 'obj', 'dist']);
+  const ignorar = new Set(['node_modules', 'target', 'bin', 'obj', 'dist', '__pycache__']);
   return readdirSync(base).flatMap((nome) => {
     const caminho = join(base, nome);
-    if (statSync(caminho).isDirectory()) return ignorar.has(nome) ? [] : ficheiros(caminho);
+    if (statSync(caminho).isDirectory()) return ignorar.has(nome) || nome.startsWith('.') ? [] : ficheiros(caminho);
     return [caminho];
   });
 }
@@ -123,6 +125,42 @@ function node() {
   return estado;
 }
 
+// O ambiente virtual Python é partilhado por todos os módulos Python (como o node_modules).
+// É (re)instalado quando ainda não existe ou quando o requirements.txt mudou desde a última vez.
+function garantirPython() {
+  const venv = join(root, '.venv');
+  const py = join(venv, 'bin', 'python');
+  const requisitos = join(root, 'requirements.txt');
+  const carimbo = join(venv, '.instalado');
+  if (existsSync(carimbo) && statSync(carimbo).mtimeMs >= statSync(requisitos).mtimeMs) return 0;
+  console.log('(A preparar o Python: pratica/.venv com o requirements.txt. Só demora na primeira vez.)');
+  if (!existsSync(py)) {
+    const r = correr('python3', ['-m', 'venv', venv]);
+    if (r !== 0) {
+      console.error('Não consegui criar o ambiente virtual. Em Debian/Ubuntu: sudo apt install python3-venv');
+      return r;
+    }
+  }
+  const r = correr(py, ['-m', 'pip', 'install', '-q', '--disable-pip-version-check', '-r', requisitos]);
+  if (r === 0) writeFileSync(carimbo, new Date().toISOString());
+  return r;
+}
+
+function python() {
+  const preparado = garantirPython();
+  if (preparado !== 0) return preparado;
+  const testes = ficheiros(dir)
+    .filter((f) => /(^|\/)test_[^/]*\.py$/.test(f))
+    .filter((f) => relative(dir, f).includes(filtro));
+  if (testes.length === 0) {
+    console.error(`Nenhum ficheiro de teste em ${pasta} corresponde a "${filtro}".`);
+    return 1;
+  }
+  return correr(join(root, '.venv', 'bin', 'python'), ['-m', 'pytest', '-v', '--tb=short', '--continue-on-collection-errors', ...testes.map((f) => relative(dir, f))], {
+    cwd: dir,
+  });
+}
+
 function playwright() {
   return correr(join(root, 'node_modules', '.bin', 'playwright'), [
     'test', '-c', relative(root, join(dir, 'playwright.config.js')), ...(filtro ? [filtro] : []),
@@ -135,6 +173,7 @@ else if (existsSync(join(dir, 'playwright.config.js'))) estado = playwright();
 else if (readdirSync(dir).some((f) => f.endsWith('.csproj'))) estado = dotnet();
 else if (existsSync(join(dir, 'verificar.mjs'))) estado = correr(process.execPath, [join(dir, 'verificar.mjs'), filtro]);
 else if (existsSync(join(dir, 'verificar.sh'))) estado = correr('bash', [join(dir, 'verificar.sh'), filtro], { cwd: dir });
+else if (ficheiros(dir).some((f) => /(^|\/)test_[^/]*\.py$/.test(f))) estado = python();
 else estado = node();
 
 console.log(estado === 0 ? `\n✔ ${pasta}: tudo a passar.` : `\n✘ ${pasta}: ainda há testes a falhar (lê a primeira falha, não todas).`);

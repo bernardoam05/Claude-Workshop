@@ -1,0 +1,6 @@
+# Coleções de que esta prática precisa (o "package.json" do Ansible).
+# Instalar: ansible-galaxy collection install -r requirements.yml -p .colecoes
+# (os testes fazem-no sozinhos na primeira vez)
+collections:
+  - name: community.docker      # traz a ligação "docker": gerir contentores como se fossem servidores
+    version: 5.4.0

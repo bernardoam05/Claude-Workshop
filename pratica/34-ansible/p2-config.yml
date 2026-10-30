@@ -1,0 +1,11 @@
+# P2 · Variáveis, loops, templates e handlers, só para o grupo "web".
+#
+# Uma play ("Configurar a app") com:
+#   1. um loop que garante as pastas /srv/app/logs, /srv/app/dados e /srv/app/tmp
+#   2. o template templates/app.conf.j2 → /srv/app/app.conf (modo 0644), que NOTIFICA o handler
+#      "recarregar app"
+#   3. um handler "recarregar app" que acrescenta uma linha ao ficheiro /srv/app/recarregamentos
+#      (ansible.builtin.shell: echo recarregado >> /srv/app/recarregamentos)
+#
+# As variáveis vêm de group_vars/web.yml. Um handler só corre quando uma tarefa que o notifica
+# muda alguma coisa, e só uma vez por execução, no fim da play.

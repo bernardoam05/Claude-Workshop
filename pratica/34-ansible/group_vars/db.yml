@@ -1,0 +1,2 @@
+# P3 · Os servidores de base de dados pertencem à equipa "dados", e têm os utilizadores "ana" e "carla".
+# (Estas variáveis vencem os defaults da role: group_vars tem prioridade maior.)
